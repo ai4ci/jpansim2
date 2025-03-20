@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.553">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Rob Challen">
+<meta name="dcterms.date" content="2025-02-24">
+
+<title>In host viral load model</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="in-host-model_files/libs/clipboard/clipboard.min.js"></script>
+<script src="in-host-model_files/libs/quarto-html/quarto.js"></script>
+<script src="in-host-model_files/libs/quarto-html/popper.min.js"></script>
+<script src="in-host-model_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="in-host-model_files/libs/quarto-html/anchor.min.js"></script>
+<link href="in-host-model_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="in-host-model_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="in-host-model_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="in-host-model_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="in-host-model_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">In host viral load model</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Rob Challen </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">February 24, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="model-desiderata" class="level1">
+<h1>Model desiderata</h1>
+<ul>
+<li>Sensible viral peak in naive host that can be translated into a viral load PCR measurement, with fairly predictable peak of virus, so we can determine a test signal / noise parameter for sensitivity and specificity, and make the PCR translation sensible.</li>
+<li>Viral peak related to infectiousness, and producing a typical latent period / infectious period / delay distribution for secondary infections.</li>
+<li>Tunable peak viral load and viral shedding duration.</li>
+<li>Some measure of severity that allows us to express risk of illness (e.g.&nbsp;symptoms, hospitalisation, death) in terms of modelled quantities.</li>
+<li>Tunable host response to infection leading to different severity for given viral challenge</li>
+<li>Ability to vaccinate individuals leading to less severe or lower viral peaks.</li>
+<li>Waning of immunity. Tunable.</li>
+<li>Secondary milder disease course, on second viral challenge.</li>
+<li>Complete elimination of infection possible (or stable very low level of virus).</li>
+<li>Chronic infection state possible.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>rendered <span class="ot">=</span> dtrackr<span class="sc">::</span><span class="fu">save_dot</span>(<span class="st">"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="st">digraph { </span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="st">  subgraph cluster_virions {</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="st">    label = 'virions';</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="st">    V;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="st">    VR [shape = point, width = 0];</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="st">    VR2 [shape = point, width = 0];</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="st">  subgraph cluster_targets {</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="st">    label = 'target cells (T)';</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="st">    S;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="st">    SE [shape = point, width = 0];</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="st">    E;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="st">    ER [shape = point, width = 0];</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="st">    I;</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="st">    IR [shape = point, width = 0];</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="st">    R;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="st">  subgraph cluster_immunity {</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="st">    label = 'immunity (J)';</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="st">    D;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="st">    DP [shape = point, width = 0];</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="st">    P;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="st">    A;</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="st">  S -&gt; SE [ arrowhead = none ];</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="st">  SE -&gt; E;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="st">  E -&gt; I;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="st">  I -&gt; IR [ arrowhead = none ];</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="st">  IR -&gt; R;</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="st">  E -&gt; ER [ arrowhead = none ];</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="st">  ER -&gt; R;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="st">  R -&gt; S;</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="st">  D -&gt; DP [ arrowhead = none ];</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="st">  DP -&gt; P;</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="st">  P -&gt; A;</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; D;</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="st">  I -&gt; DP [ arrowhead = empty, style = 'dashed', constraint=false]; </span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="st">  V -&gt; SE [ arrowhead = none]; </span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="st">  I -&gt; V;</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="st">  V -&gt; VR [ arrowhead = none ];</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="st">  VR -&gt; VR2  [ arrowhead = odot ];</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; ER [ arrowhead = empty, style = 'dotted', constraint=false]; </span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; IR [ arrowhead = empty, style = 'dotted', constraint=false]; </span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="st">  A -&gt; VR [ arrowhead = empty, style = 'dotted', constraint=false]; </span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="st">"</span>,<span class="fu">tempfile</span>())</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(rendered<span class="sc">$</span>paths<span class="sc">$</span>png)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="../../../../../tmp/RtmpXbBpMK/file2133c28f26b94.png" class="img-fluid figure-img" width="346"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="compartments" class="level1">
+<h1>Compartments</h1>
+<p><span class="math inline">\(V\)</span> is count of virions.</p>
+<p><span class="math inline">\(T\)</span> is total target cells, <span class="math inline">\(S\)</span>, susceptible targets, <span class="math inline">\(E\)</span> is “exposed” targets (infected but not yet producing virus), <span class="math inline">\(I\)</span> is infected ( and producing virus), <span class="math inline">\(R\)</span>, “removed” are target cells inactivated by immunity.</p>
+<p><span class="math inline">\(J\)</span> is the total number of immune cells, of which <span class="math inline">\(D\)</span> are dormant, <span class="math inline">\(P\)</span> are priming, and <span class="math inline">\(A\)</span> are active.</p>
+<p><span class="math inline">\(\alpha\)</span> is the ratio of immune to target cells. This affects how effective the immune system is at clearing the virus.</p>
+<p><span class="math display">\[
+\begin{align}
+V \\
+T &amp;= S + E + I + R\\
+J &amp;= D + P + A\\
+J &amp;= \alpha T
+\end{align}
+\]</span> # Virions</p>
+<p><span class="math inline">\(X_t\)</span> is the time varying external viral exposure. <span class="math inline">\(\beta_{neut}\)</span> is a rate at which virions are neutralised by the immune system, after which they are removed from the system. <span class="math inline">\(\beta_{inf}\)</span> is a rate at which virions infect susceptible target cells. <span class="math inline">\(\beta_{rep}\)</span> is a rate at which infected target cell replicate virus.</p>
+<p><span class="math display">\[
+\begin{align}
+\Delta V &amp;= X_t + N_{IV} - N_{V-} - N_{VE} \\
+p_{neut} &amp;= 1-e^{-\beta_{neut}\frac{A}{J} } \\
+p_{inf} &amp;= 1-e^{-\beta_{inf}\frac{S}{T} } \\
+N_{IV} &amp;\sim Poisson( \beta_{rep} \times I ) \\
+N_{V-} &amp;\sim Binomial(V, p_{neut}) \\
+N_{VE} &amp;\sim Binomial(V-N_{V-}, p_{inf}) \\
+\end{align}
+\]</span></p>
+</section>
+<section id="targets" class="level1">
+<h1>Targets</h1>
+<p><span class="math inline">\(\beta_{recov}\)</span> is a recovery rate of target cells, <span class="math inline">\(\beta_{EI}\)</span> is the rate “exposed” targets convert to “infected” cells which produce new virions. <span class="math inline">\(\gamma\)</span> is a relative probability of discovery of exposed cells compared to infected.</p>
+<p>$$ <span class="math display">\[\begin{align}
+\Delta S &amp;= N_{RS} - N_{SE} \\
+\Delta E &amp;= N_{SE} - N_{ER} - N_{EI}\\
+\Delta I &amp;= N_{EI} - N_{IR}\\
+\Delta R &amp;= N_{IR} - N_{RS}\\
+
+p_{cell} &amp;= 1-e^{-\beta_{neut}\frac{A}{T} } \\
+
+N_{SE} &amp;\sim Binomial( N_{VE} \bigg[ 1-\bigg(\frac{N_{VE}}{1+N_{VE}}\bigg)^S \bigg], p_{inf} ) \\
+N_{RS} &amp;\sim Binomial( R, 1-e^{-\beta_{recov}})\\
+
+
+
+N_{ER} &amp;\sim Binomial(E, \gamma \times p_{cell}) \\
+N_{EI} &amp;\sim Binomial(E-N_{ER}, 1-e^{-\beta_{EI}}) \\
+
+
+N_{IR} &amp;\sim Binomial(I, p_{cell}) \\
+
+
+\end{align}\]</span> $$</p>
+</section>
+<section id="immunity" class="level1">
+<h1>Immunity</h1>
+<p><span class="math inline">\(V_t\)</span> is a time varying vaccination dose. <span class="math inline">\(\beta_{induce}\)</span> is the rate at which exposed and infected targets. <span class="math inline">\(\beta_{PA}\)</span> is the rate at which primed immune cells transition to active. <span class="math inline">\(\beta_{waning}\)</span> is the rate at which active immune cells become dormant.</p>
+<p><span class="math display">\[
+\begin{align}
+\Delta D &amp;= N_{AD} - N_{DP} - V_t \\
+N_{DP} &amp;\sim Binomial(D, 1-e^{-\beta_{induce} \frac{ E+I }{T}})\\
+N_{AD} &amp;\sim Binomial(A, 1-e^{-\beta_{waning}})\\
+\Delta P &amp;= N_{DP} + V_t - N_{PA} \\
+N_{PA} &amp;\sim Binomial(P, 1-e^{-\beta_{PA}})\\
+\Delta P &amp;= N_{PA} - N_{AD} \\
+\end{align}
+\]</span></p>
+</section>
+<section id="stochastic-biological-model" class="level1">
+<h1>Stochastic biological model</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>stoch1 <span class="ot">=</span> odin.dust<span class="sc">::</span><span class="fu">odin_dust</span>({</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Virions</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(virions) <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(virions) <span class="ot">=</span> virions <span class="sc">+</span> virions_added <span class="sc">-</span> virions_neutralized <span class="sc">-</span> virions_infecting</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  rate_infection <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">1</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  rate_virion_replication <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">4</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  rate_neutralization <span class="ot">=</span> rate_virion_replication</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  p_neutralization <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span> rate_neutralization <span class="sc">*</span> immune_active <span class="sc">/</span> k_immune)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  p_infection <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">exp</span>(<span class="sc">-</span> rate_infection <span class="sc">*</span> target_susceptible <span class="sc">/</span> k_target)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  virions_neutralized <span class="ot">=</span> <span class="fu">rbinom</span>(virions, p_neutralization)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  virions_infecting <span class="ot">=</span> <span class="fu">rbinom</span>(virions<span class="sc">-</span>virions_neutralized, p_infection)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  virions_added <span class="ot">=</span> <span class="fu">rpois</span>(rate_virion_replication <span class="sc">*</span> target_infected)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Targets</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  k_target <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">10000</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(target_susceptible) <span class="ot">=</span> k_target</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(target_exposed) <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(target_infected) <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(target_susceptible) <span class="ot">=</span> target_susceptible <span class="sc">-</span> target_newly_exposed <span class="sc">+</span> target_recovered</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(target_exposed) <span class="ot">=</span> target_exposed <span class="sc">+</span> target_newly_exposed <span class="sc">-</span> target_exposed_removal <span class="sc">-</span> target_start_infected</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(target_infected) <span class="ot">=</span> target_infected <span class="sc">+</span> target_start_infected <span class="sc">-</span> target_infected_removed</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  rate_target_recovery <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">7</span>)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  rate_infected_given_exposed <span class="ot">=</span> rate_virion_replication</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  rate_cellular_removal <span class="ot">=</span> rate_neutralization</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># virions_infecting is a sample size and targets_susceptible is a pool size</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="co"># coverage of the pool by repeated sampling with replacement is given by:</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="co"># p_target_infected = 1-(1-1/target_susceptible)^virions_infecting</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="co"># this is not a standard way of doing this </span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="co"># because multiple viral particles can infect a single host but not vice versa</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># so a standard collision model is not applicable.</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># </span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  target_interacted <span class="ot">=</span> virions_infecting <span class="sc">*</span> (<span class="dv">1</span><span class="sc">-</span>(virions_infecting<span class="sc">/</span>(<span class="dv">1</span><span class="sc">+</span>virions_infecting))<span class="sc">^</span>target_susceptible)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  target_newly_exposed <span class="ot">=</span> <span class="fu">rbinom</span>(target_interacted, p_infection)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  target_removed <span class="ot">=</span> k_target <span class="sc">-</span> (target_susceptible <span class="sc">+</span> target_exposed <span class="sc">+</span> target_infected)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  p_target_recovery <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>rate_target_recovery)</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  target_recovered <span class="ot">=</span> <span class="fu">rbinom</span>(target_removed, p_target_recovery)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  p_infected_given_exposed <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>rate_infected_given_exposed)</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># p_target_cellular_removal = 1-exp(- rate_cellular_removal * immune_active / k_immune * ratio_immune_target)</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  p_target_cellular_removal <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span> rate_cellular_removal <span class="sc">*</span> immune_active <span class="sc">/</span> k_target)</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  p_propensity_chronic <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">0</span>)</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  target_exposed_removal <span class="ot">=</span> <span class="fu">rbinom</span>(target_exposed, (<span class="dv">1</span><span class="sc">-</span>p_propensity_chronic) <span class="sc">*</span> p_target_cellular_removal)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  target_start_infected <span class="ot">=</span> <span class="fu">rbinom</span>(target_exposed<span class="sc">-</span>target_exposed_removal, p_infected_given_exposed)</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  target_infected_removed <span class="ot">=</span> <span class="fu">rbinom</span>(target_infected, p_target_cellular_removal)</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Immunity</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  ratio_immune_target <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">1</span>)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  k_immune <span class="ot">=</span> ratio_immune_target <span class="sc">*</span> k_target</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(immune_priming) <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial</span>(immune_active) <span class="ot">=</span> <span class="dv">0</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  rate_induced_given_exposed <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">1</span>)</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>  rate_active_given_induced <span class="ot">=</span> rate_induced_given_exposed</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  rate_senescence_given_active <span class="ot">=</span> <span class="fu">user</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">150</span>)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>  immune_dormant <span class="ot">=</span> k_immune <span class="sc">-</span> immune_priming <span class="sc">-</span> immune_active</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>  <span class="co"># immune_dormant = k_immune - immune_active</span></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>  p_induced_given_exposed <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>rate_induced_given_exposed <span class="sc">*</span> (target_exposed<span class="sc">+</span>target_infected) <span class="sc">/</span> k_target)</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>  immune_induced <span class="ot">=</span> <span class="fu">rbinom</span>(immune_dormant, p_induced_given_exposed)</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  p_active_given_induced <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>rate_active_given_induced)</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>  immune_start_active <span class="ot">=</span> <span class="fu">rbinom</span>(immune_priming, p_active_given_induced)</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(immune_priming) <span class="ot">=</span> immune_priming <span class="sc">+</span> immune_induced <span class="sc">-</span> immune_start_active</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  p_senescence_given_active <span class="ot">=</span> <span class="dv">1</span><span class="sc">-</span><span class="fu">exp</span>(<span class="sc">-</span>rate_senescence_given_active)</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>  immune_senescence <span class="ot">=</span> <span class="fu">rbinom</span>(immune_active, p_senescence_given_active)</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>  <span class="fu">update</span>(immune_active) <span class="ot">=</span> immune_active <span class="sc">+</span> immune_start_active <span class="sc">-</span> immune_senescence</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>}, <span class="at">skip_cache =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required namespace: pkgbuild</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ 21 functions decorated with [[cpp11::register]]</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>✔ generated file 'cpp11.R'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>✔ generated file 'cpp11.cpp'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ Re-compiling odin747d73b3</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>── R CMD INSTALL ───────────────────────────────────────────────────────────────
+* installing *source* package ‘odin747d73b3’ ...
+** using staged installation
+** libs
+using C++ compiler: ‘g++ (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+g++ -std=gnu++17 -I"/usr/share/R/include" -DNDEBUG  -I'/home/vp22681/R/x86_64-pc-linux-gnu-library/4.4/cpp11/include'    -I"/home/vp22681/R/x86_64-pc-linux-gnu-library/4.4/dust/include" -DHAVE_INLINE -fopenmp  -fpic  -g -O2 -ffile-prefix-map=/build/r-base-6tgf7J/r-base-4.4.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -Wall -pedantic  -c cpp11.cpp -o cpp11.o
+g++ -std=gnu++17 -I"/usr/share/R/include" -DNDEBUG  -I'/home/vp22681/R/x86_64-pc-linux-gnu-library/4.4/cpp11/include'    -I"/home/vp22681/R/x86_64-pc-linux-gnu-library/4.4/dust/include" -DHAVE_INLINE -fopenmp  -fpic  -g -O2 -ffile-prefix-map=/build/r-base-6tgf7J/r-base-4.4.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -Wall -pedantic  -c dust.cpp -o dust.o
+g++ -std=gnu++17 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o odin747d73b3.so cpp11.o dust.o -fopenmp -L/usr/lib/R/lib -lR
+installing to /tmp/RtmpXbBpMK/devtools_install_2133c135fa024/00LOCK-file2133c5bc0ef74/00new/odin747d73b3/libs
+** checking absolute paths in shared objects and dynamic libraries
+* DONE (odin747d73b3)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>ℹ Loading odin747d73b3</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>step <span class="ot">=</span> <span class="cf">function</span>(mod,i, <span class="at">infectFn =</span> <span class="sc">~</span> <span class="cf">if</span> (.x <span class="sc">%%</span> <span class="dv">100</span> <span class="sc">==</span> <span class="dv">10</span>) <span class="dv">100</span> <span class="cf">else</span> <span class="dv">0</span>) {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  infectFn <span class="ot">=</span> rlang<span class="sc">::</span><span class="fu">as_function</span>(infectFn)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  mod<span class="sc">$</span><span class="fu">run</span>(i)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  s <span class="ot">=</span> mod<span class="sc">$</span><span class="fu">state</span>()</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(<span class="fu">dim</span>(s)) <span class="sc">==</span><span class="dv">3</span>) {</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    s[<span class="dv">1</span>,,] <span class="ot">=</span> s[<span class="dv">1</span>,,] <span class="sc">+</span> <span class="fu">infectFn</span>(i)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    inf <span class="ot">=</span> mod<span class="sc">$</span><span class="fu">info</span>()[[<span class="dv">1</span>]]</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    s[<span class="dv">1</span>,] <span class="ot">=</span> s[<span class="dv">1</span>,] <span class="sc">+</span> <span class="fu">infectFn</span>(i)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    inf <span class="ot">=</span> mod<span class="sc">$</span><span class="fu">info</span>()</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  mod<span class="sc">$</span><span class="fu">update_state</span>(<span class="at">state =</span> s)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  n <span class="ot">=</span> <span class="fu">names</span>(inf<span class="sc">$</span>index)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(<span class="fu">dim</span>(s))<span class="sc">==</span><span class="dv">2</span>) <span class="fu">dim</span>(s) <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">dim</span>(s),<span class="dv">1</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(<span class="fu">lapply</span>( <span class="dv">1</span><span class="sc">:</span>(<span class="fu">dim</span>(s)[<span class="dv">3</span>]) , \(set) {</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    stmp <span class="ot">=</span> s[,,set]</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">value =</span> <span class="fu">as.vector</span>(stmp),</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">boot =</span> <span class="fu">as.vector</span>(<span class="fu">col</span>(stmp)),</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">variable =</span> n[<span class="fu">as.vector</span>(<span class="fu">row</span>(stmp))],</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>      <span class="at">step =</span> i,</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>      <span class="at">set=</span>set</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>full_params <span class="ot">=</span> <span class="cf">function</span>(<span class="at">mod =</span> stoch1<span class="sc">$</span><span class="fu">new</span>(<span class="at">pars=</span><span class="fu">list</span>(), <span class="at">n_particles =</span> <span class="dv">10</span>,<span class="at">time=</span><span class="dv">0</span>)) {</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>  sweepDf <span class="ot">=</span> mod<span class="sc">$</span><span class="fu">pars</span>() <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">list_transpose</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>  defaults <span class="ot">=</span> mod<span class="sc">$</span><span class="fu">param</span>() <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">map</span>(<span class="sc">~</span> .x <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">pluck</span>(<span class="st">"default_value"</span>))</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>  defaults <span class="ot">=</span> defaults <span class="sc">%&gt;%</span> <span class="fu">map</span>(\(x) {</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.list</span>(x)) <span class="fu">return</span>(x)</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>      x[[<span class="dv">1</span>]] <span class="ot">=</span> <span class="fu">as.name</span>(x[[<span class="dv">1</span>]])</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>      <span class="fu">return</span>(x <span class="sc">%&gt;%</span> <span class="fu">as.call</span>() <span class="sc">%&gt;%</span> <span class="fu">eval</span>())</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>  }) <span class="sc">%&gt;%</span> <span class="fu">as_tibble</span>()</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(sweepDf) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(sweepDf <span class="sc">%&gt;%</span> <span class="fu">cross_join</span>(defaults <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span><span class="fu">any_of</span>(<span class="fu">colnames</span>(sweepDf)))))</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(defaults)</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>sweep <span class="ot">=</span> <span class="cf">function</span>(<span class="at">parsDf =</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(<span class="at">boot=</span><span class="dv">1</span>), <span class="at">maxtime =</span> <span class="dv">399</span>,...) {</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="st">"set"</span> <span class="sc">%in%</span> <span class="fu">colnames</span>(parsDf)) parsDf <span class="ot">=</span> parsDf <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">set =</span> <span class="fu">row_number</span>())</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># pars = parsDf %&gt;% purrr::transpose()</span></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>  pars <span class="ot">=</span> parsDf <span class="sc">%&gt;%</span> <span class="fu">as.list</span>() <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">list_transpose</span>(<span class="at">simplify =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>  mod <span class="ot">&lt;-</span> stoch1<span class="sc">$</span><span class="fu">new</span>(<span class="at">pars=</span>pars, <span class="at">n_particles =</span> <span class="dv">10</span>,<span class="at">time=</span><span class="dv">0</span>,<span class="at">pars_multi =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step</span>(mod,<span class="dv">1</span>)</span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">=</span> <span class="fu">bind_rows</span>(<span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span>maxtime, \(i) <span class="fu">step</span>(mod,i,...)))</span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">full_params</span>(mod) <span class="sc">%&gt;%</span> <span class="fu">inner_join</span>(tmp, <span class="at">by=</span><span class="st">"set"</span>)</span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a>plot_sweep <span class="ot">=</span> <span class="cf">function</span>(sweep, <span class="at">facets =</span> <span class="sc">~</span>variable) {</span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>  tmp <span class="ot">=</span> tmp <span class="sc">%&gt;%</span> </span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(variable <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"virions"</span>,<span class="st">"target_susceptible"</span>,<span class="st">"immune_active"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(<span class="fu">across</span>(<span class="sc">-</span><span class="fu">c</span>(value,boot))) <span class="sc">%&gt;%</span></span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">value =</span> <span class="fu">mean</span>(value))</span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(tmp,<span class="fu">aes</span>(<span class="at">x=</span>step<span class="dv">-10</span>,<span class="at">y=</span>value,<span class="at">colour =</span> <span class="fu">as.factor</span>(set),<span class="at">group=</span><span class="fu">interaction</span>(<span class="fu">as.factor</span>(set))))<span class="sc">+</span></span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>()<span class="sc">+</span><span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">alpha=</span><span class="dv">1</span>)))<span class="sc">+</span></span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">guides</span>(<span class="at">colour=</span><span class="fu">guide_legend</span>(<span class="at">position=</span><span class="st">"bottom"</span>))<span class="sc">+</span></span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(facets,<span class="at">scales =</span> <span class="st">"free_y"</span>),</span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(tmp,<span class="fu">aes</span>(<span class="at">x=</span>step<span class="dv">-10</span>,<span class="at">y=</span>value,<span class="at">colour =</span> <span class="fu">as.factor</span>(set),<span class="at">group=</span><span class="fu">interaction</span>(<span class="fu">as.factor</span>(set))))<span class="sc">+</span></span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>()<span class="sc">+</span><span class="fu">guides</span>(<span class="at">colour =</span> <span class="fu">guide_legend</span>(<span class="at">override.aes =</span> <span class="fu">list</span>(<span class="at">alpha=</span><span class="dv">1</span>)))<span class="sc">+</span></span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(facets,<span class="at">scales =</span> <span class="st">"free_y"</span>)<span class="sc">+</span></span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">guides</span>(<span class="at">colour=</span><span class="fu">guide_legend</span>(<span class="at">position=</span><span class="st">"bottom"</span>))<span class="sc">+</span></span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_cartesian</span>(<span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">50</span>))</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a>} </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">=</span> <span class="fu">sweep</span>(<span class="at">parsDf =</span> <span class="fu">tibble</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_virion_replication =</span> <span class="fu">seq</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">1</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>tmp <span class="sc">%&gt;%</span> <span class="fu">plot_sweep</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'rate_virion_replication', 'set',
+'k_target', 'p_propensity_chronic', 'rate_induced_given_exposed',
+'rate_infection', 'rate_senescence_given_active', 'rate_target_recovery',
+'ratio_immune_target', 'variable'. You can override using the `.groups`
+argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="in-host-model_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+[[2]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="in-host-model_files/figure-html/unnamed-chunk-4-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="full_params-as.list-deparse-cliprwrite_clip" class="level1">
+<h1>full_params() %&gt;% as.list() %&gt;% deparse() %&gt;% clipr::write_clip()</h1>
+<p>list(k_immune = 10000L, k_target = 10000L, p_propensity_chronic = 0L, rate_active_given_induced = 0.5, rate_cellular_removal = 5, rate_induced_given_exposed = 0.5, rate_infection = 5, rate_infected_given_exposed = 0.333333333333333, rate_senescence_given_active = 0.00273972602739726, rate_target_recovery = 0.0333333333333333, rate_neutralization = 5, rate_virion_replication = 2)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>tmp <span class="ot">=</span> <span class="fu">sweep</span>(<span class="at">parsDf =</span> <span class="fu">tibble</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">ratio_immune_target =</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4), # &lt;&lt; HOST FACTOR, duration and severity of disease, immune activity &amp; peak of virions, can lead to chrnoic carrier state</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># shortens GT? worsens severity</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_virion_replication =</span> <span class="dv">4</span>, <span class="co">#c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), &lt;&lt; VIRAL FACTOR</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_infection =</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_infected_given_exposed =</span> <span class="dv">1</span>, <span class="co">#rate_virion_replication, #rate_infection,</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_neutralization =</span> rate_virion_replication <span class="sc">*</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4),</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_cellular_removal =</span> rate_neutralization, <span class="co"># * c(0.25,0.5,1,2,4),</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_propensity_chronic =</span> <span class="dv">0</span>, <span class="co">#c(0,0.25, 0.5,0.75,1), # &lt;&lt; HOST PROB CHRONIC</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_induced_given_exposed =</span> <span class="fu">seq</span>(<span class="fl">0.7</span>,<span class="fl">1.3</span>,<span class="fl">0.1</span>), <span class="co"># c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. &lt;&lt; HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_active_given_induced =</span> rate_induced_given_exposed, <span class="co">#* c(1,2,4,8), #c(0.5,1,2,4,8),</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_senescence_given_active =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">150</span>, <span class="co">#1/800,</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_target_recovery =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">7</span>, <span class="co">#1/c(1,3,7,15,30), # &lt;&lt; HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>tmp <span class="sc">%&gt;%</span> <span class="fu">plot_sweep</span>(<span class="sc">~</span>variable)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'ratio_immune_target',
+'rate_virion_replication', 'rate_infection', 'rate_infected_given_exposed',
+'rate_neutralization', 'rate_cellular_removal', 'p_propensity_chronic',
+'rate_induced_given_exposed', 'rate_active_given_induced',
+'rate_senescence_given_active', 'rate_target_recovery', 'set', 'k_target',
+'variable'. You can override using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="in-host-model_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+[[2]]</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="in-host-model_files/figure-html/unnamed-chunk-5-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-independently-randomly/32816#32816</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>tmp2 <span class="ot">=</span> <span class="fu">sweep</span>(<span class="at">parsDf =</span> <span class="fu">tibble</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">ratio_immune_target =</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4), # &lt;&lt; HOST FACTOR, duration and severity of disease, immune activity &amp; peak of virions, can lead to chrnoic carrier state</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># shortens GT? worsens severity</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_virion_replication =</span> <span class="dv">4</span>, <span class="co">#c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), &lt;&lt; VIRAL FACTOR</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_infection =</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_infected_given_exposed =</span> <span class="dv">1</span>, <span class="co">#rate_virion_replication, #rate_infection,</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_neutralization =</span> rate_virion_replication <span class="sc">*</span> <span class="dv">1</span>, <span class="co">#c(0.25,0.5,1,2,4),</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_cellular_removal =</span> rate_neutralization, <span class="co"># * c(0.25,0.5,1,2,4),</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_propensity_chronic =</span> <span class="dv">0</span>, <span class="co">#c(0,0.25, 0.5,0.75,1), # &lt;&lt; HOST PROB CHRONIC</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_induced_given_exposed =</span> <span class="fu">rnorm</span>(<span class="dv">50</span>,<span class="dv">1</span>,<span class="fl">0.1</span>), <span class="co"># c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. &lt;&lt; HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_active_given_induced =</span> rate_induced_given_exposed, <span class="co">#* c(1,2,4,8), #c(0.5,1,2,4,8),</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_senescence_given_active =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">150</span>, <span class="co">#1/800,</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">rate_target_recovery =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">7</span>, <span class="co">#1/c(1,3,7,15,30), # &lt;&lt; HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="co"># tmp2 %&gt;% glimpse()</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>tmp3 <span class="ot">=</span> tmp2 <span class="sc">%&gt;%</span> </span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(variable <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"virions"</span>,<span class="st">"target_susceptible"</span>,<span class="st">"immune_active"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">phase =</span> (step <span class="sc">%/%</span> <span class="dv">100</span>)<span class="sc">+</span><span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="fu">across</span>(<span class="sc">-</span><span class="fu">c</span>(step,value,boot))) <span class="sc">%&gt;%</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">peak =</span> <span class="fu">max</span>(value),</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">minima =</span> <span class="fu">min</span>(value)</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">glimpse</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'ratio_immune_target',
+'rate_virion_replication', 'rate_infection', 'rate_infected_given_exposed',
+'rate_neutralization', 'rate_cellular_removal', 'p_propensity_chronic',
+'rate_induced_given_exposed', 'rate_active_given_induced',
+'rate_senescence_given_active', 'rate_target_recovery', 'set', 'k_target',
+'variable'. You can override using the `.groups` argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 600
+Columns: 17
+Groups: ratio_immune_target, rate_virion_replication, rate_infection, rate_infected_given_exposed, rate_neutralization, rate_cellular_removal, p_propensity_chronic, rate_induced_given_exposed, rate_active_given_induced, rate_senescence_given_active, rate_target_recovery, set, k_target, variable [150]
+$ ratio_immune_target          &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+$ rate_virion_replication      &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,…
+$ rate_infection               &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+$ rate_infected_given_exposed  &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+$ rate_neutralization          &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,…
+$ rate_cellular_removal        &lt;dbl&gt; 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,…
+$ p_propensity_chronic         &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+$ rate_induced_given_exposed   &lt;dbl&gt; 0.7961821, 0.7961821, 0.7961821, 0.796182…
+$ rate_active_given_induced    &lt;dbl&gt; 0.7961821, 0.7961821, 0.7961821, 0.796182…
+$ rate_senescence_given_active &lt;dbl&gt; 0.006666667, 0.006666667, 0.006666667, 0.…
+$ rate_target_recovery         &lt;dbl&gt; 0.1428571, 0.1428571, 0.1428571, 0.142857…
+$ set                          &lt;int&gt; 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 2…
+$ k_target                     &lt;int&gt; 10000, 10000, 10000, 10000, 10000, 10000,…
+$ variable                     &lt;chr&gt; "immune_active", "immune_active", "immune…
+$ phase                        &lt;dbl&gt; 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2,…
+$ peak                         &lt;dbl&gt; 5154, 3239, 2130, 2203, 10000, 10000, 100…
+$ minima                       &lt;dbl&gt; 0, 1576, 1419, 1361, 6692, 9979, 9665, 96…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(tmp3 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(variable <span class="sc">==</span> <span class="st">"virions"</span>, phase <span class="sc">==</span> <span class="dv">1</span>))<span class="sc">+</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="fu">aes</span>(<span class="at">x=</span>peak, <span class="at">colour=</span><span class="fu">as.factor</span>(phase)))<span class="sc">+</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>variable,<span class="at">scales=</span><span class="st">"free"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="in-host-model_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(peak <span class="sc">~</span> rate_induced_given_exposed, tmp3 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(variable <span class="sc">==</span> <span class="st">"virions"</span>, phase <span class="sc">==</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = peak ~ rate_induced_given_exposed, data = tmp3 %&gt;% 
+    filter(variable == "virions", phase == 1))
+
+Coefficients:
+               (Intercept)  rate_induced_given_exposed  
+                      8113                       -4377  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lm</span>(peak <span class="sc">~</span> rate_induced_given_exposed, tmp3 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(variable <span class="sc">==</span> <span class="st">"virions"</span>, phase <span class="sc">==</span> <span class="dv">4</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = peak ~ rate_induced_given_exposed, data = tmp3 %&gt;% 
+    filter(variable == "virions", phase == 4))
+
+Coefficients:
+               (Intercept)  rate_induced_given_exposed  
+                     442.7                      -176.0  </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ggplot(tmp3)+</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_density(aes(x=as.factor(set), ymin=minima,ymax=peak))+</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_errorbar(aes(x=as.factor(set), ymin=minima,ymax=peak))+</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   facet_wrap(~variable,scales="free_x")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

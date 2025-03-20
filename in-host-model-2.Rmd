@@ -1,0 +1,328 @@
+---
+title: "In host viral load model"
+author: "Rob Challen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+here::i_am("in-host-model.Rmd")
+library(tidyverse)
+
+# install.packages(
+#   c("odin","odin.dust","dust"),
+#   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
+
+```
+
+
+
+```{r}
+dtrackr::save_dot("digraph { a -> b }",tempfile())
+```
+
+
+
+# Stochastic biological model
+
+
+
+```{r}
+
+stoch1 = odin.dust::odin_dust({
+  
+  # Virions
+  
+  initial(virions) = 0
+  update(virions) = virions + virions_added - virions_removed
+  
+  rate_infection = user(1)
+  rate_virion_replication = user(4)
+  rate_virion_removal = rate_virion_replication
+  
+  p_virion_removed_by_immunity = 1 - exp(- rate_virion_removal * immune_active / k_immune)
+  p_virion_removed_by_infection = 1 - exp(- rate_infection * target_susceptible / k_target)
+  
+  p_virion_removal = 1 - (1-p_virion_removed_by_immunity)*(1-p_virion_removed_by_infection)
+  
+  virions_removed = rbinom(virions, p_virion_removal)
+  virions_added = rpois(rate_virion_replication * target_producing)
+  
+  # Targets
+  
+  k_target = user(10000)
+  
+  initial(target_susceptible) = k_target
+  initial(target_exposed) = 0
+  initial(target_producing) = 0
+  
+  update(target_susceptible) = target_susceptible - target_infected + target_recovered
+  update(target_exposed) = target_exposed + target_infected - target_exposed_removal - target_start_producing
+  update(target_producing) = target_producing + target_start_producing - target_producing_removed
+  
+  rate_target_recovery = user(1/7)
+  rate_producing_given_exposed = rate_virion_replication
+  rate_cellular_removal = rate_virion_removal
+  
+  p_infection_given_virion_removed = p_virion_removed_by_infection / p_virion_removal
+  virions_infecting = rbinom(virions_removed, p_infection_given_virion_removed)
+  
+  
+  # virions_infecting is a sample size and targets_susceptible is a pool size
+  # coverage of the pool by repeated sampling with replacement is given by:
+  # p_target_infected = 1-(1-1/target_susceptible)^virions_infecting
+  # this is not a standard way of doing this... 
+  # because mulitple viral particles can infect a single host but not vice versa
+  # so a standard collision model is not applicable.
+  # 
+  target_interacted = virions_infecting * 1-(1-1/(1+virions_infecting))^target_susceptible
+  
+  p_target_infected = 1 - exp(- rate_infection * target_susceptible / k_target)
+  target_infected = rbinom(target_interacted, p_target_infected)
+  
+  target_remaining = target_susceptible + target_exposed + target_producing
+  target_removed = k_target - target_remaining
+  
+  p_target_recovery = 1-exp(-rate_target_recovery)
+  target_recovered = rbinom(target_removed, p_target_recovery)
+  
+  p_producing_given_exposed = 1-exp(-rate_producing_given_exposed)
+  p_target_cellular_removal = 1-exp(- rate_cellular_removal * immune_active / k_immune * ratio_immune_target)
+  # p_target_cellular_removal = 1-exp(- rate_cellular_removal * immune_active / k_immune)
+  p_propensity_chronic = user(0)
+  
+  # TODO figrure out multinomial outcome?
+  target_exposed_removal = rbinom(target_exposed, (1-p_propensity_chronic) * p_target_cellular_removal)
+  target_start_producing = rbinom(target_exposed-target_exposed_removal, p_producing_given_exposed)
+  
+  target_producing_removed = rbinom(target_producing, p_target_cellular_removal)
+  
+  
+  # Immunity
+  ratio_immune_target = user(1)
+  
+  k_immune = ratio_immune_target * k_target
+  initial(immune_priming) = 0
+  initial(immune_active) = 0
+  rate_induced_given_exposed = user(1)
+  rate_active_given_induced = rate_induced_given_exposed
+  rate_senescence_given_active = user(1/150)
+  
+  immune_dormant = k_immune - immune_priming - immune_active
+  
+  # immune_dormant = k_immune - immune_active
+    
+  p_induced_given_exposed = 1-exp(-rate_induced_given_exposed * (target_exposed+target_producing) / target_remaining)
+  
+  immune_induced = rbinom(immune_dormant, p_induced_given_exposed)
+  
+  p_active_given_induced = 1-exp(-rate_active_given_induced)
+  immune_start_active = rbinom(immune_priming, p_active_given_induced)
+
+  update(immune_priming) = immune_priming + immune_induced - immune_start_active
+      
+  p_senescence_given_active = 1-exp(-rate_senescence_given_active)
+  immune_senescence = rbinom(immune_active, p_senescence_given_active)
+    
+  update(immune_active) = immune_active + immune_start_active - immune_senescence
+  
+  
+  
+}, skip_cache = TRUE)
+```
+
+```{r}
+
+
+step = function(mod,i, infectFn = \(.x) {if (.x %% 100 == 10) 100 else 0}, vaccFn = \(.x) ~ 0) {
+  infectFn = rlang::as_function(infectFn)
+  vaccFn = rlang::as_function(vaccFn)
+  mod$run(i)
+  
+  s = mod$state()
+  
+  
+  if (length(dim(s)) ==3) {
+    inf = mod$info()[[1]]
+    v = inf$index$virions
+    p = inf$index$immune_priming
+    
+    s[v,,] = s[v,,] + infectFn(i)
+    s[p,,] = s[p,,] + vaccFn(i)
+    
+  } else {
+    
+    inf = mod$info()
+    v = inf$index$virions
+    p = inf$index$immune_priming
+    s[v,] = s[v,] + infectFn(i)
+    s[p,] = s[p,] + infectFn(i)
+    
+  }
+  
+  mod$update_state(state = s)
+  n = names(inf$index)
+  
+  if (length(dim(s))==2) dim(s) = c(dim(s),1)
+  
+  bind_rows(lapply( 1:(dim(s)[3]) , \(set) {
+    stmp = s[,,set]
+    tibble::tibble(
+      value = as.vector(stmp),
+      boot = as.vector(col(stmp)),
+      variable = n[as.vector(row(stmp))],
+      step = i,
+      set=set
+    )
+  }))
+}
+
+full_params = function(mod = stoch1$new(pars=list(), n_particles = 10,time=0)) {
+  sweepDf = mod$pars() %>% purrr::list_transpose() %>% as.data.frame()
+  defaults = mod$param() %>% purrr::map(~ .x %>% purrr::pluck("default_value"))
+  defaults = defaults %>% map(\(x) {
+      if (!is.list(x)) return(x)
+      x[[1]] = as.name(x[[1]])
+      return(x %>% as.call() %>% eval())
+  }) %>% as_tibble()
+  if (nrow(sweepDf) > 0) {
+    return(sweepDf %>% cross_join(defaults %>% select(-any_of(colnames(sweepDf)))))
+  } else {
+    return(defaults)
+  }
+}
+
+sweep = function(parsDf = tibble::tibble(boot=1), maxtime = 399,...) {
+  if (!"set" %in% colnames(parsDf)) parsDf = parsDf %>% mutate(set = row_number())
+  # pars = parsDf %>% purrr::transpose()
+  pars = parsDf %>% as.list() %>% purrr::list_transpose(simplify = FALSE)
+  
+  mod <- stoch1$new(pars=pars, n_particles = 10,time=0,pars_multi = TRUE)
+  step(mod,1)
+  tmp = bind_rows(lapply(1:maxtime, \(i) step(mod,i,...)))
+  full_params(mod) %>% inner_join(tmp, by="set")
+}
+
+plot_sweep = function(sweep, facets = ~variable) {
+  
+  tmp = tmp %>% 
+    filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
+    group_by(across(-c(value,boot))) %>%
+    summarise(value = mean(value))
+  
+  list(
+  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+    geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
+    guides(colour=guide_legend(position="bottom"))+
+    facet_wrap(facets,scales = "free_y"),
+  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+    geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
+    facet_wrap(facets,scales = "free_y")+
+    guides(colour=guide_legend(position="bottom"))+
+    coord_cartesian(xlim=c(0,50))
+  )
+} 
+```
+
+```{r}
+
+
+tmp = sweep(parsDf = tibble(
+  rate_virion_replication = seq(1,5,1)
+))
+
+tmp %>% plot_sweep()
+```
+
+# full_params() %>% as.list() %>% deparse() %>% clipr::write_clip()
+
+list(k_immune = 10000L, k_target = 10000L, p_propensity_chronic = 0L, 
+    rate_active_given_induced = 0.5, rate_cellular_removal = 5, 
+    rate_induced_given_exposed = 0.5, rate_infection = 5, rate_producing_given_exposed = 0.333333333333333, 
+    rate_senescence_given_active = 0.00273972602739726, rate_target_recovery = 0.0333333333333333, 
+    rate_virion_removal = 5, rate_virion_replication = 2)
+
+```{r}
+
+tmp = sweep(parsDf = tibble(
+  
+  ratio_immune_target = 1, #c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chrnoic carrier state
+  
+  # shortens GT? worsens severity
+  rate_virion_replication = 4, #c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR
+  # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?
+  rate_infection = 1, #c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
+  rate_producing_given_exposed = 1, #rate_virion_replication, #rate_infection,
+  
+  rate_virion_removal = rate_virion_replication * 1, #c(0.25,0.5,1,2,4),
+  rate_cellular_removal = rate_virion_removal, # * c(0.25,0.5,1,2,4),
+  p_propensity_chronic = 0, #c(0,0.25, 0.5,0.75,1), # << HOST PROB CHRONIC
+  
+  rate_induced_given_exposed = seq(0.7,1.3,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect
+  rate_active_given_induced = rate_induced_given_exposed, #* c(1,2,4,8), #c(0.5,1,2,4,8),
+  
+  rate_senescence_given_active = 1/150, #1/800,
+  rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics
+))
+
+tmp %>% plot_sweep(~variable)
+
+
+
+```
+
+
+
+
+https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-independently-randomly/32816#32816
+
+```{r}
+
+tmp2 = sweep(parsDf = tibble(
+  
+  ratio_immune_target = 1, #c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chrnoic carrier state
+  
+  # shortens GT? worsens severity
+  rate_virion_replication = 4, #c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR
+  # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?
+  rate_infection = 1, #c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
+  rate_producing_given_exposed = 1, #rate_virion_replication, #rate_infection,
+  
+  rate_virion_removal = rate_virion_replication * 1, #c(0.25,0.5,1,2,4),
+  rate_cellular_removal = rate_virion_removal, # * c(0.25,0.5,1,2,4),
+  p_propensity_chronic = 0, #c(0,0.25, 0.5,0.75,1), # << HOST PROB CHRONIC
+  
+  rate_induced_given_exposed = rnorm(50,1,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect
+  rate_active_given_induced = rate_induced_given_exposed, #* c(1,2,4,8), #c(0.5,1,2,4,8),
+  
+  rate_senescence_given_active = 1/150, #1/800,
+  rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics
+))
+
+# tmp2 %>% glimpse()
+
+tmp3 = tmp2 %>% 
+  filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
+  mutate(phase = (step %/% 100)+1) %>%
+  group_by(across(-c(step,value,boot))) %>%
+  summarise(
+    peak = max(value),
+    minima = min(value)
+  ) %>%
+  glimpse()
+
+ggplot(tmp3 %>% filter(variable == "virions", phase == 1))+
+  geom_density(aes(x=peak, colour=as.factor(phase)))+
+  facet_wrap(~variable,scales="free")
+  
+
+lm(peak ~ rate_induced_given_exposed, tmp3 %>% filter(variable == "virions", phase == 1))
+lm(peak ~ rate_induced_given_exposed, tmp3 %>% filter(variable == "virions", phase == 4))
+
+# ggplot(tmp3)+
+#   geom_density(aes(x=as.factor(set), ymin=minima,ymax=peak))+
+#   geom_errorbar(aes(x=as.factor(set), ymin=minima,ymax=peak))+
+#   facet_wrap(~variable,scales="free_x")
+
+```
