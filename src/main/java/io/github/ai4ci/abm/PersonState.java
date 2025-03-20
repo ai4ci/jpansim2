@@ -262,12 +262,12 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Lazy default double getProbabilityInfectiousToday() {
 		
 		double logOdds = 
-				Conversions.logit(this.getPresumedLocalPrevalence()) +
-				//Conversions.logit(ModelNav.modelState(this).getPresumedTestPositivePrevalence()) +
-//				Conversions.logit((
-//						this.getPresumedLocalPrevalence()+
-//						ModelNav.modelState(this).getPresumedTestPositivePrevalence())/2.0) +
-				getDirectLogLikelihood();
+//				Conversions.logit(this.getPresumedLocalPrevalence()) +
+//				Conversions.logit(ModelNav.modelState(this).getPresumedTestPositivePrevalence()) +
+				Conversions.logit((
+						this.getPresumedLocalPrevalence()+
+						ModelNav.modelState(this).getPresumedTestPositivePrevalence())/2.0) +
+				getTotalLogLikelihood();
 		
 		return Conversions.expit(logOdds);
 	};

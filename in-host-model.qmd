@@ -765,10 +765,12 @@ ggplot(linelist,aes(x=time,y=normalisedViralLoad,group=personId))+geom_line(alph
 ggplot(linelist %>% group_by(time) %>% summarise(virionExposure=mean(virionExposure)),aes(x=time,y=virionExposure))+geom_line()
 
 ggplot(linelist,aes(x=time,y=probabilityInfectiousToday))+geom_point(alpha=0.1)
-ggplot(linelist,aes(x=probabilityInfectiousToday,y=normalisedViralLoad))+geom_point(alpha=0.1)
+# ggplot(linelist,aes(x=probabilityInfectiousToday,y=normalisedViralLoad))+geom_point(alpha=0.1)
+
+ggplot(linelist,aes(x=probabilityInfectiousToday,fill=infectious))+geom_density(alpha=0.4)
 
 ggplot(linelist %>% group_by(time) %>% summarise(presumedLocalPrevalence=mean(presumedLocalPrevalence)),aes(x=time,y=presumedLocalPrevalence))+geom_line()
-
+ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(alpha=0.01)
 
 ggplot(linelist %>% filter(virionExposure > 0))+geom_density(aes(x=virionExposure))
 ggplot(linelist %>% filter(normalisedSeverity > 0) %>% group_by(personId) %>% summarise(normalisedSeverity = max(normalisedSeverity)))+geom_density(aes(x=normalisedSeverity))
