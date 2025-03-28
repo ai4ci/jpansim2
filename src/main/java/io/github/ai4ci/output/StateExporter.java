@@ -8,10 +8,12 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.output.StateExporter.ExportSelector;
 
 public class StateExporter {
 
@@ -19,6 +21,14 @@ public class StateExporter {
 	
 	Path directory;
 	List<ExportSelector<?>> writers = new ArrayList<>();
+	
+	public static StateExporter defaultExporter(String path) {
+		 return StateExporter.of(
+				SystemUtils.getUserHome().toPath().resolve(path),
+				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState()), "summary.csv"),
+				ExportSelector.ofMany(ImmutablePersonCSV.class, o -> o.getPeople().stream().map(CSVMapper.INSTANCE::toCSV), "linelist.csv")
+		);
+	}
 	
 	private StateExporter() {}
 	

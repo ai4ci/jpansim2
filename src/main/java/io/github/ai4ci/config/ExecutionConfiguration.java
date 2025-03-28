@@ -2,11 +2,12 @@ package io.github.ai4ci.config;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.List;
 
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.abm.BehaviourModel;
@@ -16,24 +17,27 @@ import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.util.Data.Partial;
 // import io.reactivex.rxjava3.annotations.Nullable;
 import io.github.ai4ci.util.Distribution;
-import io.github.ai4ci.util.Sampler;
 
 
 @Value.Immutable
-public interface ExecutionConfiguration extends Abstraction.Named, Serializable {
+@JsonSerialize(as = ImmutableExecutionConfiguration.class)
+@JsonDeserialize(as = ImmutableExecutionConfiguration.class)
+public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable {
 
-	@Partial @Value.Modifiable 
-	public interface _PartialExecutionConfiguration extends ExecutionConfiguration {}
+	@Partial @Value.Immutable 
+	@JsonSerialize(as = PartialExecutionConfiguration.class)
+	@JsonDeserialize(as = PartialExecutionConfiguration.class)
+	public interface _PartialExecutionConfiguration extends ExecutionConfiguration, Abstraction.Modification {}
 	
 	public static ExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
-			.setName("default-execution")
+			.setName("execution")
 			.setRO(2.0)
 			
 			.setContactProbability( Distribution.unimodalBeta(0.5, 0.25))
 			.setConditionalTransmissionProbability( Distribution.point(0.25D) )
 			.setContactDetectedProbability( Distribution.unimodalBeta(0.9, 0.1))
 			.setComplianceProbability( Distribution.unimodalBeta(0.99, 0.001))
-			.setAppUseProbability( Distribution.beta(0.97, 0.1))
+			.setAppUseProbability( Distribution.unimodalBeta(0.97, 0.01))
 			
 //			.setRiskTrigger( Distribution.point(0.05) )
 //			.setRiskTriggerRatio(1.1)
@@ -60,9 +64,12 @@ public interface ExecutionConfiguration extends Abstraction.Named, Serializable 
 			.setDefaultPolicyModelName( PolicyModel.ReactiveLockdown.class.getSimpleName() )
 			
 			.setSymptomSensitivity(Distribution.unimodalBeta(0.5, 0.01))
-			.setSymptomSpecificity(Distribution.unimodalBeta(0.99, 0.01))
+			.setSymptomSpecificity(Distribution.unimodalBeta(0.95, 0.01))
 			
-			.setPresumedInfectionDuration(10.0)
+			.setInitialEstimateSymptomSensitivity(0.5)
+			.setInitialEstimateSymptomSpecificity(0.95)
+			
+			.setInitialEstimateInfectionDuration(10.0)
 			.setMaximumSocialContactReduction(Distribution.unimodalBeta(0.4, 0.01))
 			.setAvailableTests(TestResult.defaultTypes())
 			
@@ -101,12 +108,15 @@ public interface ExecutionConfiguration extends Abstraction.Named, Serializable 
 	Distribution getInfectionCarrierProbability();
 	Distribution getTargetRecoveryRate();
 	
-	List<TestParameters> getAvailableTests();
+	TestParameters.Group getAvailableTests();
 	
 	Distribution getSymptomSensitivity();
 	Distribution getSymptomSpecificity();
 	
-	Double getPresumedInfectionDuration();
+	Double getInitialEstimateInfectionDuration();
+	Double getInitialEstimateSymptomSensitivity();
+	Double getInitialEstimateSymptomSpecificity();
+	
 	Distribution getMaximumSocialContactReduction();
 	
 	String getDefaultBehaviourModelName();

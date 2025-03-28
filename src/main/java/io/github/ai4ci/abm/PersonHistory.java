@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.immutables.value.Value;
@@ -40,7 +42,16 @@ public interface PersonHistory extends PersonTemporalState {
 	double getSymptomLogLikelihood();
 	double getProbabilityInfectiousToday();
 	
-	public static class Infection implements Serializable {}
+	public static class Infection implements Serializable {
+		Contact contact;
+		public static Infection create(Contact contact) {
+			return new Infection(contact);
+		}
+		Infection(Contact contact) {this.contact = contact;}
+		public Contact getContact() {return contact;}
+	}
+	
+	
 	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
@@ -51,12 +62,25 @@ public interface PersonHistory extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default Optional<PersonHistory> getInfector() {
+		return getInfectiousContact()
+				.map(c -> c.getParticipant(this.getEntity().getOutbreak()))
+				.flatMap(ph2 -> ph2.getInfectionStart());
+	}
+	
+	/**
+	 * For a new infection this finds the contact with maximal viral exposure 
+	 * on the first day before the subject is infectious when the subject was 
+	 * exposed by an "infector". From this "infector" the time of their 
+	 * infection is identified so that all the infections from one infector 
+	 * should map back to the same instant in time for that infector.
+	 * @return
+	 */
+	@Value.Lazy default Optional<Contact> getInfectiousContact() {
 		return getNewInfection().flatMap(ph -> 
 			ph.getLastExposure().flatMap(e -> 
 				e.getTodaysContacts().stream()
-				.max((c1,c2) -> Double.compare(c1.getExposure(), c2.getExposure()))
-				.map(c -> c.getParticipant(this.getEntity().getOutbreak()))
-			).flatMap(ph2 -> ph2.getInfectionStart())
+				.max((c1,c2) -> Double.compare(c1.getExposure(), c2.getExposure())
+				))
 		);
 	}
 	
@@ -146,6 +170,31 @@ public interface PersonHistory extends PersonTemporalState {
 				this.getSymptomLogLikelihood() +
 				this.getHistoricalTestLogLikelihood(day, limit);
 				// TODO: immunity? proven previous covid?
+	}
+	
+	default Stream<TestResult> getResultsBySampleDate(int time) {
+		int lim = time - this.getTime();
+		if (lim < 0) return Stream.empty();
+		if (lim >= this.getMaxDelay()) return this.getTodaysTests().stream();
+		List<List<TestResult>> tmp = getResultsBySampleDate();
+		return tmp.stream().limit(lim).flatMap(l -> l.stream());
+	}
+	
+	@Value.Derived default int getMaxDelay() {
+		return (int) this.getTodaysTests().stream().mapToLong(tr -> tr.getDelay()).max().orElse(0);
+	}
+	
+	/**
+	 * The list of tests taken today, indexed by the delay until the results 
+	 * are available.
+	 * @return
+	 */
+	@Value.Lazy default List<List<TestResult>> getResultsBySampleDate() {
+		return 
+			IntStream.range(0, getMaxDelay()).mapToObj(delay -> 
+						this.getTodaysTests().stream().filter(tr -> tr.getDelay() == delay).collect(Collectors.toList())
+			)
+			.collect(Collectors.toList());
 	}
 	
 }

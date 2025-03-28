@@ -2,10 +2,6 @@ package io.github.ai4ci.util;
 
 import static io.github.ai4ci.util.ModelNav.baseline;
 
-import java.util.Optional;
-
-import io.github.ai4ci.abm.BehaviourModel;
-import io.github.ai4ci.abm.BehaviourModel.LockdownIsolation;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
 import io.github.ai4ci.abm.ImmutablePersonState;
@@ -13,7 +9,6 @@ import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.StateMachine;
 import io.github.ai4ci.abm.StateMachine.BehaviourState;
-import io.github.ai4ci.abm.StateMachine.State;
 import io.github.ai4ci.abm.StateMachineContext;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.TestResult.Type;
@@ -146,12 +141,29 @@ public class StateUtils {
 		seekPcrIfSymptomatic(builder, person, 1);
 	}
 	
+	public static void doPCR(ImmutablePersonHistory.Builder builder, 
+			PersonState person) {
+		TestResult test = TestResult.resultFrom(person, Type.PCR).get();
+		builder.addTodaysTests(test);
+	}
+	
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
 			PersonState person, int days) {
-		if (person.isSymptomaticTestingIndicatedToday(days) && person.isCompliant() ) {
-			TestResult test = TestResult.resultFrom(person, Type.PCR).get();
-			builder.addTodaysTests(test);
+		if (isSymptomatic(person, days) && isTestingAllowed(person) ) {
+			doPCR(builder,person);
 		}
+	}
+	
+	public static boolean isSymptomatic(PersonState person, int days) {
+		return person.isSymptomaticConsecutively(days) && person.isCompliant();
+	}
+	
+	public static boolean isHighRiskOfInfection(PersonState person, double cutoff) {
+		return person.getProbabilityInfectiousToday() > cutoff && person.isCompliant(); 
+	}
+	
+	public static boolean isTestingAllowed(PersonState person) {
+		return !person.isRecentlyTested(Type.PCR) && person.isCompliant();
 	}
 	
 	/**

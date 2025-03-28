@@ -24,7 +24,7 @@ public interface Contact {
 	 * and in situations where masks are worn. 
 	 * @return
 	 */
-	default double getExposure() {
+	@Value.Derived default double getExposure() {
 		if (getParticipant().getNormalisedViralLoad() < 1) return 0;
 		if (!isTransmitted()) return 0;
 		double exposure = getProximityDuration() * getParticipant().getNormalisedViralLoad();

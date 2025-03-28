@@ -1,5 +1,8 @@
 package io.github.ai4ci.flow;
 
+import java.util.stream.IntStream;
+
+import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,22 +15,45 @@ import io.github.ai4ci.abm.ModelOperation;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.Updater;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.output.StateExporter;
 import io.github.ai4ci.util.Sampler;
+import io.reactivex.rxjava3.core.Flowable;
 
 public class ExperimentBuilder {
 
 	static Logger log = LoggerFactory.getLogger(ExperimentBuilder.class);
 	
-	public static void runExperiments(ExperimentConfiguration config) {
+	public static void runExperiments(ExperimentConfiguration config, String urnBase, Updater updater, StateExporter exporter, int toStep, StateExporter finalState ) {
 		
-//		Flowable
-//			.just(config)
-//			.flatMap(cfg -> {
-//				String urn = "";
-//				
-//			});
+		Flowable
+			.fromIterable(config.getSetup())
+			.map(cfg -> {
+				ExperimentBuilder builder = new ExperimentBuilder();
+				builder.setupOutbreak(cfg, urnBase);
+				return builder;
+			})
+			.flatMapStream(builder -> {
+				return config.getExecution().stream().map(exCfg -> {
+					ExperimentBuilder builder2 = builder.copy();
+					builder2.baselineModel(exCfg);
+					builder2.initialiseStatus(exCfg);
+					return builder2.build();
+				});	
+			})
+			.map( outbreak -> {
+				IntStream.range(0, toStep).forEach(i -> {
+					updater.update(outbreak);
+					exporter.export(outbreak);
+				});
+				finalState.export(outbreak);
+				return outbreak;
+			})
+			.blockingSubscribe();
+			;
+			
 		
 	}
 	
@@ -62,10 +88,20 @@ public class ExperimentBuilder {
 			setupFn, outbreakBaselineFn, personBaselineFn, outbreakInitFn,
 			personInitFn
 		);
-		experiment.setupOutbreak(setupConfig, urnBase, 0);
-		experiment.baselineModel(execConfig, 0);
+		experiment.setupOutbreak(setupConfig, urnBase);
+		experiment.baselineModel(execConfig);
 		experiment.initialiseStatus(execConfig);
 		return experiment.build();
+	}
+	
+	ExperimentBuilder() {
+		this(
+				ModelBuild.OutbreakSetupFn.DEFAULT.fn(),
+				ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
+				ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
+				ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
+				ModelBuild.PersonStateInitialiserFn.DEFAULT.fn()
+		);
 	}
 	
 	ExperimentBuilder(
@@ -92,17 +128,31 @@ public class ExperimentBuilder {
 	ModelOperation.OutbreakBaseliner outbreakBaselineFn;
 	ModelOperation.PersonInitialiser personInitFn;
 	ModelOperation.OutbreakInitialiser outbreakInitFn;
-		
-	private void setupOutbreak(SetupConfiguration setupConfig, String urnBase, int replica) {
-		outbreak.setUrn(urnBase+":"+setupConfig.getName()+":"+replica);
+	
+	public ExperimentBuilder copy() {
+		ExperimentBuilder tmp = new ExperimentBuilder(
+				this.setupFn,
+				this.outbreakBaselineFn,
+				this.personBaselineFn,
+				this.outbreakInitFn,
+				this.personInitFn
+		);
+		tmp.outbreak = SerializationUtils.clone(outbreak);
+		return tmp;
+	}
+	
+	private void setupOutbreak(SetupConfiguration setupConfig, String urnBase) {
+		outbreak.setUrn(
+				(urnBase != null ? urnBase+":" : "")
+				+setupConfig.getName()+":"+setupConfig.getReplicate());
 		Sampler sampler = Sampler.getSampler(outbreak.getUrn());
 		setupFn.getSelector().test(setupConfig);
 		setupFn.getConsumer().accept(outbreak, setupConfig, sampler);
 	}
 	
-	private void baselineModel(ExecutionConfiguration execConfig, int replica) {
+	private void baselineModel(ExecutionConfiguration execConfig) {
 		outbreak.setUrn(
-			outbreak.getUrn()+":"+execConfig.getName()+":"+replica	
+			outbreak.getUrn()+":"+execConfig.getName()+":"+execConfig.getReplicate()	
 		);
 		Sampler sampler = Sampler.getSampler(outbreak.getUrn());
 		outbreak.setExecutionConfiguration(execConfig);
@@ -136,44 +186,6 @@ public class ExperimentBuilder {
 		
 	}
 	
-//	private PersonBaseline baselineFrom(ExecutionConfiguration configuration, Sampler rng) {
-//		double trigger = rng.logitNormal(configuration.getRiskTriggerMedian(), configuration.getRiskTriggerScale());
-//		return ImmutablePersonBaseline.builder()
-//				.setSocialMobility(
-//					(double) rng.logitNormal( 
-//							configuration.getMedianContactProbability(),
-//							configuration.getScaleContactProbability()
-//					)
-//				)
-//				.setLowRiskMobilityIncreaseTrigger(trigger * 1/Math.sqrt(configuration.getRiskTriggerRatio()))
-//				.setHighRiskMobilityDecreaseTrigger(trigger * Math.sqrt(configuration.getRiskTriggerRatio()))
-//				.setHighRiskMobilityModifier(configuration.getHighRiskMobilityModifier())
-//				.build();
-//	}
-	
-//	private OutbreakBaseline outbreakBaselineFrom(ExecutionConfiguration configuration, Sampler rng) {
-//		SimpleWeightedGraph<Person, Person.Relationship> contacts = outbreak.getSocialNetwork();
-//		long peopleCount = contacts.iterables().vertexCount();
-//		double meanContactWeight = StreamSupport.stream(
-//							contacts.iterables().edges().spliterator(),false
-//						).mapToDouble(
-//							c -> c.getConnectednessQuantile()*
-//								configuration.getMedianContactProbability()*
-//								contacts.getEdgeSource(c).getBaseline().getSocialMobility()*
-//								contacts.getEdgeTarget(c).getBaseline().getSocialMobility()
-//						).sum() / peopleCount;
-//		double pTransmission = configuration.getRO()/meanContactWeight;
-//		
-//		if (pTransmission > 1) {
-//			log.warn("Cannot satisfy R0 with current network structure.");
-//		}
-//		DelayDistribution tmp = configuration.getGenerationTime();
-//		
-//		return ImmutableOutbreakBaseline
-//				.builder()
-//				.setPInfectionGivenInfectiousContact(tmp.conditionedOn(pTransmission))
-//				.build();
-//	}
 	
 	private void initialiseStatus(ExecutionConfiguration execConfig) {
 		Sampler sampler = Sampler.getSampler(outbreak.getUrn());
@@ -213,24 +225,6 @@ public class ExperimentBuilder {
 			});
 		
 	}
-	
-//	private PersonState personStatusFrom(Person person, ExecutionConfiguration execConfig, Sampler sampler) {
-//		// TODO Auto-generated method stub
-//		return ImmutablePersonState.builder()
-//				.setEntity(person)
-//				.setState(InfectionState.SUSCEPTIBLE)
-//				.setTime(0)
-//				.build();
-//	}
-//	
-//	
-//	private OutbreakState outbreakStatusFrom(Outbreak outbreak, ExecutionConfiguration execConfig, Sampler sampler) {
-//		// TODO Auto-generated method stub
-//		return ImmutableOutbreakState.builder()
-//				.setEntity(outbreak)
-//				.setTime(0)
-//				.build();
-//	}
 
 	public Outbreak build() {
 		if (!outbreak.isInitialized()) 

@@ -82,7 +82,7 @@ public @interface Data {
 	    		// CsvColumn.class
 	    },
 	    typeAbstract = "_Partial*",
-	    typeModifiable = "Partial*",
+	    typeImmutable = "Partial*",
 	    strictModifiable = false,
 	    depluralize = true, // enable feature
 	    depluralizeDictionary = {"person:people"}, // specifying dictionary of exceptions

@@ -1,6 +1,5 @@
 package io.github.ai4ci.config;
 
-import org.mapstruct.AfterMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.CollectionMappingStrategy;
 import org.mapstruct.Mapper;
@@ -19,37 +18,34 @@ import org.mapstruct.factory.Mappers;
 		nullValueIterableMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT
 		
 )
-public abstract class ConfigMerger  {
+public abstract class ConfigMerger {
 	 
 	public static ConfigMerger INSTANCE = Mappers.getMapper( ConfigMerger.class );
 	
-	public ExecutionConfiguration mergeConfiguration(
+	public ImmutableExecutionConfiguration.Builder mergeConfiguration(
 			ExecutionConfiguration target,
 			PartialExecutionConfiguration source
 	) {
 		return updateConfiguration(
 				ImmutableExecutionConfiguration.builder().from(target),
-				source).build();
+				source)
+				.setAvailableTests(target.getAvailableTests().combine(source.getAvailableTests()))
+				;
 	};
 	
-	public SetupConfiguration mergeConfiguration(
+	public ImmutableSetupConfiguration.Builder mergeConfiguration(
 			SetupConfiguration target,
 			PartialSetupConfiguration source
 	) {
 		return updateConfiguration(
 				ImmutableSetupConfiguration.builder().from(target),
-				source).build();
+				source);
 	};
 	
 	@Mapping(target = "availableTests", ignore = true)
 	abstract protected ImmutableExecutionConfiguration.Builder updateConfiguration(
 			@MappingTarget ImmutableExecutionConfiguration.Builder target,
 			PartialExecutionConfiguration source); 
-	
-	@AfterMapping // will be applied in the final part of the previous method
-	public void mergeLists( @MappingTarget ImmutableExecutionConfiguration.Builder target, PartialExecutionConfiguration source ) {
-		target.addAllAvailableTests( source.getAvailableTests() );
-	}
 	
 	abstract protected ImmutableSetupConfiguration.Builder updateConfiguration(
 			@MappingTarget ImmutableSetupConfiguration.Builder target,

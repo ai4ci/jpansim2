@@ -1,0 +1,244 @@
+---
+title: "Supporting relationships"
+author: "Rob Challen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+here::i_am("supporting-relationships.qmd")
+library(tidyverse)
+
+# install.packages(
+#   c("odin","odin.dust","dust"),
+#   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
+
+```
+
+# Supporting rationale
+
+## Signal to noise, sensitivity and specificiy
+
+Viral load is normalised so that a value of 1 is infected and should be
+detected at the sensitivity and specificity of the tests. This is to do
+with the ease of separating signal from noise. The noise distribution 
+upper quantile at a test cut off must be equal to specificity.
+at the same test cut off the lower quantile of the signal distribution must
+be equal to sensitivity. 
+
+Problem is we don;t know anything about the signal distribution. and it 
+is somewhat arbitrary because it is a circular definition, if we impose
+a cut-off. This comes down to
+how we normalise viral load. 
+
+A cut off of 1 has to be designed that 
+noise distribution quantile (spec)% is 1, and 1+noise distribution quantile
+is (1-sens)% at 1. If we assume a uniform distributed additive noise 
+function we can phrase this in 
+
+$$
+E \sim Uniform(min,max) \\
+P(E \geq 1) = specificity \\
+P(1+E \leq 1) = 1-sensitivity \\
+P(E \leq 0) = 1-sensitivity \\
+$$
+
+I.e. the (1-sensitivity)% quantile is 0 and the (specificity)% quantile is 1. 
+The CDF of this Uniform distribution is a linear function with gradient and 
+intercept:
+
+$$
+
+CDF(x) = (specificity + sensitivity - 1) \times x + (1-sensitivity) \\
+
+CDF(min) = 0 \\
+(specificity + sensitivity - 1) \times min + (1-sensitivity) = 0 \\
+min = \frac{sensitivity-1}{specificity + sensitivity - 1} \\
+
+CDF(max) = 1 \\
+(specificity + sensitivity - 1) \times max + (1-sensitivity) = 1 \\
+max = \frac{sensitivity}{specificity + sensitivity - 1}
+
+$$
+
+```{r}
+
+sensitivity = 0.8
+specificity = 0.95
+
+min = (sensitivity-1)/(specificity + sensitivity - 1) 
+max = (sensitivity)/(specificity + sensitivity - 1)
+
+# sens
+sum(runif(10000,min,max)+1 > 1)/10000
+
+# spec
+sum(runif(10000,min,max) < 1)/10000
+```
+
+Easier to transform a 0,1 Uniform using sensitivity and specificity
+
+```{r}
+
+noise = (runif(10000)-(1-sensitivity)) / (sensitivity+specificity-1)
+
+# sens 
+sum(1 + noise > 1)/10000
+
+# spec
+sum( noise < 1)/10000
+
+```
+
+
+## Conversions
+
+rate to probability
+	
+$$
+p = 1-e^{-rate}\\
+rate = -ln(1-p)
+$$
+
+```{r}
+p = 0.1 #seq(0,1,0.1)
+rate = -log(1-p)
+
+p2 = 1-exp(-rate*c(1,2,4,8,16))
+rate2 = -log(1-p2)
+
+rate2/rate
+
+```
+
+
+$$
+
+period \\
+0.5 = p^{period} \\
+log(0.5) = period \times log(p) \\
+p = e^\frac{log(0.5)}{period}
+
+$$
+
+
+```{r}
+# half life
+period = 7
+p = exp(log(0.5)/period)
+p^7
+```
+
+# Scaling probabilities
+
+```{r}
+logit = function(p) {return(log(p/(1-p)))}
+expit = function(x) {return(1/(1+exp(-x)))}
+
+OR = 2
+p = seq(0.1,0.9,0.1)
+
+scaled_p = expit(logit(p) + log(OR))
+
+# scaled_p2 = 1-((1-p)^OR)
+
+p/(1-p)
+scaled_p/(1-scaled_p)
+# scaled_p2/(1-scaled_p2)
+```
+
+```{r}
+# If we need to reduce the effect of a modifier on the logit scale we can simply
+# multiply by the factor. This is equivalent to multiplying the 
+# odds by the (odds_ratio ^ factor)
+
+# if this is a number of days then a 1/(1+period) is going to be the factor
+# we use 
+
+b = expit(logit(0.01) + seq(-1,1,0.1))
+
+a = expit(logit(0.01) + seq(-1,1,0.1) * 0.5)
+
+```
+
+### Logit normal distributions.
+
+Standard deviation of logit normal distribution is not easy to specify
+It would be useful to parametrise using mean and SD. There is a simple relationship
+between median and mu. scale parameter not so easy though.
+
+```{r}
+median = seq(0.025,0.975,0.05)
+scale = 0.1
+mu = logit(median);
+#sigma = scale*(exp((abs(mu)^(3/4))))
+
+sigma = scale*(2+(abs(mu)^(7/4)))
+
+tmp = bind_rows(lapply(seq_along(mu), \(i) tibble::tibble(
+  q = seq(0.01,0.99,0.01),
+  x = expit(qnorm(p = seq(0.01,0.99,0.01))*sigma[i]+mu[i]),
+  p = (q-lag(q))/(x-lag(x)),
+  median = expit(mu[i])          
+)))
+
+ggplot(tmp,aes(x=x,y=p,colour=as.factor(median)))+geom_line()
+
+tmp2 = tmp %>% group_by(median) %>%
+  mutate(dx=x-lag(x)) %>%
+  summarise(
+    mean = sum(x*p*dx,na.rm = TRUE),
+    sd = sum((x-mean)^2*p*dx,na.rm = TRUE)
+  )
+
+ggplot(tmp2,aes(x=median,y=mean))+geom_point()
+ggplot(tmp2,aes(x=median,y=sd))+geom_point()
+```
+
+
+
+## Convex Beta distributions
+
+Mode if alpha and beta are >1 otherwise turns into u shaped distribution
+
+$$
+\alpha = (\frac{\mu(1-\mu)}{\sigma^2}-1) \mu \\
+\beta = (\frac{\mu(1-\mu)}{\sigma^2}-1) (1-\mu) \\
+$$
+
+$$
+
+1 < (\frac{\mu(1-\mu)}{\sigma^2}-1) \mu \\
+\frac{1}{\mu}+1 < \frac{\mu(1-\mu)}{\sigma^2} \\
+\frac{1+\mu}{\mu} < \frac{\mu(1-\mu)}{\sigma^2} \\
+\sigma^2 < \mu^2\frac{1-\mu}{1+\mu} \\
+
+$$
+
+$$
+
+1 < (\frac{\mu(1-\mu)}{\sigma^2}-1) (1-\mu) \\
+\frac{1}{1-\mu}+1 < \frac{\mu(1-\mu)}{\sigma^2}  \\
+\frac{2-\mu}{1-\mu} < \frac{\mu(1-\mu)}{\sigma^2}  \\
+{\sigma^2} < (1-\mu)^2\frac{\mu}{2-\mu} \\
+$$
+
+
+
+```{r}
+
+mu = 0.995
+
+sigma = sqrt(pmin(
+  mu^2*(1-mu)/(1+mu),
+  (1-mu)^2*(mu)/(2-mu)
+))
+
+# regardless of mu one of alpha or beta should be equal to 1.
+
+alpha = (mu*(1-mu) / sigma^2 -1) * mu
+beta = (mu*(1-mu) / sigma^2 -1) * (1-mu)
+
+```
+

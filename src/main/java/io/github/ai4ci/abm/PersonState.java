@@ -1,13 +1,10 @@
 package io.github.ai4ci.abm;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.TestResult.Result;
@@ -28,11 +25,15 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Default default Double getTransmissibilityModifier() {return 1.0D;}
 	@Value.Default default Double getMobilityModifier() {return 1.0D;}
 	@Value.Default default Double getComplianceModifier() {return 1.0D;}
-	@Value.Default default Double getContactDetectedProbability() {return 1.0D;}
-	
 	@Value.Default default Double getImmuneModifier() {return 1.0D;}
-	@Value.Default default Double getScreeningInterval() {return 7D;}
+	
 	@Value.Default default Double getImportationExposure() {return 0D;}
+	@Value.Default default Double getImmunisationDose() {return 0D;}
+	
+	Double getContactDetectedProbability();
+	
+	//Double getScreeningInterval();
+	
 	
 	/**
 	 * An immunisation dose is a fraction of dormant immune cells that are 
@@ -42,7 +43,7 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	// TODO: need to think about this as a protocol or strategy like testing
-	@Value.Default default Double getImmunisationDose() {return 0D;}
+	
 	
 //	@Value.Default default TestingStrategy getTestingStrategy() {
 //		return this.getEntity().getBaseline().getDefaultTestingStrategy();
@@ -211,21 +212,11 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	default boolean isRecentlyTested(Type type) {
-		return getTests().filter(t-> type.params().getTestName().equals(t.getTestParams().getTestName()))
+		return getRecentTests().filter(t-> type.params().getTestName().equals(t.getTestParams().getTestName()))
 				.findFirst().isPresent();
 	};
 	
-	/**
-	 * Testing indicated if the person has been symptomatic for a set number
-	 * of days and has not had a test within a set number of days (regardless of
-	 * result)
-	 * @param symptomDays
-	 * @param noRepeatTestDays
-	 * @return
-	 */
-	default boolean isSymptomaticTestingIndicatedToday(int symptomDays) {
-		return this.isSymptomaticConsecutively(symptomDays) && !this.isRecentlyTested(Type.PCR);
-	}
+	
 	
 	private int limit() {
 		return ModelNav.modelState(this).getPresumedInfectiousPeriod();
@@ -281,7 +272,7 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	default double getTestLogLikelihood() {
-		return this.getTests()
+		return this.getRecentTests()
 			.mapToDouble(t -> t.logLikelihoodRatio(this.getTime(), limit()) )
 			.sum();
 	}
@@ -380,7 +371,7 @@ public interface PersonState extends PersonTemporalState {
 	 * All the tests done in the last presumed infectious period
 	 * @return
 	 */
-	default Stream<TestResult> getTests() {
+	default Stream<TestResult> getRecentTests() {
 		return ModelNav.history(this, limit())
 			.flatMap(ph -> ph.getTodaysTests().stream());
 	}
@@ -390,7 +381,7 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default Optional<TestResult> getLastTest() {
-		return getTests().findFirst();
+		return getRecentTests().findFirst();
 	}
 	
 	/**
@@ -398,7 +389,7 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default Optional<TestResult> getLastResult() {
-		return getTests()
+		return getRecentTests()
 				.filter(t -> t.isResultAvailable(this.getTime()))
 				.findFirst();
 	}
@@ -410,10 +401,13 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default List<TestResult> getResults() {
-		return this.getTests()
+		return this.getRecentTests()
 			.filter(r -> r.isResultToday(this.getTime()))
 			.collect(Collectors.toList());
 	};
+	
+	
+	
 	
 	/**
 	 * Reassemble the weighted contacts from the PersonHistory

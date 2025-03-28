@@ -1,8 +1,18 @@
 package io.github.ai4ci.abm;
 
-import org.immutables.value.Value;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.immutables.value.Value;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+
+import io.github.ai4ci.abm.PersonHistory.Infection;
 import io.github.ai4ci.abm.TestResult.Result;
+import io.github.ai4ci.util.Binomial;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ModelNav;
 
@@ -10,9 +20,9 @@ import io.github.ai4ci.util.ModelNav;
 public interface OutbreakState extends OutbreakTemporalState {
 
 	@Value.Default default Double getViralActivityModifier() {return 1.0D;}
-	@Value.Default default Integer getPresumedInfectiousPeriod() {return 10;}
-	@Value.Default default double getPresumedSymptomSpecificity() {return 0.9;}
-	@Value.Default default double getPresumedSymptomSensitivity() {return 0.5;}
+	Integer getPresumedInfectiousPeriod();
+	Double getPresumedSymptomSpecificity();
+	Double getPresumedSymptomSensitivity();
 
 	@Value.Lazy 
 	default double getAverageMobility() {
@@ -44,8 +54,9 @@ public interface OutbreakState extends OutbreakTemporalState {
 				.mapToInt(p ->
 					// If any of a persons results are positive today
 					p.getResults().stream()
-						.filter(t -> t.resultOnDay(this.getTime()).equals(Result.POSITIVE))
-						.findAny().isPresent() ? 1 : 0
+						.map(t -> t.resultOnDay(this.getTime()))
+						.anyMatch(tr -> tr.equals(Result.POSITIVE))
+						 ? 1 : 0
 				)
 				.sum();
 	};
@@ -56,11 +67,13 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy default long getTestNegatives() {
 		return ModelNav.peopleState(this)
-				.mapToInt(p -> // If any of a persons results are positive today
-					p.getResults().stream()
-						.filter(t -> t.resultOnDay(this.getTime()).equals(Result.NEGATIVE))
-						.findAny().isPresent() ? 1 : 0
-				).sum();
+				.mapToInt(p -> {// If any of a persons results are positive today
+					if (p.getResults().isEmpty()) return 0;
+					return p.getResults().stream()
+						.map(t -> t.resultOnDay(this.getTime()))
+						.allMatch(tr -> tr.equals(Result.NEGATIVE))
+						 ? 1 : 0;
+				}).sum();
 	};
 	
 	@Override
@@ -101,7 +114,36 @@ public interface OutbreakState extends OutbreakTemporalState {
 	}
 	
 	
+	// This is a forward looking R number based on the day at which someone
+	// becomes infectious.
+	default List<Double> getRtForward() {
+		int size = this.getTime()+1;
+		List<MutablePair<Double,Double>> ts = new ArrayList<>(size);
+		for (int i=0;i<size;i++) ts.add(i, MutablePair.of(0D,0D));
+		DirectedAcyclicGraph<PersonHistory, Infection> infections = this.getEntity().getInfections();
+		infections.vertexSet().forEach(v -> {
+			int infTime = v.getTime(); 
+			MutablePair<Double,Double> tmp = ts.get(infTime);
+			tmp.setLeft(tmp.getLeft()+infections.outDegreeOf(v));
+			tmp.setRight(tmp.getRight()+1);
+		});
+		return ts.stream().map(p -> p.getLeft()/p.getRight()).collect(Collectors.toList());
+	}
 	
-	
+	default double getRtEffective() {
+		// people who are newly infectious today
+		long numerator = this.getEntity().getPeople().stream()
+			.flatMap(a -> a.getCurrentHistory().stream())
+			.filter(p -> p.isIncidentInfection())
+			.count();
+		// people with capability to infect today. (n.b. those infected today will
+		// have zero capability)
+		double denominator = this.getEntity().getPeople().stream()
+			.flatMap(a -> a.getCurrentHistory().stream())
+			.filter(p -> p.isInfectious())
+			.mapToDouble(ph -> ph.getAdjustedTransmissibility())
+			.sum();
+		return ((double) numerator)/denominator;
+	}
 	
 }

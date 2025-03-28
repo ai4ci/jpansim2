@@ -3,6 +3,7 @@ package io.github.ai4ci.util;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.github.ai4ci.abm.Abstraction.TemporalState;
 import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
@@ -13,6 +14,8 @@ import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.PersonTemporalState;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.SetupConfiguration;
 
 public class ModelNav {
 
@@ -67,7 +70,8 @@ public class ModelNav {
 	public static Stream<PersonState> peopleState(OutbreakState current) {
 		return current.getEntity().getPeople().parallelStream().map(p -> p.getCurrentState());
 	}
-
+	
+	
 	public static Stream<PersonHistory> peopleCurrentHistory(OutbreakState current) {
 		return current.getEntity().getPeople().parallelStream().flatMap(p -> p.getCurrentHistory().stream());
 	}
@@ -84,6 +88,48 @@ public class ModelNav {
 		return outbreakState.getEntity().getHistory().stream().limit(period);
 	}
 
+	public static ExecutionConfiguration modelParam(TemporalState<?> temporalState) {
+		if (temporalState instanceof OutbreakTemporalState s) {
+			return modelParam(s);
+		} else if (temporalState instanceof PersonTemporalState s) {
+			return modelParam(s);
+		}
+		throw new RuntimeException("Unknown temporal state type");
+	}
+
+	public static SetupConfiguration modelSetup(TemporalState<?> temporalState) {
+		if (temporalState instanceof OutbreakTemporalState s) {
+			return modelSetup(s);
+		} else if (temporalState instanceof PersonTemporalState s) {
+			return modelSetup(s);
+		}
+		throw new RuntimeException("Unknown temporal state type");
+	}
+
+	public static SetupConfiguration modelSetup(OutbreakTemporalState outbreak) {
+		return outbreak.getEntity().getSetupConfiguration();
+	}
+	
+	public static SetupConfiguration modelSetup(PersonTemporalState outbreak) {
+		return outbreak.getEntity().getOutbreak().getSetupConfiguration();
+	}
+
+	/**
+	 * The corresponding history entries for this point in time in the outbreak
+	 * i.e. A stream of individuals at the same time point. 
+	 * @param outbreakHistory
+	 * @return
+	 */
+	public static Stream<PersonHistory> peopleHistory(OutbreakHistory outbreakHistory) {
+		int time = outbreakHistory.getTime();
+		return 
+			outbreakHistory.getEntity().getPeople().stream().flatMap(
+					p -> p.getHistoryEntry(time).stream()
+			);
+	}
+
+	
+	
 
 	
 }

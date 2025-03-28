@@ -1,13 +1,27 @@
 package io.github.ai4ci.abm;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 import org.immutables.value.Value;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.util.Sampler;
 
 @Value.Immutable
+@JsonSerialize(as = ImmutableTestParameters.class)
+@JsonDeserialize(as = ImmutableTestParameters.class)
 public interface TestParameters extends Serializable {
+	
+	public class Group extends ArrayList<TestParameters> {
+
+		public Group combine(Group availableTests) {
+			if (availableTests != null)
+				this.addAll(availableTests);
+			return this;
+		}}
 	
 	/**
 	 * Identifier for the test type e.g. LFT, PCR, SYMPTOMS

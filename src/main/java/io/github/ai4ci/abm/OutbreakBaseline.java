@@ -33,4 +33,5 @@ public interface OutbreakBaseline extends Serializable {
 	
 	PolicyState getDefaultPolicyState();
 	
+	
 }

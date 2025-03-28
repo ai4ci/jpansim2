@@ -14,5 +14,6 @@ public interface OutbreakCSV extends CommonCSV {
 	long getTestPositives();
 	long getTestNegatives();
 	double getPresumedTestPositivePrevalence();
+	double getRtEffective();
 	String getPolicy();
 }

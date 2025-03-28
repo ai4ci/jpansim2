@@ -28,20 +28,18 @@ public interface PersonBaseline extends Serializable {
 //	Double getHighRiskMobilityDecreaseTrigger();
 //	Double getHighRiskMobilityModifier();
 	
-	@Value.Default default Integer getTargetCellCount() {return 10000;}
-	@Value.Default default Double getImmuneTargetRatio() {return 1.0;}
-	@Value.Default default Double getImmuneActivationRate() {return 1.0;}
-	@Value.Default default Double getImmuneWaningRate() {return 1.0/200;}
-	@Value.Default default Double getInfectionCarrierProbability() {return 0D;}
-	@Value.Default default Double getTargetRecoveryRate() {return 1.0/7;}
+	Integer getTargetCellCount();
+	Double getImmuneTargetRatio();
+	Double getImmuneActivationRate();
+	Double getImmuneWaningRate();
+	Double getInfectionCarrierProbability();
+	Double getTargetRecoveryRate();
 	
-//	@Value.Default default TestingStrategy getDefaultTestingStrategy() {return TestingStrategy.NONE;}
-//	@Value.Default default BehaviourStrategy getDefaultBehaviourStrategy() {return BehaviourStrategy.NONE;}
+	Double getSymptomSpecificity();
+	Double getSymptomSensitivity();
 	
-	@Value.Default default Double getSymptomSpecificity() {return 0.95;}
-	@Value.Default default Double getSymptomSensitivity() {return 0.9;}
 	BehaviourState getDefaultBehaviourState();
-	double getSelfIsolationDepth();
-	double getAppUseProbability();
+	Double getSelfIsolationDepth();
+	Double getAppUseProbability();
 	
 }

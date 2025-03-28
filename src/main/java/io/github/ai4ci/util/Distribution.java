@@ -1,15 +1,20 @@
 package io.github.ai4ci.util;
 
 import java.io.Serializable;
-import io.github.ai4ci.abm.ModelOperation.BiFunction;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import io.github.ai4ci.abm.ModelOperation.BiFunction;
 import io.github.ai4ci.abm.ModelOperation.TriFunction;
 import io.reactivex.rxjava3.annotations.Nullable;
 
 
 @Value.Immutable
+@JsonSerialize(as = ImmutableDistribution.class)
+@JsonDeserialize(as = ImmutableDistribution.class)
 public interface Distribution extends Serializable {
 
 	public static enum Type {

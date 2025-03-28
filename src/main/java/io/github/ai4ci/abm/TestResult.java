@@ -2,9 +2,7 @@ package io.github.ai4ci.abm;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
 
@@ -47,9 +45,11 @@ public interface TestResult extends Serializable {
 		
 	}
 	
-	static List<TestParameters> defaultTypes() {
-		return Arrays.asList(Type.values()).stream().map(t -> t.params())
-				.collect(Collectors.toList());
+	static TestParameters.Group defaultTypes() {
+		TestParameters.Group tmp = new TestParameters.Group();
+		Arrays.asList(Type.values()).stream().map(t -> t.params())
+			.forEach(tmp::add);
+		return tmp;		
 	}
 	
 	public enum Result {PENDING,POSITIVE,NEGATIVE};

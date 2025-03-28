@@ -17,9 +17,12 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
+import io.github.ai4ci.abm.PolicyModel.NoControl;
+import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.flow.ExperimentConfiguration;
 import io.github.ai4ci.flow.ImmutableExperimentConfiguration;
+import io.github.ai4ci.flow.ImmutableExperimentFacet;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutablePersonCSV;
 
@@ -30,12 +33,31 @@ class TestJackson {
 		ObjectMapper om = new ObjectMapper(new YAMLFactory());
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.setSerializationInclusion(Include.NON_NULL);
-		String json = om.writeValueAsString(
-		    ExperimentConfiguration.DEFAULT);
+		
+		ExperimentConfiguration tmp = 
+			ImmutableExperimentConfiguration.copyOf(	
+					ExperimentConfiguration.DEFAULT
+				).withFacets(
+						ImmutableExperimentFacet.builder()
+							.putModification(
+								"smart-agent",
+								PartialExecutionConfiguration.builder()
+									.setDefaultPolicyModelName(NoControl.class.getSimpleName())
+									.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
+									.build()
+								)
+						.setName("test")
+						.build()
+				)
+				;
+		
+		
+		String json = om.writeValueAsString(tmp);
 		System.out.println(json);
 		
-		ExperimentConfiguration rt = om.readerFor(ImmutableExperimentConfiguration.class).readValue(json);
-		assertEquals(rt, ExecutionConfiguration.DEFAULT);
+		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json);
+		String json2 = om.writeValueAsString(rt);
+		assertEquals(json, json2);
 	}
 
 	@Test

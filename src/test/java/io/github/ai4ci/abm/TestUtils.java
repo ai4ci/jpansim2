@@ -15,10 +15,11 @@ public class TestUtils {
 			instance = ExperimentBuilder.buildExperiment(
 				ConfigMerger.INSTANCE.mergeConfiguration(
 						SetupConfiguration.DEFAULT,
-						PartialSetupConfiguration.create()
+						PartialSetupConfiguration.builder()
 							.setNetworkSize(3)
 							.setInitialImports(2)
-				),
+							.build()
+				).build(),
 				ExecutionConfiguration.DEFAULT, 
 				"experiment");
 		}

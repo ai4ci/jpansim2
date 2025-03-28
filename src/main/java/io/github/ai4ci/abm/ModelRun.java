@@ -22,7 +22,6 @@ public class ModelRun {
 					(builder, outbreak, rng) -> {
 						//OutbreakBaseline baseline = outbreak.getBaseline();
 						//OutbreakState current = outbreak.getCurrentState();
-				log.debug("outbreak state: "+outbreak.getUrn());
 			})
 		);
 		

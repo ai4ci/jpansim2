@@ -146,10 +146,9 @@ public class ModelBuild {
 				ExecutionConfiguration config = outbreak.getExecutionConfiguration();
 				builder
 					.setViralActivityModifier(1D)
-					.setPresumedInfectiousPeriod( config.getPresumedInfectionDuration().intValue() )
-					// TODO: parametrise?
-					.setPresumedSymptomSensitivity(0.5) 
-					.setPresumedSymptomSpecificity(0.9);
+					.setPresumedInfectiousPeriod( config.getInitialEstimateInfectionDuration().intValue() )
+					.setPresumedSymptomSensitivity( config.getInitialEstimateSymptomSensitivity() ) 
+					.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSensitivity() );
 			})
 		);
 		
@@ -176,7 +175,7 @@ public class ModelBuild {
 							.setComplianceModifier(1.0)
 							
 							.setContactDetectedProbability( params.getContactDetectedProbability().sample(rng) )
-							.setScreeningInterval( params.getScreeningPeriod().sample(rng) )
+							// .setScreeningInterval( params.getScreeningPeriod().sample(rng) )
 							.setViralLoad(
 									ViralLoadState.initialise(person)
 							)

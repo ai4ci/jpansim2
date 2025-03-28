@@ -143,27 +143,90 @@ public interface BehaviourModel extends StateMachine.BehaviourState {
 		
 	}
 	
-	public static enum SmartAgent implements BehaviourModel, DefaultNoTesting {
+	public static enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
 		
-		DEFAULT {
-
+		/**
+		 * Patient will probably test if they have symptoms, then wait for the
+		 * result.
+		 */
+		REACTIVE_PCR {
+	
 			@Override
-			public void updateHistory(Builder builder, PersonState current, StateMachineContext context, Sampler rng) {
-				// TODO Auto-generated method stub
+			public void updateHistory(ImmutablePersonHistory.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				
+				if (isSymptomatic(person, 2) || isHighRiskOfInfection(person, 0.5)  ) {
+					if (isTestingAllowed(person)) doPCR(builder,person);
+				}
 				
 			}
-
+	
 			@Override
-			public BehaviourState nextState(ImmutablePersonState.Builder builder,
-					PersonState current, StateMachineContext context, Sampler rng) {
-				// TODO Auto-generated method stub
-				return null;
+			public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				if ( isTestedToday(person) ) { 
+					decreaseSociabilityIfCompliant(builder,person);
+					return AWAIT_PCR;
+				} else {
+					return REACTIVE_PCR;
+				}
 			}
 			
+		},
+		
+		AWAIT_PCR {
+			public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				if (person.isLastTestExactly(Result.PENDING)) return AWAIT_PCR;
+				if (person.isLastTestExactly(Result.POSITIVE)) return SELF_ISOLATE;
+				resetBehaviour(builder,person);
+				return REACTIVE_PCR;
+			}
+		},
+		
+		SELF_ISOLATE {
+			@Override
+			public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				if (!person.isCompliant()) {
+					resetBehaviour(builder,person);
+					return NonCompliant.DEFAULT;
+				}
+				if (!person.isSymptomatic()) {
+					if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod())) {
+						resetBehaviour(builder,person);
+						return REACTIVE_PCR;
+					}
+				}
+				complianceFatigue(builder,person);
+				return SELF_ISOLATE;
+			}		
 		};
 		
-		public String getName() {return this.getClass().getSimpleName()+"."+this.name();}
-		
+		public String getName() {return SmartAgentTesting.class.getSimpleName()+"."+this.name();}
 	}
+	
+//	public static enum SmartAgent implements BehaviourModel, DefaultNoTesting {
+//		
+//		DEFAULT {
+//
+//			@Override
+//			public void updateHistory(Builder builder, PersonState current, StateMachineContext context, Sampler rng) {
+//				// TODO Auto-generated method stub
+//				
+//			}
+//
+//			@Override
+//			public BehaviourState nextState(ImmutablePersonState.Builder builder,
+//					PersonState current, StateMachineContext context, Sampler rng) {
+//				// TODO Auto-generated method stub
+//				return null;
+//			}
+//			
+//		};
+//		
+//		public String getName() {return this.getClass().getSimpleName()+"."+this.name();}
+//		
+//	}
 	
 }

@@ -1,7 +1,12 @@
 package io.github.ai4ci.output;
 
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
@@ -13,6 +18,7 @@ import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 
 @Mapper(
+		builder = @Builder(buildMethod = "build"),
 		nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
@@ -24,10 +30,28 @@ public abstract class CSVMapper {
 //	public abstract ImmutablePersonCSV toCSV(PersonHistory history);
 	
 	@Mapping(target= "personId", source="entity.id")
-	public abstract ImmutablePersonCSV toCSV(PersonState history);
+	public abstract ImmutablePersonCSV toCSV(PersonState state);
 	
-	public abstract ImmutableOutbreakCSV toCSV(OutbreakState history);
-	//public abstract ImmutableOutbreakCSV toCSV(OutbreakHistory history);
+	public abstract ImmutableOutbreakCSV toCSV(OutbreakState state);
+	
+	@Mapping(target = "observationTime", source="entity.currentState.time")
+	public abstract ImmutableOutbreakHistoryCSV toCSV(OutbreakHistory history);
+	
+	@Mapping(target = "rtForward", ignore = true)
+	@Mapping(target = "observationTime", ignore = true)
+	public abstract ImmutableOutbreakFinalStateCSV.Builder commonCSV(@MappingTarget ImmutableOutbreakFinalStateCSV.Builder builder, OutbreakState state);
+	
+	public Stream<ImmutableOutbreakFinalStateCSV> finalCSV(OutbreakState state) {
+		return IntStream
+			.range(0,  state.getTime())
+			.mapToObj(i -> 
+				commonCSV(ImmutableOutbreakFinalStateCSV.builder(), state)
+					.setObservationTime(i)
+					.setRtForward(
+						state.getRtForward().get(i)
+					).build()
+			);
+	};
 	
 	public ImmutablePersonCSV toCSV(Person person) {
 		return toCSV(person.getCurrentState());

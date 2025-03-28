@@ -1,0 +1,63 @@
+---
+  title: "ABM output"
+author: "Rob Challen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+here::i_am("supporting-relationships.qmd")
+library(tidyverse)
+
+# install.packages(
+#   c("odin","odin.dust","dust"),
+#   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
+
+``` 
+  
+  # Output of ABM.
+
+
+```{r}
+linelist = readr::read_csv("~/tmp/linelist.csv")
+ggplot(linelist,aes(x=time,y=normalisedViralLoad,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName)
+ggplot(linelist %>% group_by(time,experimentName) %>% summarise(virionExposure=mean(virionExposure)),aes(x=time,y=virionExposure,colour = experimentName))+geom_line()
+
+ggplot(linelist,aes(x=time,y=probabilityInfectiousToday))+geom_point(alpha=0.1)+facet_wrap(~experimentName)
+# ggplot(linelist,aes(x=probabilityInfectiousToday,y=normalisedViralLoad))+geom_point(alpha=0.1)
+
+ggplot(linelist,aes(x=probabilityInfectiousToday,fill=infectious))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
+ggplot(linelist,aes(x=probabilityInfectiousToday,fill=symptomatic))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
+
+ggplot(linelist %>% group_by(time,experimentName) %>% summarise(presumedLocalPrevalence=mean(presumedLocalPrevalence)),aes(x=time,y=presumedLocalPrevalence,colour = experimentName))+geom_line()
+
+ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName,scales = "free_y")
+
+ggplot(linelist %>% filter(virionExposure > 0))+geom_density(aes(x=virionExposure, colour=experimentName))
+ggplot(linelist %>% filter(normalisedSeverity > 0) %>% group_by(personId,experimentName) %>% summarise(normalisedSeverity = max(normalisedSeverity)))+geom_density(aes(x=normalisedSeverity, colour=experimentName))
+
+ggplot(linelist,aes(x=time,fill=as.factor(behaviour),colour=as.factor(behaviour)))+geom_bar()+facet_wrap(~experimentName,scales = "free_y")
+
+linelist %>% group_by(behaviour) %>% count()
+```
+
+
+```{r}
+summary = readr::read_csv("~/tmp/summary.csv")
+ggplot(summary,aes(x=time,y=incidence, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=infectedCount/10000, colour=experimentName))+geom_line()+ylab("actual prevalence")
+ggplot(summary,aes(x=time,y=averageMobility, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=averageCompliance, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=presumedTestPositivePrevalence, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=testPositives, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=testNegatives, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=testPositives/(testPositives+testNegatives), colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=rtEffective, colour=experimentName))+geom_line()
+
+ggplot(summary,aes(x=time,fill=as.factor(policy),colour=as.factor(policy),y=1))+geom_bar(stat="identity")
+
+summary %>% group_by(policy) %>% count()
+```

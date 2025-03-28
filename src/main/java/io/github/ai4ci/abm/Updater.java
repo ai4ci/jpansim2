@@ -8,24 +8,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.ModelOperation.OutbreakStateUpdater;
 import io.github.ai4ci.abm.ModelOperation.PersonStateUpdater;
 import io.github.ai4ci.abm.ModelOperation.TriConsumer;
 import io.github.ai4ci.abm.PersonHistory.Infection;
-import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.Sampler;
 
 
 public class Updater {
 
-	
+	Logger log = LoggerFactory.getLogger(Updater.class);
 	
 	private List<PersonStateUpdater> personProcessors = new ArrayList<>();
 	private List<OutbreakStateUpdater> outbreakProcessors = new ArrayList<>();
@@ -74,6 +74,7 @@ public class Updater {
 		updateState(outbreak);
 		switchState(outbreak);
 		// at this point the "current history" is the same as the previous state
+		log.debug("Update: "+outbreak.getUrn()+"; Step:"+outbreak.getCurrentState().getTime());
 		return outbreak;
 	}
 	
@@ -287,6 +288,7 @@ public class Updater {
 				.forEach(p -> updateState(p));
 		
 			// update infection network...
+			// TODO: this does not look to be correct...
 			DirectedAcyclicGraph<PersonHistory, Infection> infections = m.getInfections();
 			outbreak.getPeople()
 				.stream()
@@ -301,11 +303,17 @@ public class Updater {
 					p.getInfector().ifPresent(i -> {
 						infections.addVertex(i);
 						infections.addVertex(p);
+						Contact contact = p.getInfectiousContact().get();
 						try {
-							infections.addEdge(i, p);
+							infections.addEdge(i, p, Infection.create(contact));
 						} catch (Exception e) {
-							//TODO: figure out this exception cause.
-							
+							// TODO: figure out this exception cause.
+							// It is because the infection network can cause a cycle
+							// which could be because the heuristics for determining
+							// who infected whom depends on picking the person]
+							// who contributed the largest viral load in recent
+							// history.
+							log.debug(e.getMessage());
 						}
 					});
 				});

@@ -31,6 +31,13 @@ public interface ViralLoadState extends Serializable {
 	}
 
 	@Value.Derived
+	/**
+	 * The viral load is the number of newly produced virions, i.e. the total 
+	 * virions in the person excluding those innoculating the person. Large 
+	 * innoculations can't be excluded completely as they do not immediately 
+	 * infect cells.
+	 * @return
+	 */
 	default double getNormalisedViralLoad() {
 		return ((double) getVirionsProduced()) /(double) this.model().getBaseline().getVirionsDiseaseCutoff();
 	}
@@ -147,12 +154,23 @@ public interface ViralLoadState extends Serializable {
 		// Targets - exposed
 		Integer target_interacted = 
 				(int) floor(
-					virions_infecting.doubleValue() * 
+//					virions_infecting.doubleValue() * 
+//					(1-
+//						pow(
+//							virions_infecting.doubleValue()/(1+virions_infecting.doubleValue()),
+//							(double) getTargetSusceptible()
+//						)
+//					)
+//					(double) getTargetSusceptible() * 
+//					(1-
+//						pow(
+//							((double) getTargetSusceptible()-1)/((double) getTargetSusceptible()),
+//							virions_infecting.doubleValue()
+//						)
+//					)
+					(double) getTargetSusceptible() * 
 					(1-
-						pow(
-							virions_infecting.doubleValue()/(1+virions_infecting.doubleValue()),
-							(double) getTargetSusceptible()
-						)
+						exp( - virions_infecting.doubleValue() / ((double) getTargetSusceptible())	)
 					)
 				);
 		Integer target_newly_exposed = rng.binom(target_interacted, p_infection);

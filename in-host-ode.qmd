@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-here::i_am("in-host-model.qmd")
+here::i_am("in-host-ode.qmd")
 library(tidyverse)
 
 # install.packages(
@@ -99,16 +99,15 @@ and producing virus), $R$, "removed" are target cells inactivated by immunity.
 $J$ is the total number of immune cells, of which $D$ are dormant, $P$ are priming, and 
 $A$ are active. 
 
-$\alpha$ is the ratio of immune to target cells. This affects how effective the
+$\alpha$ is the fraction of immune to target cells. This affects how effective the
 immune system is at clearing the virus.
 
 
 $$
 \begin{align}
 V \\
-T &= S + E + I + R\\
-J &= D + P + A\\
-J &= \alpha T
+1 &= S + E + I + R\\
+\alpha &= D + P + A\\
 \end{align}
 $$
 
@@ -120,48 +119,53 @@ from the system. $\beta_{inf}$ is a rate at which virions infect susceptible
 target cells. $\beta_{rep}$ is a rate at which infected target cell replicate
 virus.
 
+A continuous deterministic model might be:
+
 $$
 \begin{align}
-\Delta V &= X_t + N_{IV} - N_{V-} - N_{VE} \\
-p_{neut} &= 1-e^{-\beta_{neut}\frac{A}{J} } \\
-p_{inf} &= 1-e^{-\beta_{inf}\frac{S}{T} } \\
-N_{IV} &\sim Poisson( \beta_{rep} \times I ) \\
-N_{V-} &\sim Binomial(V, p_{neut}) \\
-N_{VE} &\sim Binomial(V-N_{V-}, p_{inf}) \\
+
+V_{add} &= \beta_{rep} \times I \\
+\beta_{remov} &= \beta_{neut} \times A + \beta_{inf} \times S \\ 
+V_{remov} &= \beta_{remov} \times V \\
+V_{neut} &= \frac{\beta_{neut} \times A}{\beta_{remov}} \times V_{remov} \\
+V_{inf} &= \frac{\beta_{inf} \times S}{\beta_{remov}} \times V_{remov}\\
+
+\frac{dV}{dt} &= X_t - V_{remov} + V_{add}\\
+
 \end{align}
 $$
 
 ## Targets
+
+The interaction between virions and susceptible target cells has to take into 
+account the possibility of multiple virions infecting the same cell.
+
+This is different in the stochastic versus the continuous case, as in the former
+we can use the absolute counts to get a precise value for the probability of
+virions interacting with multiple. 
 
 $\beta_{recov}$ is a recovery rate of target cells, $\beta_{EI}$ is the rate 
 "exposed" targets convert to "infected" cells which produce new virions. 
 $\gamma$ is a relative probability of discovery of exposed cells compared to 
 infected.
 
-Virions (that have not been neutralised) interact with target cells at a fixed rate as they randomly mix. Only interactions with susceptible targets can be successful ($N_{VE}$). The number of susceptible cells involved in this interaction can be thought of as the number of unique results after $N_{VE}$ random draws from the susceptible pool.
-https://stats.stackexchange.com/questions/296005/the-expected-number-of-unique-elements-drawn-with-replacement
+TODO: think about moving innoculation to S->E transition rather than adding to 
+viral component. Would need to scale innoculation by the immune activity, 
+before the $\beta_{infcell}$ to get similar mucosal immune effect.
 
 $$
 \begin{align}
-\Delta S &= N_{RS} - N_{SE} \\
-\Delta E &= N_{SE} - N_{ER} - N_{EI}\\
-\Delta I &= N_{EI} - N_{IR}\\
-\Delta R &= N_{IR} + N_{ER} - N_{RS}\\
-
-p_{cell} &= 1-e^{-\beta_{neut}\frac{A}{T} } \\
-
-N_{SE} &\sim Binomial( S \bigg[ 1-\bigg(\frac{S-1}{S}\bigg)^{N_{VE}} \bigg], p_{inf} ) \\
-N_{RS} &\sim Binomial( R, 1-e^{-\beta_{recov}})\\
-
-
-
-N_{ER} &\sim Binomial(E, \gamma \times p_{cell}) \\
-N_{EI} &\sim Binomial(E-N_{ER}, 1-e^{-\beta_{EI}}) \\
-
-
-N_{IR} &\sim Binomial(I, p_{cell}) \\
-
-
+\beta_{infcell} &= \beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S}}\bigg) \\
+S_E &= \beta_{infcell} \times S \\
+\beta_{E-} &= \gamma\beta_{neut} \times A + \beta_{EI} \\
+E_{-} &= \beta_{E-} \times E \\
+E_R &= \frac{\gamma\beta_{neut} \times A}{\beta_{E-}} \times E_{-} \\
+E_I &= \frac{\beta_{EI}}{\beta_{E-}} \times E_{-} \\
+I_R &= \beta_{neut} \times A \times I \\
+\frac{dS}{dt} &= \beta_{recov} R - S_E \\
+\frac{dE}{dt} &= S_E - E_{-} \\
+\frac{dI}{dt} &= E_I - I_R\\
+\frac{dR}{dt} &= E_R + I_R - \beta_{recov} R\\ 
 \end{align}
 $$
 
@@ -176,103 +180,85 @@ The SEIRS target cell model, with phases susceptible, exposed,
 producing infective virus, regenerating is coupled to a SEIS-like model for immunity where 
 the phases as dormant, priming, active, dormant.
 
+
 $$
 \begin{align}
-\Delta D &= N_{AD} - N_{DP} - V_t \\
-N_{DP} &\sim Binomial(D, 1-e^{-\beta_{induce} \frac{ E+I }{T}})\\
-N_{AD} &\sim Binomial(A, 1-e^{-\beta_{waning}})\\
-\Delta P &= N_{DP} + V_t - N_{PA} \\
-N_{PA} &\sim Binomial(P, 1-e^{-\beta_{PA}})\\
-\Delta P &= N_{PA} - N_{AD} \\
+D_P &= \beta_{induce} \times \alpha(E+I) \times D \\
+\frac{dD}{dt} &= \beta_{waning} A - D_P \\
+\frac{dP}{dt} &= D_P - \beta_{PA} P \\
+\frac{dA}{dt} &= \beta_{PA} P - \beta_{waning} A\\
 \end{align}
 $$
 
-# Stochastic model implementation
+
+#  model implementation
 
 ```{r}
 
-stoch1 = odin.dust::odin_dust({
-  
+ode = #odin.dust::odin_dust({
+  odin::odin({
   
   # Initial state
   
-  k_target = user(10000)
   ratio_immune_target = user(1)
   
   initial(virions) = 0
   
-  initial(target_susceptible) = k_target
+  initial(target_susceptible) = 1
   initial(target_exposed) = 0
   initial(target_infected) = 0
   
-  target_removed = k_target - (target_susceptible + target_exposed + target_infected)
+  target_removed = 1 - (target_susceptible + target_exposed + target_infected)
   
-  k_immune = ratio_immune_target * k_target
   initial(immune_priming) = 0
   initial(immune_active) = 0
-  immune_dormant = k_immune - immune_priming - immune_active
+  immune_dormant = ratio_immune_target - immune_priming - immune_active
   
   # Virions
   
-  update(virions) = virions + virions_added - virions_neutralized - virions_infecting
+  deriv(virions) = virions_added - virions_removed
   
   rate_infection = user(1)
-  rate_virion_replication = user(4)
+  rate_virion_replication = user(2)
   rate_neutralization = rate_virion_replication
   
-  p_neutralization = 1 - exp(- rate_neutralization * immune_active / k_immune)
-  p_infection = 1 - exp(- rate_infection * target_susceptible / k_target)
+  virions_added = rate_virion_replication * target_infected
   
-  virions_added = rpois(rate_virion_replication * target_infected)
-  virions_neutralized = rbinom(virions, p_neutralization)
-  virions_infecting = rbinom(virions-virions_neutralized, p_infection)
+  rate_virion_removal = ( rate_neutralization * immune_active +
+      rate_infection * target_susceptible )
+  
+  virions_removed = virions * rate_virion_removal
+  virions_neutralized = virions_removed * (rate_neutralization * immune_active)/rate_virion_removal
+  virions_infecting = virions_removed * (rate_infection * target_susceptible)/rate_virion_removal
+  
   
   
   # Targets
   
-  
-  
-  update(target_susceptible) = target_susceptible - target_newly_exposed + target_recovered
-  update(target_exposed) = target_exposed + target_newly_exposed - target_exposed_removal - target_start_infected
-  update(target_infected) = target_infected + target_start_infected - target_infected_removed
+  deriv(target_susceptible) = target_recovered - target_newly_exposed
+  deriv(target_exposed) = target_newly_exposed - target_exposed_removed
+  deriv(target_infected) = target_start_infected - target_infected_removed
   
   rate_target_recovery = user(1/7)
   rate_infected_given_exposed = rate_virion_replication
   rate_cellular_removal = rate_neutralization
   
   
-  # virions_infecting is a sample size and targets_susceptible is a pool size
-  # coverage of the pool by repeated sampling with replacement is given by:
-  # p_target_infected = 1-(1-1/target_susceptible)^virions_infecting
-  # this is not a standard way of doing this 
-  # because multiple viral particles can infect a single host but not vice versa
-  # so a standard collision model is not applicable.
-  # https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-independently-randomly/32816#32816
-  
-  # target_interacted = target_susceptible * (1-(target_susceptible/(1+target_susceptible))^virions_infecting)
-  
-  # N.b. the following approximation is OK for larger V
-  
-  target_interacted = target_susceptible * (1-exp(-virions_infecting/target_susceptible))
-  
-  target_newly_exposed = rbinom(target_interacted, p_infection)
-  
-  
-  
-  p_target_recovery = 1-exp(-rate_target_recovery)
-  target_recovered = rbinom(target_removed, p_target_recovery)
-  
-  p_infected_given_exposed = 1-exp(-rate_infected_given_exposed)
-  
-  # p_target_cellular_removal = 1-exp(- rate_cellular_removal * immune_active / k_immune * ratio_immune_target)
-  p_target_cellular_removal = 1-exp(- rate_cellular_removal * immune_active / k_target)
-  
+  # https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-independently-randomly/32816#32816 in the limit where N is large
+  target_newly_exposed = rate_infection * target_susceptible * (1-exp(-virions_infecting/target_susceptible))
+
+  target_recovered = target_removed * rate_target_recovery
   
   p_propensity_chronic = user(0)
   
-  target_exposed_removal = rbinom(target_exposed, (1-p_propensity_chronic) * p_target_cellular_removal)
-  target_start_infected = rbinom(target_exposed-target_exposed_removal, p_infected_given_exposed)
-  target_infected_removed = rbinom(target_infected, p_target_cellular_removal)
+  rate_target_exposed_removed = (1-p_propensity_chronic) * rate_cellular_removal * immune_active +
+    rate_infected_given_exposed
+  target_exposed_removed = target_exposed * rate_target_exposed_removed
+  
+  target_exposed_neut = target_exposed_removed * (1-p_propensity_chronic) * rate_cellular_removal * immune_active /  rate_target_exposed_removed
+  target_start_infected = target_exposed_removed * rate_infected_given_exposed / rate_target_exposed_removed
+  
+  target_infected_removed = target_infected * rate_cellular_removal * immune_active
   
   
   # Immunity
@@ -284,97 +270,79 @@ stoch1 = odin.dust::odin_dust({
   rate_senescence_given_active = user(1/150)
   
   
+  immune_start_priming = immune_dormant * rate_priming_given_infected * (target_exposed+target_infected)
   
-  # immune_dormant = k_immune - immune_active
-    
-  p_priming_given_infected = 1-exp(-rate_priming_given_infected * (target_exposed+target_infected) / k_target)
-  
-  immune_start_priming = rbinom(immune_dormant, p_priming_given_infected)
-  
-  p_active_given_priming = 1-exp(-rate_active_given_priming)
-  immune_start_active = rbinom(immune_priming, p_active_given_priming)
+  immune_start_active = immune_priming * rate_active_given_priming
 
-  update(immune_priming) = immune_priming + immune_start_priming - immune_start_active
+  deriv(immune_priming) = immune_start_priming - immune_start_active
       
-  p_senescence_given_active = 1-exp(-rate_senescence_given_active)
-  immune_senescence = rbinom(immune_active, p_senescence_given_active)
+  immune_senescence = immune_active * rate_senescence_given_active
     
-  update(immune_active) = immune_active + immune_start_active - immune_senescence
+  deriv(immune_active) = immune_start_active - immune_senescence
   
   
   
 }, skip_cache = TRUE)
 ```
 
-```{r}
 
-step = function(mod,i, infectFn = \(.x) {if (.x %% 50 == 5) 2000 else 0}, vaccFn = \(.x) 0) {
+
+```{r}
+run_to_step = function(mod, i, infectFn = \(.x) {if (.x %% 50 == 5) 0.02 else 0}, vaccFn = \(.x) 0) {
+  
   infectFn = rlang::as_function(infectFn)
   vaccFn = rlang::as_function(vaccFn)
-  mod$run(i)
   
-  s = mod$state()
+  state = mod$run(c(0,1))[1,-1]
   
-  if (length(dim(s)) ==3) {
-    inf = mod$info()[[1]]
-    v = inf$index$virions
-    p = inf$index$immune_priming
+  timeseries = tibble::tibble()
+  
+  for (j in 1:i) {
+    state[1] = state[1] + infectFn(j)
+    state[5] = state[5] + vaccFn(j)
+    state_row = as.data.frame(t(state)) %>%
+      mutate(t = j-1)
+    timeseries= bind_rows(timeseries,state_row)
     
-    s[v,,] = s[v,,] + infectFn(i)
-    s[p,,] = s[p,,] + vaccFn(i)
-    
-  } else {
-    
-    inf = mod$info()
-    v = inf$index$virions
-    p = inf$index$immune_priming
-    s[v,] = s[v,] + infectFn(i)
-    s[p,] = s[p,] + vaccFn(i)
+    y = mod$run(c(0,1), state, maxsteps = 10000)
+    state = y[2,-1]
     
   }
   
-  mod$update_state(state = s)
+  state_row = as.data.frame(t(state)) %>%
+      mutate(t = j)
+  timeseries= bind_rows(timeseries,state_row)
   
-  n = names(inf$index)
+  return(timeseries)
   
-  if (length(dim(s))==2) dim(s) = c(dim(s),1)
-  
-  bind_rows(lapply( 1:(dim(s)[3]) , \(set) {
-    stmp = s[,,set]
-    tibble::tibble(
-      value = as.vector(stmp),
-      boot = as.vector(col(stmp)),
-      variable = n[as.vector(row(stmp))],
-      step = i,
-      set=set
-    )
-  }))
 }
+```
 
-full_params = function(mod = stoch1$new(pars=list(), n_particles = 10,time=0)) {
-  sweepDf = mod$pars() %>% purrr::list_transpose() %>% as.data.frame()
-  defaults = mod$param() %>% purrr::map(~ .x %>% purrr::pluck("default_value"))
-  defaults = defaults %>% map(\(x) {
-      if (!is.list(x)) return(x)
-      x[[1]] = as.name(x[[1]])
-      return(x %>% as.call() %>% eval())
-  }) %>% as_tibble()
-  if (nrow(sweepDf) > 0) {
-    return(sweepDf %>% cross_join(defaults %>% select(-any_of(colnames(sweepDf)))))
-  } else {
-    return(defaults)
-  }
-}
+```{r}
 
-sweep = function(parsDf = tibble::tibble(boot=1), maxtime = 399,...) {
-  if (!"set" %in% colnames(parsDf)) parsDf = parsDf %>% mutate(set = row_number())
+# ts = run_to_step(mod,100)
+
+sweep = function(parsDf = tibble::tibble(boot=1), maxtime = 399, mod = ode$new(), ...) {
+  
   # pars = parsDf %>% purrr::transpose()
   pars = parsDf %>% as.list() %>% purrr::list_transpose(simplify = FALSE)
+  if (!"set" %in% colnames(parsDf)) parsDf = parsDf %>% mutate(set = row_number())
+  simlist = pars %>% lapply( \(p) {
+    mod$set_user(user = p)
+    return(run_to_step(mod,maxtime,...))
+  })
   
-  mod <- stoch1$new(pars=pars, n_particles = 10,time=0,pars_multi = TRUE)
-  step(mod,1)
-  tmp = bind_rows(lapply(1:maxtime, \(i) step(mod,i,...)))
-  full_params(mod) %>% inner_join(tmp, by="set")
+  return(
+    parsDf %>% mutate(sim = simlist, boot=0) %>% 
+      mutate(
+        sim = purrr::map(
+          sim, \(x) pivot_longer(x, -t, values_to = "value", names_to = "variable")
+        )
+      ) %>%
+      unnest(cols = sim) %>% 
+      rename(step=t)
+      
+  )
 }
 
 plot_sweep = function(tmp, facets = ~variable) {
@@ -385,20 +353,23 @@ plot_sweep = function(tmp, facets = ~variable) {
     summarise(value = mean(value))
   
   list(
-  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+  ggplot(tmp,aes(x=step-5,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     guides(colour=guide_legend(position="bottom"))+
     facet_wrap(facets,scales = "free_y"),
-  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+  ggplot(tmp,aes(x=step-5,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     facet_wrap(facets,scales = "free_y")+
     guides(colour=guide_legend(position="bottom"))+
-    coord_cartesian(xlim=c(0,50))
+    coord_cartesian(xlim=c(NA,50))
   )
 } 
 
-full_params() %>% glimpse()
+
+
 ```
+
+
 
 ```{r}
 
@@ -416,14 +387,14 @@ tmp %>% plot_sweep()
 
 tmp = sweep(parsDf = tibble(
   
-  ratio_immune_target = c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chrnoic carrier state
+  ratio_immune_target = c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chronic carrier state
   
   p_propensity_chronic = 0, #c(0,0.25, 0.5,0.75,1), # << HOST PROB CHRONIC
   
-  rate_priming_given_infected = 1, #seq(0.7,1.3,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect
+  rate_priming_given_infected = 1, #seq(0.7,1.3,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, duration, severity, and peak of virus, immunity fixed and no chrnoic disease effect
   
   rate_senescence_given_active = 1/150, #1/800,
-  rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics
+  rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no effect on peak viral load ? useful for asymptomatics
 ))
 
 tmp %>% plot_sweep(~variable)
@@ -451,14 +422,16 @@ tmp = sweep(parsDf = tibble(
 ))
 
 tmp %>% plot_sweep(~variable)
+```
 
 
+```{r}
 tmp2 = sweep(parsDf = tibble(
   
   # shortens GT? worsens severity
   rate_virion_replication = c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR
   # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?
-  rate_infection = 1# c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
+  rate_infection = 4/rate_virion_replication, #rev(c(0.25,0.5,1,2,4,8)) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
   
 ))
 
@@ -536,8 +509,20 @@ lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", ph
 
 ```
 
+$$
+\begin{align}
 
+V_{add} &= \beta_{rep} \times I \\
+\beta_{remov} &= \beta_{neut} \times A + \beta_{inf} \times S \\ 
+V_{remov} &= \beta_{remov} \times V \\
+V_{neut} &= \frac{\beta_{neut} \times A}{\beta_{remov}} \times V_{remov} \\
+V_{inf} &= \frac{\beta_{inf} \times S}{\beta_{remov}} \times V_{remov}\\
 
+\frac{dV}{dt} &= X_t - V_{remov} + V_{add}\\
 
+\frac{dV}{dt} &< 0 \\
+V_{remov} &> V_{add}\\
+(\beta_{neut} \times A + \beta_{inf} \times S) \times V &> \beta_{rep} \times I
 
-
+\end{align}
+$$
