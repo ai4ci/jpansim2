@@ -1,5 +1,6 @@
 package io.github.ai4ci.abm;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Default default Double getMobilityModifier() {return 1.0D;}
 	@Value.Default default Double getComplianceModifier() {return 1.0D;}
 	@Value.Default default Double getImmuneModifier() {return 1.0D;}
+	@Value.Default default Double getSusceptibilityModifier() {return 1.0D;}
 	
 	@Value.Default default Double getImportationExposure() {return 0D;}
 	@Value.Default default Double getImmunisationDose() {return 0D;}
@@ -56,23 +58,20 @@ public interface PersonState extends PersonTemporalState {
 //		return StateMachine.from(getEntity());
 //	}
 	
-	@Value.Default default ViralLoadState getViralLoad() {
-		// TODO: is initialising this a good idea? 
-		return ViralLoadState.initialise(this.getEntity());
-	}
+	InHostModelState<?> getInHostModel();
 	
 	/**
 	 * A normalised severity index where 1 is symptomatic.
 	 */
 	default Double getNormalisedSeverity() {
-		return getViralLoad().getNormalisedSeverity();
+		return getInHostModel().getNormalisedSeverity();
 	}
 	
 	/**
 	 * A normalised viral load index where 1 is infectious.
 	 */
 	default Double getNormalisedViralLoad() {
-		return getViralLoad().getNormalisedViralLoad();
+		return getInHostModel().getNormalisedViralLoad();
 	}
 	
 	/**
@@ -117,7 +116,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Double getAdjustedMobility() {
 		double tmp = 
-			Conversions.scaleProbability(
+			Conversions.scaleProbabilityByOR(
 				this.getEntity().getBaseline().getMobilityBaseline(),
 				this.getMobilityModifier()
 			);
@@ -127,13 +126,18 @@ public interface PersonState extends PersonTemporalState {
 	/**
 	 * Probability of transmission given a contact with a completely
 	 * unprotected partner. A lower value means less likely transmission.
-	 * This is is going to be a function of compliance
+	 * This is a combination of several factors, the R0 and structure of the
+	 * social network, the exogenous factors such as weather, endogenous factors
+	 * such as inherent susceptibility due to age, and time varying behavioural 
+	 * factors such as mask wearing. 
 	 * @return
 	 */
 	default Double getAdjustedTransmissibility() {
 		double tmp = 
-			Conversions.scaleProbability(
-				this.getEntity().getBaseline().getTransmissibilityBaseline(),
+			Conversions.scaleProbabilityByOR(
+				ModelNav.modelBase(this).getTransmissibilityBaseline(this.getNormalisedViralLoad()),
+				ModelNav.modelState(this).getTransmissibilityModifier()*
+				ModelNav.baseline(this).getTransmissibilityModifier()*
 				this.getTransmissibilityModifier()
 			);
 		return tmp;
@@ -147,7 +151,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Double getAdjustedCompliance() {
 		return 
-			Conversions.scaleProbability(
+			Conversions.scaleProbabilityByOR(
 				this.getEntity().getBaseline().getComplianceBaseline(),
 				this.getComplianceModifier()
 			);
@@ -198,11 +202,15 @@ public interface PersonState extends PersonTemporalState {
 	 * 
 	 * @return
 	 */
-	@Value.Lazy default double getVirionExposure() {
+	@Value.Lazy default double getContactExposure() {
 		return Math.min(20, ModelNav.history(this).stream()
-				.flatMap(ph -> ph.getTodaysContacts().stream())
+				.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()))
 				.mapToDouble(p -> p.getExposure())
 				.sum());
+	}
+	
+	public default double getTotalExposure() {
+		return getContactExposure()+getImportationExposure();
 	}
 	
 	/** 
@@ -233,7 +241,7 @@ public interface PersonState extends PersonTemporalState {
 		// double prev2 = ModelNav.modelState(this).getPresumedTestPositivePrevalence();
 		double prev =  getContacts()
 			.filter(c -> c.isDetected())
-			.flatMap(c -> c.getParticipant().getCurrent(this.getEntity().getOutbreak()).stream())
+			.map(c -> c.getParticipant(this))
 			.mapToDouble(ph -> ph.getProbabilityInfectiousToday())
 			.average()
 			.orElse(0D);
@@ -347,7 +355,7 @@ public interface PersonState extends PersonTemporalState {
 					.filter(c -> c.isDetected())
 					.mapToDouble(c -> 
 							c.getProximityDuration() *
-							c.getParticipant(this.getEntity().getOutbreak())
+							c.getParticipant(this)
 								.getDirectLogLikelihood(
 									this.getTime(), 
 									limit()))
@@ -416,6 +424,16 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Stream<Contact> getContacts() {
 		return ModelNav.history(this, limit())
-			.flatMap(ph -> ph.getTodaysContacts().stream());
+			.flatMap(ph -> Arrays.stream(ph.getTodaysContacts()));
+	}
+	
+	/**
+	 * Reassemble the exposures from the PersonHistory
+	 * graph within the infectious period.  
+	 * @return
+	 */
+	default Stream<Exposure> getExposures() {
+		return ModelNav.history(this, limit())
+			.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()));
 	}
 }

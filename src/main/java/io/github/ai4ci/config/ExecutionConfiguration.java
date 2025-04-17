@@ -14,9 +14,11 @@ import io.github.ai4ci.abm.BehaviourModel;
 import io.github.ai4ci.abm.PolicyModel;
 import io.github.ai4ci.abm.TestParameters;
 import io.github.ai4ci.abm.TestResult;
+import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
 import io.github.ai4ci.util.Data.Partial;
+import io.github.ai4ci.util.DelayDistribution;
 // import io.reactivex.rxjava3.annotations.Nullable;
-import io.github.ai4ci.util.Distribution;
+import io.github.ai4ci.util.SimpleDistribution;
 
 
 @Value.Immutable
@@ -31,25 +33,20 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	
 	public static ExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
 			.setName("execution")
-			.setRO(2.0)
+			.setRO(2.5)
 			
-			.setContactProbability( Distribution.unimodalBeta(0.5, 0.25))
-			.setConditionalTransmissionProbability( Distribution.point(0.25D) )
-			.setContactDetectedProbability( Distribution.unimodalBeta(0.9, 0.1))
-			.setComplianceProbability( Distribution.unimodalBeta(0.99, 0.001))
-			.setAppUseProbability( Distribution.unimodalBeta(0.97, 0.01))
+			.setContactProbability( SimpleDistribution.unimodalBeta(0.5, 0.05))
+			
+			.setContactDetectedProbability( SimpleDistribution.unimodalBeta(0.9, 0.1))
+			.setComplianceProbability( SimpleDistribution.unimodalBeta(0.99, 0.001))
+			.setAppUseProbability( SimpleDistribution.unimodalBeta(0.97, 0.01))
 			
 //			.setRiskTrigger( Distribution.point(0.05) )
 //			.setRiskTriggerRatio(1.1)
 //			.setHighRiskMobilityModifier(0.95)
 //			.setHighRiskTransmissibilityModifier(0.95)
 			
-			.setTargetCellCount(10000)
-			.setImmuneTargetRatio( Distribution.logNorm(1D, 0.1))
-			.setImmuneActivationRate( Distribution.logNorm(1D, 0.1))
-			.setImmuneWaningRate( Distribution.logNorm(1D/150, 0.01))
-			.setInfectionCarrierProbability( Distribution.point(0D))
-			.setTargetRecoveryRate( Distribution.logNorm( 1D/7, 0.1) )
+			.setInHostConfiguration( PhenomenologicalModel.DEFAULT )
 			
 //			.setLockdownStartPrevalenceTrigger(0.05)
 //			.setLockdownMinDuration(14)
@@ -57,20 +54,20 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 //			.setLockdownMobility(0.5)
 //			.setLockdownTransmissibility(0.5)
 			
-			.setScreeningPeriod( Distribution.gamma(7.0,1D) )
-			.setProbabilityScreened(0.01)
+//			.setScreeningPeriod( Distribution.gamma(7.0,1D) )
+//			.setProbabilityScreened(0.01)
 			
 			.setDefaultBehaviourModelName( BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName() )
 			.setDefaultPolicyModelName( PolicyModel.ReactiveLockdown.class.getSimpleName() )
 			
-			.setSymptomSensitivity(Distribution.unimodalBeta(0.5, 0.01))
-			.setSymptomSpecificity(Distribution.unimodalBeta(0.95, 0.01))
+			.setSymptomSensitivity(SimpleDistribution.unimodalBeta(0.5, 0.01))
+			.setSymptomSpecificity(SimpleDistribution.unimodalBeta(0.95, 0.01))
 			
 			.setInitialEstimateSymptomSensitivity(0.5)
 			.setInitialEstimateSymptomSpecificity(0.95)
 			
 			.setInitialEstimateInfectionDuration(10.0)
-			.setMaximumSocialContactReduction(Distribution.unimodalBeta(0.4, 0.01))
+			.setMaximumSocialContactReduction(SimpleDistribution.unimodalBeta(0.2, 0.01))
 			.setAvailableTests(TestResult.defaultTypes())
 			
 			.setImportationProbability(0.001D)
@@ -80,11 +77,17 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	// must have no optionals.
 	Double getRO();
 	
-	Distribution getContactProbability();
-	Distribution getConditionalTransmissionProbability();
-	Distribution getContactDetectedProbability();
-	Distribution getComplianceProbability();
-	Distribution getAppUseProbability();
+	/**
+	 * The proportion of a persons social network that they see each day
+	 * in a fully mobile population. The mobility baseline is determined from
+	 * the square root of this value, as the contact is the product of 2 peoples
+	 * mobility.
+	 * {@link AgentBaseline#contactRate}
+	 */
+	SimpleDistribution getContactProbability();
+	SimpleDistribution getContactDetectedProbability();
+	SimpleDistribution getComplianceProbability();
+	SimpleDistribution getAppUseProbability();
 	
 	// Distribution getRiskTrigger();
 	
@@ -98,26 +101,22 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 //	Double getLockdownMobility();
 //	Double getLockdownTransmissibility();
 
-	Distribution getScreeningPeriod();
-	Double getProbabilityScreened();
+//	Distribution getScreeningPeriod();
+//	Double getProbabilityScreened();
 	
-	Integer getTargetCellCount();
-	Distribution getImmuneTargetRatio();
-	Distribution getImmuneActivationRate();
-	Distribution getImmuneWaningRate();
-	Distribution getInfectionCarrierProbability();
-	Distribution getTargetRecoveryRate();
+	InHostConfiguration getInHostConfiguration();
+	
 	
 	TestParameters.Group getAvailableTests();
 	
-	Distribution getSymptomSensitivity();
-	Distribution getSymptomSpecificity();
+	SimpleDistribution getSymptomSensitivity();
+	SimpleDistribution getSymptomSpecificity();
 	
 	Double getInitialEstimateInfectionDuration();
 	Double getInitialEstimateSymptomSensitivity();
 	Double getInitialEstimateSymptomSpecificity();
 	
-	Distribution getMaximumSocialContactReduction();
+	SimpleDistribution getMaximumSocialContactReduction();
 	
 	String getDefaultBehaviourModelName();
 	String getDefaultPolicyModelName();
@@ -164,8 +163,10 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 		}
 	}
 
-	
-
+	@JsonIgnore
+	@Value.Lazy default DelayDistribution getInfectivityProfile() {
+		return InHostConfiguration.getInfectivityProfile(this.getInHostConfiguration(), 100, 100);
+	}
 	
 
 	

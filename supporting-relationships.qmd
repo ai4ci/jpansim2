@@ -10,6 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 here::i_am("supporting-relationships.qmd")
 library(tidyverse)
 
+logit = function(p) {return(log(p/(1-p)))}
+expit = function(x) {return(1/(1+exp(-x)))}
+
 # install.packages(
 #   c("odin","odin.dust","dust"),
 #   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
@@ -133,8 +136,7 @@ p^7
 # Scaling probabilities
 
 ```{r}
-logit = function(p) {return(log(p/(1-p)))}
-expit = function(x) {return(1/(1+exp(-x)))}
+
 
 OR = 2
 p = seq(0.1,0.9,0.1)
@@ -242,3 +244,58 @@ beta = (mu*(1-mu) / sigma^2 -1) * (1-mu)
 
 ```
 
+
+
+# Log likelihood ratio and multiple tests / symptoms
+
+```{r}
+
+tests = tribble(
+  ~test, ~sens, ~spec, ~obs_neg, ~delay_fn,
+  "PCR", 0.95, 0.99, TRUE, \(t) max(0,(10-t)/10),
+  "LFT", 0.8, 0.95, FALSE, \(t) max(0,(5-t)/5),
+  "SYMPTOMS", 0.5, 0.8, FALSE, \(t) exp(-t/2)
+)
+
+tests = tests %>% mutate(
+  log_LR_pos = log(sens / (1-spec)),
+  log_LR_neg = log((1-sens) / spec)
+)
+
+person = tribble(
+  ~time, ~test, ~result,
+  0, "PCR", TRUE,
+  1, "LFT", TRUE,
+  5, "LFT", FALSE,
+  0, "SYMPTOMS", TRUE,
+  1, "SYMPTOMS", TRUE,
+  3, "SYMPTOMS", FALSE
+)
+
+person = person %>% inner_join(tests, by="test") %>%
+  mutate(
+    time_coeff = purrr::map2_dbl(delay_fn,time, ~.x(.y)),
+    log_LR = ifelse(result, log_LR_pos, log_LR_neg),
+    log_LR2 = ifelse(result, log_LR_pos, log_LR_neg*obs_neg),
+    adj_log_LR = time_coeff * log_LR,
+    adj_log_LR2 = time_coeff * log_LR2,
+  )
+
+prevalence = c(0.001,0.01,0.1)
+
+person %>% crossing(prevalence) %>%
+  group_by(prevalence) %>%
+  summarise(
+    log_LR = sum(log_LR),
+    log_LR2 = sum(log_LR2),
+    adj_log_LR = sum(adj_log_LR),
+    adj_log_LR2 = sum(adj_log_LR2)
+  ) %>%
+  mutate(
+    posterior = expit(logit(prevalence)+log_LR),
+    posterior2 = expit(logit(prevalence)+log_LR2),
+    adj_posterior = expit(logit(prevalence)+adj_log_LR),
+    adj_posterior2 = expit(logit(prevalence)+adj_log_LR2)
+  )
+
+```

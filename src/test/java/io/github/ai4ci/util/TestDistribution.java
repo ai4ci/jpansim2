@@ -9,7 +9,7 @@ class TestDistribution {
 	@Test
 	void test() {
 		System.out.println(
-				Distribution.unimodalBeta(0.99, 0.01).sample()
+				SimpleDistribution.unimodalBeta(0.99, 0.01).sample()
 				);
 	}
 

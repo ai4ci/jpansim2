@@ -128,6 +128,11 @@ public class ModelNav {
 			);
 	}
 
+	public static OutbreakHistory outbreakHistory(PersonHistory personHistory) {
+		int time = personHistory.getTime();
+		return personHistory.getEntity().getOutbreak().getHistoryEntry(time).get();
+	}
+
 	
 	
 

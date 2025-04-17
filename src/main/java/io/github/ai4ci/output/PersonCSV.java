@@ -11,7 +11,7 @@ public interface PersonCSV extends CommonCSV {
 	boolean isSymptomatic();
 	double getNormalisedSeverity();
 	double getNormalisedViralLoad();
-	double getVirionExposure();
+	double getContactExposure();
 	double getPresumedLocalPrevalence();
 	double getProbabilityInfectiousToday();
 	

@@ -1,8 +1,10 @@
 package io.github.ai4ci.abm;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import org.immutables.value.Value;
 
@@ -12,23 +14,47 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+import io.github.ai4ci.abm.ModelOperation.BiFunction;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.PartialSetupConfiguration;
+import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ModelNav;
+import io.github.ai4ci.util.Sampler;
 
 public interface Abstraction {
 
 	@JsonTypeInfo(use = Id.DEDUCTION)
 	@JsonSubTypes( {@Type(PartialSetupConfiguration.class), @Type(PartialExecutionConfiguration.class)})
 	public interface Modification {}
-
+ 
 
 
 	public interface Entity extends Serializable {
 		@Value.NonAttribute String getUrn();
 	}
 	
-	
+	public interface Distribution {
+		
+		int PRECISION = 10000;
+		
+		double getCentral();
+		double sample(Sampler rng);
+		
+		default double sample() {
+			return sample(Sampler.getSampler());
+		}
+		
+		default Distribution combine(Distribution with, BiFunction<Double,Double,Double> using) {
+			return ImmutableResampledDistribution.builder()
+					.setFirst(this)
+					.setSecond(with)
+					.setCombiner(using)
+					.build();
+		};
+		
+		double pLessThan(double x);
+		double getMedian();
+	}
 	
 	// This has potential to be problematic if multiple entities are sampling
 	// on the same thread and keep resetting the seed
@@ -78,7 +104,7 @@ public interface Abstraction {
 		
 		public default Optional<H> getHistory(int delay) {
 			if (delay < 0) return Optional.empty();
-			if (this.getHistory().size() < delay) return Optional.empty();
+			if (this.getHistory().size() <= delay) return Optional.empty();
 			return Optional.of(this.getHistory().get(delay));
 		}
 		

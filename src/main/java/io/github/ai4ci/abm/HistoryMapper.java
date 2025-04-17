@@ -16,8 +16,8 @@ public abstract class HistoryMapper {
 	 
 	public static HistoryMapper MAPPER = Mappers.getMapper( HistoryMapper.class );
 	
-	@Mapping( target = "previous", expression = "java(currentHistory(currentState, 1))")
-	@Mapping( target = "todaysContacts", expression = "java(new java.util.ArrayList<>())")
+	@Mapping( target = "todaysContacts", expression = "java(new Contact[0])")
+	@Mapping( target = "todaysExposures", expression = "java(new Exposure[0])")
 	@Mapping( target = "todaysTests", expression = "java(new java.util.ArrayList<>())")
 	abstract PersonHistory createHistory(PersonState currentState);
 	
@@ -25,8 +25,8 @@ public abstract class HistoryMapper {
 	@Mapping( target = "previous", expression = "java(currentHistory(currentState, 1))")
 	abstract OutbreakHistory createHistory(OutbreakState currentState);
 	
-	@Mapping( target = "personId", source = "entity.id")
-	abstract PersonHistoryReference createReference(PersonState history);
+//	@Mapping( target = "personId", source = "entity.id")
+//	abstract PersonHistoryReference createReference(PersonState history);
 	
 	Integer personStateId( PersonState source ) {
 		return source.getEntity().getId();

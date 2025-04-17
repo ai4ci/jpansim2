@@ -385,15 +385,15 @@ plot_sweep = function(tmp, facets = ~variable) {
     summarise(value = mean(value))
   
   list(
-  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+  ggplot(tmp,aes(x=step,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     guides(colour=guide_legend(position="bottom"))+
     facet_wrap(facets,scales = "free_y"),
-  ggplot(tmp,aes(x=step-10,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
+  ggplot(tmp,aes(x=step,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     facet_wrap(facets,scales = "free_y")+
     guides(colour=guide_legend(position="bottom"))+
-    coord_cartesian(xlim=c(0,50))
+    coord_cartesian(xlim=c(0,60))
   )
 } 
 

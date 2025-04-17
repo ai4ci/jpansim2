@@ -11,12 +11,13 @@ import org.immutables.value.Value.Style.ValidationMethod;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 // import com.j256.simplecsv.common.CsvColumn;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize.Typing;
 
 public @interface Data {
 
 	@Target({ElementType.PACKAGE, ElementType.TYPE})
 	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
-	@JsonSerialize
+	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
 	// @InjectAnnotation(type = CsvColumn.class, target = InjectAnnotation.Where.FIELD)
 	// @Csv
@@ -43,7 +44,7 @@ public @interface Data {
 
 	@Target({ElementType.PACKAGE, ElementType.TYPE})
 	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
-	@JsonSerialize
+	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
 	// @InjectAnnotation(type = CsvColumn.class, target = InjectAnnotation.Where.FIELD)
 	// @Csv
@@ -70,7 +71,7 @@ public @interface Data {
 	
 	@Target({ElementType.PACKAGE, ElementType.TYPE})
 	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
-	@JsonSerialize
+	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
 	// @InjectAnnotation(type = CsvColumn.class, target = InjectAnnotation.Where.FIELD)
 	// @Csv

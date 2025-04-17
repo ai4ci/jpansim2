@@ -167,11 +167,11 @@ public class Sampler implements UniformRandomProvider {
 		return bern(Conversions.probabilityFromRate(1.0/period));
 	}
 	
-	public double sample(Distribution dist) {
+	public double sample(SimpleDistribution dist) {
 		return dist.sample(this);
 	}
 	
-	public int sampleInt(Distribution dist) {
+	public int sampleInt(SimpleDistribution dist) {
 		return (int) Math.floor(dist.sample(this));
 	}
 }

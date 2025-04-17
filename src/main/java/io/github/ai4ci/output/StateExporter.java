@@ -75,7 +75,7 @@ public class StateExporter {
 			ExportSelector<X> sel2 = (ExportSelector<X>) sel; 
 			if (sel2.writer != null)
 				sel2.writer.export(
-						sel2.selector.apply(outbreak)
+						sel2.selector.apply(outbreak).parallel()
 				);
 		});
 		return outbreak;

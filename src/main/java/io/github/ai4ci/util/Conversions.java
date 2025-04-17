@@ -26,12 +26,29 @@ public class Conversions {
 		return Math.log(0.5)/(Math.log(p));
 	}
 	
-	public static double scaleProbability(double p, double factor) {
-		if (factor == Double.POSITIVE_INFINITY) return 1;
-		if (factor == 1) return p;
-		if (factor == 0) return 0;
-		double tmp = expit(logit(p) + Math.log(factor));
+	public static double scaleRateByOR(double rate, double oddsRatio) {
+		return rateFromProbability(
+				scaleProbabilityByOR(
+						probabilityFromRate(rate),
+						oddsRatio
+						)
+		);
+	}
+	
+	public static double oddsRatio(double p1, double p2) {
+		return (p1/(1-p1)) / (p2/(1-p2));
+	}
+	
+	public static double scaleProbabilityByOR(double p, double oddsRatio) {
+		if (oddsRatio == Double.POSITIVE_INFINITY) return 1;
+		if (oddsRatio == 1) return p;
+		if (oddsRatio == 0) return 0;
+		double tmp = expit(logit(p) + Math.log(oddsRatio));
 		return tmp;
+	}
+	
+	public static double scaleProbabilityByRR(double p, double rateRatio) {
+		return p*rateRatio;
 	}
 	
 	public static double probabilityFromOdds(double odds) {
@@ -65,5 +82,9 @@ public class Conversions {
 		// 0.1 = x / (x + maxPeriod)
 		double x = maxPeriod / 9.0;
 		return logOdds * x / (x + period);
+	}
+
+	public static double rateRatio(double p1, double p2) {
+		return p1/p2;
 	}
 }

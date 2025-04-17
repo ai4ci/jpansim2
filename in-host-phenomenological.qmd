@@ -1,0 +1,308 @@
+---
+title: "Phenomonological model"
+author: "Rob Challen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup}
+library(tidyverse)
+```
+
+$$
+f(x,r,s) = \frac{1}{1+e^{-r(x-s)}} \\
+g(x) = f(x,r_1,s_1) \times (1-f(x,r_2,s_2)) \\
+$$
+
+$$
+f(x_1,s,r) = y_1 \\
+f(x_2,s,r) = y_2 \\
+
+\frac{1}{1+e^{-r(x-s)}} = y \\
+\frac{1}{y} = 1+e^{-r(x-s)} \\
+\frac{1}{y}-1 = e^{-r(x-s)} \\
+\forall: 0 \le y \le 1 \\
+-r(x-s) = \log{(\frac{1-y}{y})} \\
+s = \frac{ \log{(\frac{1-y}{y})} + rx }{r} \\
+
+$$
+
+$$
+\log{(\frac{1-y_1}{y_1})} + rx_1 = \log{(\frac{1-y_2}{y_2})} + rx_2 \\
+r = \frac { \log{(\frac{1-y_2}{y_2})} - \log{(\frac{1-y_1}{y_1})} }{x_1 - x_2} \\
+s = \frac{1}{r} \log{(\frac{1-y_1}{y_1})} + x_1
+$$
+
+```{r}
+
+
+
+infer_params = function(x1,y1,x2,y2) {
+  r = (log((1-y2)/y2) - log((1-y1)/y1))/(x1 - x2)
+  s = 1/r * log((1-y1)/y1) + x1
+  return(list(r=r,s=s))
+}
+
+f = function(x,r=params$r,s=params$s, params = infer_params(0,0.01,5,0.1)) {
+  return(1/(1+exp(-r*(x-s))))
+}
+```
+
+```{r}
+lag = 5
+duration = 15
+dose = 0.01
+cutoff = 0.2
+
+ggplot2::ggplot()+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params(0,dose,lag,cutoff)))+
+  geom_point(mapping=aes(x=c(0,lag),y=c(dose,cutoff)))+
+  ggplot2::geom_function(fun=~1-f(.x, params = infer_params(lag,dose,lag+duration,1-cutoff)),colour="blue")+
+  geom_point(mapping=aes(x=c(lag,lag+duration),y=c(1-dose,cutoff)),colour="blue")+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params(0,dose,lag,cutoff)) * (1-f(.x, params = infer_params(lag,dose,lag+duration,1-cutoff))),colour="red")+
+  geom_hline(yintercept=cutoff,linetype="dashed")+
+  xlim(0,30)
+  
+
+```
+
+
+```{r}
+lag = 5
+duration = 15
+cutoff = 0.1
+peak = 0.7
+peaktime = 7
+
+peak=sqrt(peak)
+
+ggplot2::ggplot()+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params( lag,cutoff,peaktime, peak )))+
+  geom_point(mapping=aes(x=c(peaktime,lag),y=c(peak^2,cutoff)))+
+  ggplot2::geom_function(fun=~1-f(.x, params = infer_params(peaktime, 1-peak, lag+duration,1-cutoff)),colour="blue")+
+  geom_point(mapping=aes(x=c(peaktime,lag+duration),y=c(peak^2,cutoff)),colour="blue")+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params( lag,cutoff,peaktime,peak)) * (1-f(.x, params = infer_params(peaktime,1-peak,lag+duration,1-cutoff))),colour="red")+
+  geom_hline(yintercept=cutoff,linetype="dashed")+
+  xlim(0,30)
+  
+
+```
+
+
+$$
+f(x,r,s) = \frac{1}{1+e^{-r(x-s)}} \\
+1-f(x,r,s) = 1- \frac{1}{1+e^{-r(x-s)}} \\
+1-f(x,r,s) = \frac{1+e^{-r(x-s)}-1}{1+e^{-r(x-s)}} \\
+1-f(x,r,s) = \frac{1}{e^{r(x-s)}+1} \\
+1-f(x,r,s) = f(x,-r,s) \\
+$$
+
+
+$$
+f(x,r_1,s_1)f(x,r_2,s_2) = \frac{1}{1+e^{-r_1(x-s_1)}}\frac{1}{1+e^{-r_2(x-s_2)}} \\
+f(x,r_1,s_1)f(x,r_2,s_2) = \frac{1}{1+e^{-r_1(x-s_1)}+e^{-r_2(x-s_2)}+e^{-r_1(x-s_1)-r_2(x-s_2)}} \\
+$$
+
+$$
+a = r_1(x-s_1) \\
+b = r_2(x-s_2) \\
+e^{-a}+e^{-b}+e^{-(a+b)} \\
+\sum_k{\frac{(-a)^k+(-b)^k+(-(a+b))^k}{k!}}
+$$
+
+# calibrating immune response
+
+```{r}
+halflife = 150
+initial = 0.01
+peak = 0.7
+peaktime = 20
+
+halfpeak = peak/2
+peak=sqrt(peak)
+
+
+ggplot2::ggplot()+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params( 0,initial, peaktime, peak )))+
+  ggplot2::geom_function(fun=~1-f(.x, params = infer_params(peaktime, 1-peak, peaktime+halflife, 1-halfpeak)),colour="blue")+
+  geom_point(mapping=aes(x=c(peaktime,peaktime+halflife), y=c(peak^2,halfpeak)),colour="blue")+
+  ggplot2::geom_function(fun=~f(.x, params = infer_params( 0,initial,peaktime,peak)) * (1-f(.x, params = infer_params(peaktime,1-peak,peaktime+halflife, 1-halfpeak))),colour="red")+
+  geom_hline(yintercept=cutoff,linetype="dashed")+
+  xlim(0,300)
+  
+
+```
+
+
+
+
+# Prior immune system
+
+could shift the decay curve backwards (i.e. reduce the second s param) based on
+1 - the value of the immune response.
+
+So if the immune response is at 0.4, then we would look for a point when the 
+decay component for the viral load is at 0.6, retaining all the original 
+calibration, and shift it to that point:
+
+
+```{r}
+lag = 5
+duration = 15
+cutoff = 0.1
+peak = 0.7
+peaktime = 7
+peak=sqrt(peak)
+immunity = 0.3
+
+grow = infer_params( lag,cutoff,peaktime, peak )
+decay = infer_params(peaktime, 1-peak, lag+duration,1-cutoff)
+
+# so the 
+inv_f = function(y,r,s) { 
+  return(s - log((1-y)/y) / r)
+}
+
+adj_time = inv_f(immunity, decay$r, decay$s)
+
+f(0, r = grow$r, s=grow$s )
+inv_f(0.01,r = grow$r, s=grow$s )
+
+peak=sqrt(peak)
+
+
+ggplot2::ggplot()+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s ))+
+  ggplot2::geom_function(fun=~1-f(.x, r=decay$r, s= decay$s),colour="blue")+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s) * (1-f(.x, r=decay$r, s= decay$s)),colour="orange")+
+  ggplot2::geom_function(fun=~1-f(.x, r=decay$r, s= decay$s-adj_time),colour="magenta")+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s) * (1-f(.x, r=decay$r, s= decay$s-adj_time)),colour="red")+
+  geom_hline(yintercept=1-immunity,linetype="dotted")+
+  geom_hline(yintercept=cutoff,linetype="dashed")+
+  xlim(0,30)
+  
+
+```
+
+# Dose dependence
+
+could shift the growth curve backwards (i.e. reduce the first s param) based on
+size of the dose. At some level this needs to be normalised though. Lets say
+that a unitary dose is what is required to get the standard growth.
+Exposure can be measured in terms of that standard dose
+
+```{r}
+lag = 5
+duration = 15
+cutoff = 0.1
+peak = 0.2
+peaktime = 7
+peak=sqrt(peak)
+
+
+exposure = 20
+
+grow = infer_params( lag,cutoff,peaktime, peak )
+
+
+  
+decay = infer_params(peaktime, 1-peak, lag+duration,1-cutoff)
+
+# so the 
+inv_f = function(y,r,s) { 
+  return(s - log((1-y)/y) / r)
+}
+
+unitdose = f(0,grow$r, grow$s)
+adj_time = inv_f(exposure*unitdose, grow$r, grow$s)
+
+
+
+peak=sqrt(peak)
+
+
+ggplot2::ggplot()+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s ))+
+  ggplot2::geom_function(fun=~1-f(.x, r=decay$r, s= decay$s),colour="blue")+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s) * (1-f(.x, r=decay$r, s= decay$s)),colour="orange")+
+  ggplot2::geom_function(fun=~f(.x, r=grow$r, s= grow$s-adj_time),colour="magenta")+
+  ggplot2::geom_function(fun=~f(.x, r = grow$r, s=grow$s-adj_time) * (1-f(.x, r=decay$r, s= decay$s)),colour="red")+
+  geom_hline(yintercept=dose,linetype="dotted")+
+  geom_hline(yintercept=cutoff,linetype="dashed")+
+  xlim(0,30)
+  
+
+```
+
+# Multiple exposures
+
+could combine probabilities with a $1-\prod{1-p_i}$ for each exposure.
+
+# Host variation
+
+We want to have an infection symptomatic rate, an infection hospitalisation rate
+and an infection fatality rate that are controllable in the population and 
+can be correlated to susceptibility.
+
+The easiest way to do this is calibrate infectiousness, symptomatic, 
+hospitalisation and fatality as a function of viral load, and allow people
+to randomly have different peak viral load following a single exposure. The peak 
+viral load is an individual level. We can calibrate response to the infecting 
+dose similar to immunity above but the only problem with that is that someone
+with a large dose will be immediately infectious.
+
+This will tend to mean that second exposures or exposures post vaccination are 
+less severe, if any residual immunity exists. This is a good thing. The 
+effectiveness of the immune system will depend on the peak immunity. We might 
+want to scale the response to a new exposure differently or scale the response 
+to a vaccination less than that to a full blown infection. We could correlate
+viral peak with immune peak.
+
+Some heuristic to decide immunity peak based on an exposure is needed. If there 
+is a second exposure leading to a small sub-clinical viral load peak. Should that
+lead to a full immune system response, bearing in mind that they will be
+combined by product of complements of probability.
+
+
+# Immunisation
+
+An immunisation event can be modelled with an exposure with zero peak viral 
+load. We could decide to keep immunity model and viral load model logically 
+separate. This is probably a good idea. There is the risk that we are having to 
+manage lots of components of immunity as result of very many small exposures.
+
+
+# Calibration against R0
+
+Suppose an group of individuals are in a connected network. The $i$th person is
+infected and a contact of the $j$th. At $\tau$ days post infection of $i$ the
+probability of transmission $T_{ij}$, given a probability of contact $P_{ij}$ 
+between $i$ and $j$. 
+is:
+
+$$
+T_{ij,\tau} = \omega_{\tau} \times P_{ij} \times T
+$$
+
+Where $T$ is the probability of transmission per contact, and $\omega_\tau$ is
+the probability of transmission on day $t$ after infection given transmission occurs.
+
+$$
+T_{ij} = 1-\prod_t{1-\omega_{t} \times P_{ij} \times T}
+$$
+
+On average there will be $\langle k \rangle$ such contacts for individual $i$
+where this is the degree distribution of the social network.
+
+$$
+
+R_{0,i} = \sum_{j \in E_i} T_{ij} \\
+
+R_{0} = \frac{1}{|i|} \sum_{i \in G} \sum_{ij \in E_i} T_{ij}
+
+$$
+
+$$
+R = 1+r \times T_c \\
+r = \frac{\beta \langle k^2 \rangle - \langle k \rangle (\beta+\mu)}{\langle k \rangle}
+$$

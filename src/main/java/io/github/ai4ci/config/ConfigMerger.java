@@ -10,6 +10,11 @@ import org.mapstruct.NullValueMappingStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
+import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
+import io.github.ai4ci.config.InHostConfiguration.StochasticModel;
+import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.ImmutableDelayDistribution;
+
 @Mapper(
 		builder = @Builder(buildMethod = "build"),
 		nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
@@ -19,7 +24,7 @@ import org.mapstruct.factory.Mappers;
 		
 )
 public abstract class ConfigMerger {
-	 
+	
 	public static ConfigMerger INSTANCE = Mappers.getMapper( ConfigMerger.class );
 	
 	public ImmutableExecutionConfiguration.Builder mergeConfiguration(
@@ -51,5 +56,13 @@ public abstract class ConfigMerger {
 			@MappingTarget ImmutableSetupConfiguration.Builder target,
 			PartialSetupConfiguration source);
 	
+	abstract protected ImmutableStochasticModel mapper(StochasticModel source);
+	abstract protected ImmutablePhenomenologicalModel mapper(PhenomenologicalModel source);
+	protected InHostConfiguration mapper(InHostConfiguration source) {
+		if (source instanceof PhenomenologicalModel p) return mapper(p);
+		if (source instanceof StochasticModel p) return mapper(p);
+		throw new RuntimeException("Unknown type: "+source.getClass());
+	};
 	
+	abstract protected ImmutableDelayDistribution mapper(DelayDistribution source);
 }

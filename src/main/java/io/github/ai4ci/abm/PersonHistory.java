@@ -1,9 +1,9 @@
 package io.github.ai4ci.abm;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -27,8 +27,12 @@ public interface PersonHistory extends PersonTemporalState {
 	 * contact venue into this context.
 	 * @return
 	 */
-	Set<Contact> getTodaysContacts();
-	Optional<PersonHistory> getPrevious();
+	Contact[] getTodaysContacts();
+	Exposure[] getTodaysExposures();
+	
+	default Optional<PersonHistory> getPrevious() {
+		return this.getEntity().getHistoryEntry(this.getTime()-1);
+	};
 	
 	boolean isSymptomatic();
 	boolean isReportedSymptomatic();
@@ -36,8 +40,9 @@ public interface PersonHistory extends PersonTemporalState {
 	Double getNormalisedViralLoad();
 	Double getAdjustedTransmissibility();
 	Double getAdjustedMobility();
+	Double getSusceptibilityModifier();
 	String getBehaviour();
-	Double getVirionExposure();
+	Double getContactExposure();
 	
 	double getSymptomLogLikelihood();
 	double getProbabilityInfectiousToday();
@@ -51,8 +56,6 @@ public interface PersonHistory extends PersonTemporalState {
 		public Contact getContact() {return contact;}
 	}
 	
-	
-	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
 	 * on the first day before the subject is infectious when the subject was 
@@ -63,9 +66,9 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	@Value.Lazy default Optional<PersonHistory> getInfector() {
 		return getInfectiousContact()
-				.map(c -> c.getParticipant(this.getEntity().getOutbreak()))
+				.map(c -> c.getExposer(this))
 				.flatMap(ph2 -> ph2.getInfectionStart());
-	}
+	} 
 	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
@@ -75,10 +78,10 @@ public interface PersonHistory extends PersonTemporalState {
 	 * should map back to the same instant in time for that infector.
 	 * @return
 	 */
-	@Value.Lazy default Optional<Contact> getInfectiousContact() {
+	@Value.Lazy default Optional<Exposure> getInfectiousContact() {
 		return getNewInfection().flatMap(ph -> 
 			ph.getLastExposure().flatMap(e -> 
-				e.getTodaysContacts().stream()
+				Arrays.stream(e.getTodaysExposures())
 				.max((c1,c2) -> Double.compare(c1.getExposure(), c2.getExposure())
 				))
 		);
@@ -133,12 +136,12 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Find the previous last exposure to virus
+	 * Find the infectee's state at the time of last exposure to virus.
 	 * @return
 	 */
 	default Optional<PersonHistory> getLastExposure() {
-		if (this.getVirionExposure() > 0 &&
-				this.getPrevious().map(p -> p.getVirionExposure() == 0).orElse(Boolean.FALSE)) 
+		if (this.getContactExposure() > 0 &&
+				this.getPrevious().map(p -> p.getContactExposure() == 0).orElse(Boolean.FALSE)) 
 					return Optional.of(this);
 		return this.getPrevious().flatMap(p -> p.getLastExposure());
 	}

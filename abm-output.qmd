@@ -9,7 +9,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-here::i_am("supporting-relationships.qmd")
+here::i_am("abm-output.qmd")
 library(tidyverse)
 
 # install.packages(
@@ -34,7 +34,7 @@ ggplot(linelist,aes(x=probabilityInfectiousToday,fill=symptomatic))+geom_density
 
 ggplot(linelist %>% group_by(time,experimentName) %>% summarise(presumedLocalPrevalence=mean(presumedLocalPrevalence)),aes(x=time,y=presumedLocalPrevalence,colour = experimentName))+geom_line()
 
-ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName,scales = "free_y")
+ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName)
 
 ggplot(linelist %>% filter(virionExposure > 0))+geom_density(aes(x=virionExposure, colour=experimentName))
 ggplot(linelist %>% filter(normalisedSeverity > 0) %>% group_by(personId,experimentName) %>% summarise(normalisedSeverity = max(normalisedSeverity)))+geom_density(aes(x=normalisedSeverity, colour=experimentName))
@@ -48,6 +48,7 @@ linelist %>% group_by(behaviour) %>% count()
 ```{r}
 summary = readr::read_csv("~/tmp/summary.csv")
 ggplot(summary,aes(x=time,y=incidence, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=cumulativeInfections, colour=experimentName))+geom_line()
 ggplot(summary,aes(x=time,y=infectedCount/10000, colour=experimentName))+geom_line()+ylab("actual prevalence")
 ggplot(summary,aes(x=time,y=averageMobility, colour=experimentName))+geom_line()
 ggplot(summary,aes(x=time,y=averageCompliance, colour=experimentName))+geom_line()
@@ -55,9 +56,40 @@ ggplot(summary,aes(x=time,y=presumedTestPositivePrevalence, colour=experimentNam
 ggplot(summary,aes(x=time,y=testPositives, colour=experimentName))+geom_line()
 ggplot(summary,aes(x=time,y=testNegatives, colour=experimentName))+geom_line()
 ggplot(summary,aes(x=time,y=testPositives/(testPositives+testNegatives), colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=rtEffective, colour=experimentName))+geom_line()
+ggplot(summary,aes(x=time,y=rtEffective, colour=experimentName))+geom_line()+coord_cartesian(ylim=c(0,5))
 
 ggplot(summary,aes(x=time,fill=as.factor(policy),colour=as.factor(policy),y=1))+geom_bar(stat="identity")
 
 summary %>% group_by(policy) %>% count()
+```
+
+
+
+```{r}
+
+# ip = ggoutbreak::make_gamma_ip(median_of_mean = 7, median_of_sd = 4)
+ip = readr::read_csv("~/tmp/ip.csv")
+ip = ip %>% mutate(boot = as.integer(as.factor(experiment))) %>% group_by(boot)
+
+summary2 = summary %>% mutate(
+    time = ggoutbreak::as.time_period(time, unit="1 day"),
+    count = incidence) %>%
+    group_by(experimentName)
+
+estimate = summary2 %>%
+  ggoutbreak::poisson_locfit_model() %>%
+  ggoutbreak::rt_from_incidence(ip)
+  
+
+summary2 %>% ggoutbreak::plot_counts(mapping = aes(colour=experimentName))
+estimate %>% ggoutbreak::plot_growth_rate(mapping = aes(colour=experimentName))
+estimate %>% ggoutbreak::plot_rt(mapping = aes(colour=experimentName)) +
+  geom_point(data = summary,aes(x=as.Date(ggoutbreak::as.time_period(time, unit="1 day")),y=rtEffective, colour=experimentName))
+
+```
+
+
+```{r}
+rt = readr::read_csv("~/tmp/rt-final.csv")
+
 ```

@@ -11,11 +11,14 @@ import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
+import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
+import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.util.DelayDistribution;
 
 @Mapper(
 		builder = @Builder(buildMethod = "build"),
@@ -37,19 +40,33 @@ public abstract class CSVMapper {
 	@Mapping(target = "observationTime", source="entity.currentState.time")
 	public abstract ImmutableOutbreakHistoryCSV toCSV(OutbreakHistory history);
 	
-	@Mapping(target = "rtForward", ignore = true)
-	@Mapping(target = "observationTime", ignore = true)
-	public abstract ImmutableOutbreakFinalStateCSV.Builder commonCSV(@MappingTarget ImmutableOutbreakFinalStateCSV.Builder builder, OutbreakState state);
+//	@Mapping(target = "rtForward", ignore = true)
+//	@Mapping(target = "observationTime", ignore = true)
+//	public abstract ImmutableOutbreakFinalStateCSV.Builder commonCSV(@MappingTarget ImmutableOutbreakFinalStateCSV.Builder builder, OutbreakState state);
+//	
+//	public Stream<ImmutableOutbreakFinalStateCSV> finalCSV(OutbreakState state) {
+//		return IntStream
+//			.range(0,  state.getTime())
+//			.mapToObj(i -> 
+//				commonCSV(ImmutableOutbreakFinalStateCSV.builder(), state)
+//					.setObservationTime(i)
+////					.setRtForward(
+////						state.getRtForward().get(i)
+////					)
+//					.build()
+//			);
+//	};
 	
-	public Stream<ImmutableOutbreakFinalStateCSV> finalCSV(OutbreakState state) {
+	public Stream<ImmutableInfectivityProfileCSV> infectivityProfile(ExecutionConfiguration outbreak) {
+		DelayDistribution dd = outbreak.getInfectivityProfile();
 		return IntStream
-			.range(0,  state.getTime())
+			.range(0,  (int) dd.size())
 			.mapToObj(i -> 
-				commonCSV(ImmutableOutbreakFinalStateCSV.builder(), state)
-					.setObservationTime(i)
-					.setRtForward(
-						state.getRtForward().get(i)
-					).build()
+			ImmutableInfectivityProfileCSV.builder()
+					.setExperiment(outbreak.getName())
+					.setTau(i)
+					.setProbability(dd.density(i))
+				.build()
 			);
 	};
 	

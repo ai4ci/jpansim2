@@ -1,35 +1,47 @@
 package io.github.ai4ci.abm;
 
+import static java.lang.Math.exp;
+import static java.lang.Math.floor;
+import static java.lang.Math.log;
+import static java.lang.Math.pow;
+
 import org.immutables.value.Value;
 
+import io.github.ai4ci.config.InHostConfiguration.StochasticModel;
+import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
-import static java.lang.Math.*;
-
-import java.io.Serializable;
 
 @Value.Immutable
-public interface ViralLoadState extends Serializable {
+public interface InHostStochasticState extends InHostModelState<StochasticModel> {
 
-	Person getPerson();
+	Integer getTargets();
+	Double getImmuneTargetRatio();
+	Double getImmuneActivationRate();
+	Double getImmuneWaningRate();
+	Double getInfectionCarrierProbability();
+	Double getTargetRecoveryRate();
+	Integer getTime();
+	
 	int getVirions();
 	int getVirionsProduced();
 	int getTargetSusceptible();
 	int getTargetExposed();
 	int getTargetInfected();
-	int getImmune();
+	@Value.Default default Integer getImmune() {
+		return (int) (this.getTargets() * this.getImmuneTargetRatio());
+	};
 	int getImmunePriming();
 	int getImmuneActive();
 
-	@Value.Derived
-	default int getTargets() {
-		return getPerson().getBaseline().getTargetCellCount();
-	}
+	
 
 	@Value.Derived
 	default int getTargetRemoved() {
 		return getTargets() - getTargetSusceptible() - getTargetExposed() - getTargetInfected();
 	}
 
+	StochasticModel getConfig();
+	
 	@Value.Derived
 	/**
 	 * The viral load is the number of newly produced virions, i.e. the total 
@@ -39,18 +51,33 @@ public interface ViralLoadState extends Serializable {
 	 * @return
 	 */
 	default double getNormalisedViralLoad() {
-		return ((double) getVirionsProduced()) /(double) this.model().getBaseline().getVirionsDiseaseCutoff();
+		double tmp = ((double) getVirionsProduced()) / (double) this.getConfig().getVirionsDiseaseCutoff();
+		return tmp < 1 ? 0 : tmp;
+	}
+	
+	/** 
+	 * Infected but may be incubating
+	 */
+	default boolean isInfected() {
+		return getTargetExposed() > 0 || getTargetInfected() > 0;
 	}
 	
 	@Value.Derived
 	default double getNormalisedSeverity() {
-		double baselinePercent = this.model().getBaseline().getTargetSymptomsCutoff();
-		double baselineRate = -log(1-baselinePercent);
+		double baselinePercent = this.getConfig().getTargetSymptomsCutoff();
 		double currentPercent = 
 				((double) this.getTargets()-this.getTargetSusceptible()-this.getTargetExposed()) / 
 				(double) this.getTargets();
-		double currentRate = -log(1-currentPercent);
-		return Math.max(0,currentRate/baselineRate);
+		return Conversions.oddsRatio(currentPercent, baselinePercent);
+	}
+	
+	@Value.Derived
+	/**
+	 * The activity as a percent of maximum
+	 * @return
+	 */
+	default double getImmuneActivity() {
+		return ((double) this.getImmuneActive())/this.getImmune();
 	}
 
 	@Value.Derived
@@ -58,30 +85,29 @@ public interface ViralLoadState extends Serializable {
 		return getImmune() - getImmunePriming() - getImmuneActive();
 	}
 
-	static ViralLoadState initialise(Person person) {
-		int targets = person.getBaseline().getTargetCellCount();
-		return ImmutableViralLoadState.builder().setPerson(person)
-			.setTargetSusceptible(targets)
-			.setTargetExposed(0)
-			.setTargetInfected(0)
-			.setImmune((int) floor(
-				targets * person.getBaseline().getImmuneTargetRatio()
-						// When this is used the person is incomplete and the
-						// state has not been built yet.
-						// * person.getCurrentState().getImmuneModifier()
-			))
-			.setVirions(0)
-			.setVirionsProduced(0)
-			.setImmunePriming(0)
-			.setImmuneActive(0)
-			.build();
+	static InHostStochasticState initialise(StochasticModel configuration, Sampler rng, int time) {
+		return ImmutableInHostStochasticState.builder()
+				.setTime(time)
+				.setConfig(configuration)
+				.setTargets(configuration.getTargetCellCount())
+				.setTargetSusceptible(configuration.getTargetCellCount())
+				.setTargetExposed(0)
+				.setTargetInfected(0)
+				.setVirions(0)
+				.setVirionsProduced(0)
+				.setImmunePriming(0)
+				.setImmuneActive(0)
+				.setImmuneTargetRatio(configuration.getImmuneTargetRatio().sample(rng))
+				.setImmuneActivationRate(configuration.getImmuneActivationRate().sample(rng))
+				.setImmuneWaningRate(configuration.getImmuneWaningRate().sample(rng))
+				.setTargetRecoveryRate(configuration.getTargetRecoveryRate().sample(rng))
+				.setInfectionCarrierProbability(configuration.getInfectionCarrierProbability().sample(rng))
+				.build();
 	}
 
 	
 
-	private Outbreak model() {
-		return getPerson().getOutbreak();
-	}
+	
 
 	/**
 	 * Update the viral load for a person. 
@@ -90,47 +116,44 @@ public interface ViralLoadState extends Serializable {
 	 * @param rng (thread local RNG)
 	 * @return
 	 */
-	default ViralLoadState update(Sampler rng) {
+	default InHostStochasticState update(Sampler rng, double virionDose, double immunisationDose) { //, double viralActivityModifier, double immuneModifier) {
 		
-		int virionsDx = this.model().getBaseline().getVirionsDiseaseCutoff();
+		int virionsDx = this.getConfig().getVirionsDiseaseCutoff();
 		
-		int time = this.getPerson().getCurrentState().getTime();
+		int time = getTime();
 		// This update function is called when the history has been updated, 
 		// as part of the update to the patientState so
 		// exposure will be as determined by current contact network.
-		int virionExposure = (int) floor(
-				(
-					this.getPerson().getHistoryEntry(time)
-						.map(ph -> ph.getVirionExposure())
-						.orElse(0D)
-					+
-					this.getPerson().getCurrentState().getImportationExposure()
-				) * virionsDx);
+		int virionExposure = (int) virionDose * virionsDx;
 		
-		int immunePriming = (int) floor(this.getPerson().getCurrentState().getImmunisationDose() * this.getImmuneDormant());
+		int immunePriming = (int) floor(immunisationDose * this.getImmuneDormant());
 		
 		// Overall modifiers are a number around 1:
-		Double hostImmunity = getPerson().getCurrentState().getImmuneModifier();
-		Double viralActivity = model().getCurrentState().getViralActivityModifier();
+//		Double hostImmunity = immuneModifier;
+//		Double viralActivity = viralActivityModifier;
+		// Disable:
+		// TODO:  
+		Double hostImmunity = 1D;
+		Double viralActivity = 1D;
 		
 		// Viral factors are shared across the model
-		Double rate_infection = model().getBaseline().getBaselineViralInfectionRate() * viralActivity;
-		Double rate_virion_replication = pow(model().getBaseline().getBaselineViralReplicationRate(),viralActivity); // TODO: update
+		Double rate_infection = this.getConfig().getBaselineViralInfectionRate() * viralActivity;
+		Double rate_virion_replication = pow(this.getConfig().getBaselineViralReplicationRate(),viralActivity); // TODO: update
 		Double rate_infected_given_exposed = rate_virion_replication;
 		// Host factors
 		
-		Double ratio_immune_target = getPerson().getBaseline().getImmuneTargetRatio()*hostImmunity;
-		Double rate_priming_given_infected = getPerson().getBaseline().getImmuneActivationRate()*hostImmunity; //user(1) 
+		Double ratio_immune_target = getImmuneTargetRatio()*hostImmunity;
+		Double rate_priming_given_infected = getImmuneActivationRate()*hostImmunity; //user(1) 
 		Double rate_active_given_priming = rate_priming_given_infected; 
 		
 		Double rate_neutralization = rate_virion_replication;
 		Double rate_cellular_removal = rate_neutralization;
 		
-		Double rate_target_recovery = getPerson().getBaseline().getTargetRecoveryRate()*hostImmunity; //user(1/7); 
+		Double rate_target_recovery = getTargetRecoveryRate()*hostImmunity; //user(1/7); 
 		
-		Double rate_senescence_given_active = getPerson().getBaseline().getImmuneWaningRate()*(1.0/hostImmunity); //user(1/150)
+		Double rate_senescence_given_active = getImmuneWaningRate()*(1.0/hostImmunity); //user(1/150)
 		
-		Double p_propensity_chronic = getPerson().getBaseline().getInfectionCarrierProbability(); //user(0)
+		Double p_propensity_chronic = getInfectionCarrierProbability(); //user(0)
 
 		
 		// Derived 
@@ -194,7 +217,8 @@ public interface ViralLoadState extends Serializable {
 		
 		if (immunePriming > this.getImmune()) immunePriming = this.getImmune();
 		
-		return ImmutableViralLoadState.builder().from(this)
+		return ImmutableInHostStochasticState.builder().from(this)
+				.setTime(time+1)
 				// Virions
 				.setVirions(this.getVirions() - virions_neutralized - virions_infecting + virions_added + virionExposure)
 				.setVirionsProduced(this.getVirions() - virions_neutralized - virions_infecting + virions_added)

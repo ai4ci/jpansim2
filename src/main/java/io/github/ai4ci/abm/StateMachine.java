@@ -1,11 +1,7 @@
 package io.github.ai4ci.abm;
 
 import java.io.Serializable;
-import java.util.function.BiPredicate;
 
-import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
-import io.github.ai4ci.abm.ModelOperation.TriConsumer;
-import io.github.ai4ci.abm.ModelOperation.TriFunction;
 import io.github.ai4ci.util.Sampler;
 
 public class StateMachine implements Serializable {

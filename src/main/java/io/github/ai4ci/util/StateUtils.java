@@ -90,7 +90,7 @@ public class StateUtils {
 			);
 		} else if (partialNonCompliance) {
 			builder.setMobilityModifier(
-					1-Conversions.scaleProbability(
+					1-Conversions.scaleProbabilityByOR(
 						1-baseline(person).getSelfIsolationDepth(),
 						person.getAdjustedCompliance()
 					)

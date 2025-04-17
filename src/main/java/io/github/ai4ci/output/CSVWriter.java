@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -17,7 +18,46 @@ public class CSVWriter<X> implements Closeable {
 	CsvMapper cm;
 	CsvSchema sch;
 	Class<X> type;
-	SequenceWriter seqW;
+	QueueWriter<X> queueWriter;
+	
+	public static class QueueWriter<X> extends Thread {
+		
+		ConcurrentLinkedQueue<X> queue;
+		SequenceWriter seqW;
+		volatile boolean stop = false;
+		
+		QueueWriter(SequenceWriter seqW) {
+			this.seqW = seqW;
+			this.queue = new ConcurrentLinkedQueue<>();
+		}
+		
+		public void queue(X item) {
+			this.queue.add(item);
+		}
+		
+		public void halt() {
+			this.stop = true;
+		}
+		
+		public void run() {
+			try {
+				while (!stop) {
+					while (!this.queue.isEmpty()) {
+						seqW.write(queue.poll());
+					}
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+						stop = true;
+					}
+				}
+				this.seqW.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+	}
 	
 	public void export(Stream<X> supply) {
 		supply.forEach(this::export);
@@ -29,6 +69,7 @@ public class CSVWriter<X> implements Closeable {
 	
 	private CSVWriter(Class<X> type, File file) throws IOException {
 		this.type = type;
+		
 		cm = CsvMapper.builder()
 				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 				.build();
@@ -36,21 +77,19 @@ public class CSVWriter<X> implements Closeable {
 				.withHeader()
 				.withColumnReordering(false);
 		FileWriter strW = new FileWriter(file);
-		seqW = cm.writer(sch).writeValues(strW);
+		queueWriter = new QueueWriter<X>(cm.writer(sch).writeValues(strW));
+		queueWriter.setDaemon(true);
+		queueWriter.start();
+		
 	}
 	
 	public void export(X single) {
-		try {
-			seqW.write(single);
-		} catch (IOException e) {
-			// TODO: Handle more gracefully
-			throw new RuntimeException(e);
-		}
+		queueWriter.queue(single);
 	}
 
 	@Override
 	public void close() throws IOException {
-		seqW.close();
+		queueWriter.halt();
 	}
 	
 }

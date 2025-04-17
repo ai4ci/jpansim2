@@ -25,8 +25,8 @@ public interface SetupConfiguration extends Abstraction.Named, Abstraction.Repli
 	SetupConfiguration DEFAULT = ImmutableSetupConfiguration.builder()
 			.setName("setup")
 			.setNetworkSize(10000)
-			.setNetworkConnectedness(40)
-			.setNetworkRandomness(0.25)
+			.setNetworkConnectedness(100)
+			.setNetworkRandomness(0.15)
 			.setInitialImports(5)
 			.build();
 	
@@ -34,7 +34,14 @@ public interface SetupConfiguration extends Abstraction.Named, Abstraction.Repli
 	
 	Integer getNetworkSize();
 	Integer getNetworkConnectedness();
+	
+	/**
+	 * A measure of the randomness of the small world social network. This is 
+	 * a range from 0 to 1 where 0 is ordered and 1 is totally random.
+	 */
 	Double getNetworkRandomness();
+	
+	
 	Integer getInitialImports();
 	
 	 

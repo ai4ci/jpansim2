@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.numbers.gamma.RegularizedGamma.P;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.util.ModelNav;
@@ -14,6 +13,7 @@ import io.github.ai4ci.util.ModelNav;
 public interface OutbreakHistory extends OutbreakTemporalState {
 	
 	Long getInfectedCount();
+	Long getIncidence();
 	Optional<OutbreakHistory> getPrevious();
 	
 	/**
@@ -29,6 +29,8 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 * @return
 	 */
 	Long getTestNegatives();
+	
+	Long getCumulativeInfections();
 	
 //	default Long getTestPositivesBySampleDate() {
 //		return getTestPositivesBySampleDate(this.getEntity().getCurrentState().getTime());

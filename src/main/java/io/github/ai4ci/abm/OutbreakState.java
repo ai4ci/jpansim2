@@ -1,28 +1,30 @@
 package io.github.ai4ci.abm;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.immutables.value.Value;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import io.github.ai4ci.abm.PersonHistory.Infection;
 import io.github.ai4ci.abm.TestResult.Result;
-import io.github.ai4ci.util.Binomial;
-import io.github.ai4ci.util.Conversions;
+import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ModelNav;
 
 @Value.Immutable
 public interface OutbreakState extends OutbreakTemporalState {
 
-	@Value.Default default Double getViralActivityModifier() {return 1.0D;}
+	
+	// @Value.Default default Double getViralActivityModifier() {return 1.0D;}
+	
+	/**
+	 * An odds ratio describing day to day changes in the transmission due
+	 * to exogenous factors such as weather, or potentially viral evolution.  
+	 * @return
+	 */
+	Double getTransmissibilityModifier();
+	
 	Integer getPresumedInfectiousPeriod();
 	Double getPresumedSymptomSpecificity();
 	Double getPresumedSymptomSensitivity();
+	
 
 	@Value.Lazy 
 	default double getAverageMobility() {
@@ -44,6 +46,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 				.mapToDouble(p -> p.getAdjustedCompliance())
 				.average().orElse(1);
 	};
+	
+	@Value.Lazy default long getCumulativeInfections() {
+		return this.getIncidence() + ModelNav.history(this).map(h -> h.getCumulativeInfections()).orElse(0L);
+	}
 	
 	/**
 	 * Count of people with test positives in the results that become available today
@@ -116,34 +122,46 @@ public interface OutbreakState extends OutbreakTemporalState {
 	
 	// This is a forward looking R number based on the day at which someone
 	// becomes infectious.
-	default List<Double> getRtForward() {
-		int size = this.getTime()+1;
-		List<MutablePair<Double,Double>> ts = new ArrayList<>(size);
-		for (int i=0;i<size;i++) ts.add(i, MutablePair.of(0D,0D));
-		DirectedAcyclicGraph<PersonHistory, Infection> infections = this.getEntity().getInfections();
-		infections.vertexSet().forEach(v -> {
-			int infTime = v.getTime(); 
-			MutablePair<Double,Double> tmp = ts.get(infTime);
-			tmp.setLeft(tmp.getLeft()+infections.outDegreeOf(v));
-			tmp.setRight(tmp.getRight()+1);
-		});
-		return ts.stream().map(p -> p.getLeft()/p.getRight()).collect(Collectors.toList());
-	}
+//	default List<Double> getRtForward() {
+//		int size = this.getTime()+1;
+//		List<MutablePair<Double,Double>> ts = new ArrayList<>(size);
+//		for (int i=0;i<size;i++) ts.add(i, MutablePair.of(0D,0D));
+//		NetworkBuilder<PersonHistory, Infection> infections = this.getEntity().getInfections();
+//		infections.vertexSet().forEach(v -> {
+//			int infTime = v.getTime(); 
+//			MutablePair<Double,Double> tmp = ts.get(infTime);
+//			tmp.setLeft(tmp.getLeft()+infections.outDegreeOf(v));
+//			tmp.setRight(tmp.getRight()+1);
+//		});
+//		return ts.stream().map(p -> p.getLeft()/p.getRight()).collect(Collectors.toList());
+//	}
 	
-	default double getRtEffective() {
-		// people who are newly infectious today
-		long numerator = this.getEntity().getPeople().stream()
-			.flatMap(a -> a.getCurrentHistory().stream())
-			.filter(p -> p.isIncidentInfection())
-			.count();
+	default Double getRtEffective() {
+		// people who are newly exposed today
+		long numerator = this.getIncidence();
 		// people with capability to infect today. (n.b. those infected today will
 		// have zero capability)
-		double denominator = this.getEntity().getPeople().stream()
-			.flatMap(a -> a.getCurrentHistory().stream())
-			.filter(p -> p.isInfectious())
-			.mapToDouble(ph -> ph.getAdjustedTransmissibility())
-			.sum();
-		return ((double) numerator)/denominator;
+		DelayDistribution dd = this.getEntity().getExecutionConfiguration().getInfectivityProfile();
+		
+		double denominator = IntStream.range(0, (int) dd.size()).mapToDouble(tau -> 
+			this.getEntity().getHistory(tau).map(oh -> oh.getIncidence()).orElse(0L) * dd.condDensity(tau)
+		).sum();
+		
+		return denominator == 0 ? Double.NaN : ((double) numerator)/denominator;
 	}
+	
+//	default Double getRtEffective() {
+//		// people who are newly exposed today
+//		double numerator = this.getEntity().getPeople().stream()
+//				.filter(p -> p.getCurrentHistory().map(ph -> ph.isIncidentInfection()).orElse(Boolean.FALSE))
+//				.mapToDouble(p -> p.getCurrentState().getContactExposure())
+//				.sum();
+//		
+//		double denominator = this.getEntity().getPeople().stream()
+//				.mapToDouble(p -> p.getCurrentState().getNormalisedViralLoad())
+//				.sum();
+//		
+//		return denominator == 0 ? Double.NaN : ((double) numerator)/denominator;
+//	}
 	
 }

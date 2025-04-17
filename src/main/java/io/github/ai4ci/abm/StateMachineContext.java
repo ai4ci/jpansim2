@@ -2,9 +2,7 @@ package io.github.ai4ci.abm;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Optional;
 
-import org.immutables.value.Value;
 import org.immutables.value.Value.Modifiable;
 
 import io.github.ai4ci.abm.StateMachine.BehaviourState;

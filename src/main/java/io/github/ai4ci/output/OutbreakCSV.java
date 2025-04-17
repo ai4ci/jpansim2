@@ -5,7 +5,8 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface OutbreakCSV extends CommonCSV {
 
-	long getIncidence(); 
+	long getIncidence();
+	long getCumulativeInfections(); 
 	long getInfectedCount();
 	long getSymptomaticCount();
 	double getAverageMobility();

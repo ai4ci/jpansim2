@@ -15,7 +15,7 @@ import io.github.ai4ci.util.Ephemeral;
 @Value.Modifiable
 @Data.Mutable
 public abstract class Person implements Entity, HistoricalStateProvider<PersonHistory> {
-
+ 
 	public String getUrn() {
 		return getOutbreak().getUrn()+":person:"+getId();
 	}

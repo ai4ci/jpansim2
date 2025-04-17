@@ -34,6 +34,12 @@ class TestJackson {
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.setSerializationInclusion(Include.NON_NULL);
 		
+		ExperimentConfiguration tmp0 = ExperimentConfiguration.DEFAULT;
+		
+		String json0 = om.writeValueAsString(tmp0);
+		System.out.println(json0);
+		System.out.print("\n\n");
+		
 		ExperimentConfiguration tmp = 
 			ImmutableExperimentConfiguration.copyOf(	
 					ExperimentConfiguration.DEFAULT

@@ -9,7 +9,6 @@ import java.io.Serializable;
 import java.util.function.Supplier;
 
 import org.jgrapht.generate.WattsStrogatzGraphGenerator;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +36,16 @@ public class ModelBuild {
 								(Supplier<Person.Relationship> & Serializable) () -> new Person.Relationship()
 						)
 					);
-				outbreak.setInfections(
-						new DirectedAcyclicGraph<PersonHistory, PersonHistory.Infection>(
-								PersonHistory.Infection.class
-								));
+//				outbreak.setInfections(
+//						NetworkBuilder.from(new DirectedAcyclicGraph<PersonHistory, PersonHistory.Infection>(
+//								PersonHistory.Infection.class
+//								)));
 			
 				log.debug("Initialising network config");
 				
-				if (!(outbreak.initialisedSocialNetwork() && outbreak.initialisedInfections())) throw new RuntimeException("Already configured");
+				if (!(outbreak.initialisedSocialNetwork()
+						// && outbreak.initialisedInfections()
+						)) throw new RuntimeException("Already configured");
 				WattsStrogatzGraphGenerator<Person, Person.Relationship> gen = 
 						new WattsStrogatzGraphGenerator<Person, Person.Relationship>(
 								setupConfig.getNetworkSize(),
@@ -60,6 +61,8 @@ public class ModelBuild {
 						socialNetwork.iterables().edgeCount(),
 						Calibration.getConnectedness(outbreak)
 						);
+				// This sets the weight of the network. This is accessible as 
+				// the "connectednessQuantile" of the relationship.
 				socialNetwork.edgeSet().forEach(r -> socialNetwork.setEdgeWeight(r, sampler.uniform()));
 			})
 		);
@@ -88,17 +91,10 @@ public class ModelBuild {
 //						.setHighRiskMobilityModifier(configuration.getHighRiskMobilityModifier())
 						
 						//Host immunity setup 
-						.setImmuneTargetRatio(configuration.getImmuneTargetRatio().sample(rng))
-						.setImmuneActivationRate(configuration.getImmuneActivationRate().sample(rng))
-						.setImmuneWaningRate(configuration.getImmuneWaningRate().sample(rng))
-						.setTargetCellCount(configuration.getTargetCellCount())
-						.setTargetRecoveryRate(configuration.getTargetRecoveryRate().sample(rng))
-						.setInfectionCarrierProbability(configuration.getInfectionCarrierProbability().sample(rng))
-						
 						// Host behaviour setup
 						 
-						.setMobilityBaseline(	configuration.getContactProbability().sample(rng) )
-						.setTransmissibilityBaseline(	configuration.getConditionalTransmissionProbability().sample(rng) )
+						.setMobilityBaseline(	Math.sqrt( configuration.getContactProbability().sample(rng) ) )
+						.setTransmissibilityModifier(	rng.gamma(1, 0.1) )
 						.setComplianceBaseline( configuration.getComplianceProbability().sample(rng))
 						.setAppUseProbability( configuration.getAppUseProbability().sample(rng))
 						.setDefaultBehaviourState( configuration.getDefaultBehaviourModel() )
@@ -106,6 +102,8 @@ public class ModelBuild {
 						.setSymptomSensitivity( configuration.getSymptomSensitivity().sample(rng))
 						.setSymptomSpecificity( configuration.getSymptomSpecificity().sample(rng))
 						.setSelfIsolationDepth( configuration.getMaximumSocialContactReduction().sample(rng) )
+						
+						
 						
 						;
 			})
@@ -122,7 +120,13 @@ public class ModelBuild {
 			baselineOutbreak((builder, outbreak, rng) -> {
 				ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
 				
-				builder.setDefaultPolicyState( configuration.getDefaultPolicyModel() );
+				builder
+					.setDefaultPolicyState( configuration.getDefaultPolicyModel() )
+					.setViralLoadTransmissibilityProbabilityFactor( 
+							Calibration.inferViralLoadTransmissionProbabilityFactor(outbreak,
+									configuration.getRO()
+							) 
+					);
 				outbreak.getStateMachine().init(configuration.getDefaultPolicyModel());
 				
 				// TODO: Viral load model calibration.
@@ -145,7 +149,7 @@ public class ModelBuild {
 			initialiseOutbreak((builder, outbreak, rng) -> {
 				ExecutionConfiguration config = outbreak.getExecutionConfiguration();
 				builder
-					.setViralActivityModifier(1D)
+					.setTransmissibilityModifier( 1.0 )
 					.setPresumedInfectiousPeriod( config.getInitialEstimateInfectionDuration().intValue() )
 					.setPresumedSymptomSensitivity( config.getInitialEstimateSymptomSensitivity() ) 
 					.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSensitivity() );
@@ -173,11 +177,12 @@ public class ModelBuild {
 							.setMobilityModifier(1.0)
 							.setImmuneModifier(1.0)
 							.setComplianceModifier(1.0)
+							.setSusceptibilityModifier(1.0)
 							
 							.setContactDetectedProbability( params.getContactDetectedProbability().sample(rng) )
 							// .setScreeningInterval( params.getScreeningPeriod().sample(rng) )
-							.setViralLoad(
-									ViralLoadState.initialise(person)
+							.setInHostModel(
+									params.getInHostConfiguration().initialise(person, rng)
 							)
 							.setImportationExposure(
 									rng.uniform() < limit ? 2.0 : 0

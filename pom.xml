@@ -50,6 +50,11 @@
 			<artifactId>jgrapht-core</artifactId>
 			<version>1.5.2</version>
 		</dependency>
+		<dependency>
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-unimi-dsi</artifactId>
+			<version>1.5.2</version>
+		</dependency>
 
 		<dependency>
 		  <groupId>org.immutables</groupId>

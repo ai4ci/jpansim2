@@ -4,28 +4,23 @@ import static io.github.ai4ci.abm.HistoryMapper.MAPPER;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-import org.jgrapht.graph.DirectedAcyclicGraph;
-import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.github.ai4ci.abm.Contact.Network;
 import io.github.ai4ci.abm.ModelOperation.OutbreakStateUpdater;
 import io.github.ai4ci.abm.ModelOperation.PersonStateUpdater;
 import io.github.ai4ci.abm.ModelOperation.TriConsumer;
-import io.github.ai4ci.abm.PersonHistory.Infection;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.Sampler;
 
 
 public class Updater {
 
-	Logger log = LoggerFactory.getLogger(Updater.class);
+	static Logger log = LoggerFactory.getLogger(Updater.class);
 	
 	private List<PersonStateUpdater> personProcessors = new ArrayList<>();
 	private List<OutbreakStateUpdater> outbreakProcessors = new ArrayList<>();
@@ -77,7 +72,7 @@ public class Updater {
 		log.debug("Update: "+outbreak.getUrn()+"; Step:"+outbreak.getCurrentState().getTime());
 		return outbreak;
 	}
-	
+	 
 	/**
 	 * set the nextState builders for outbreak and each of the people,
 	 * copying the current state and incrementing the time. At the same
@@ -146,7 +141,7 @@ public class Updater {
 		// TODO: ? ImmutableOutbreakHistory.Builder nextOutbreakHistory = outbreak.getNextHistory().get();
 		if (outbreak instanceof ModifiableOutbreak m) {
 			
-			ContactNetwork contactNetwork = contactNetwork(m);
+			Network contactNetwork = Contact.contactNetwork(m);
 			
 			// Update the next history entry with anything from the current 
 			Sampler sampler1 = Sampler.getSampler();
@@ -160,9 +155,11 @@ public class Updater {
 				
 				if (person instanceof ModifiablePerson p) {
 					
-					// Contacts:
-					PersonHistoryReference ref = PersonHistoryReference.from(p.getCurrentState());
-					nextPersonHistory.setTodaysContacts( contactNetwork.getOrDefault(ref, Collections.emptySet()) );
+					
+					Integer ref = p.getId();
+					nextPersonHistory
+						.setTodaysContacts( contactNetwork.get(ref).finish() )
+						.setTodaysExposures( contactNetwork.getExp(ref).finish());
 					
 					p.getStateMachine().performHistoryUpdate(nextPersonHistory, person.getCurrentState(), sampler);
 					
@@ -173,79 +170,9 @@ public class Updater {
 		}
 	}
 	
-	private class ContactNetwork extends ConcurrentHashMap<PersonHistoryReference, Set<Contact>> {
-	}
 	
-	private ContactNetwork contactNetwork(Outbreak outbreak) {
-		//Do the contact network here? and pass it as a parameter to the
-		//person updateState
-		SimpleWeightedGraph<Person, Person.Relationship> network = outbreak.getSocialNetwork();
-		ContactNetwork out = new ContactNetwork();
-		
-		network.edgeSet().parallelStream().forEach(r -> {
-			Sampler sampler = Sampler.getSampler();
-			PersonState one = network.getEdgeSource(r).getCurrentState();
-			PersonState two = network.getEdgeTarget(r).getCurrentState();
-			// jointProb is a contact intensity. This can be used to 
-			// estimate contact observation probability
-			double jointProb = 
-					// Conversions.scaleProbability(
-							// This will be the lowest common value 
-							one.getAdjustedMobility()*two.getAdjustedMobility(); //,
-							// This is just a way of introducing noise into
-							// the probability.
-							// sampler.gamma(1, 0.1)
-					// );
-			// TODO: connectedness quantile is a proxy for the context of a contact
-			// If we wanted to control this a different set of fetaures of the 
-			// relationship could be used. At the moment this overloads mobility
-			// with type of contact, but in reality WORK contacts may be less
-			// Significant that home contacts. This is where we would implement
-			// something along these lines.
-			if (jointProb > r.getConnectednessQuantile()) {
-				// This is a contact. 
-				// Contact transmission probability depends on lowest transmissibility
-				// If both parties wearing masks will be less than if one only.
-				// TODO: where does this fit with the notions of proximity and
-				// duration?
-				double jointTrans = 
-						//Conversions.scaleProbability(
-								one.getAdjustedTransmissibility()*two.getAdjustedTransmissibility();
-						//		sampler.gamma(1, 0.1));
-				
-				PersonHistoryReference oneref = PersonHistoryReference.from(one);
-				PersonHistoryReference tworef = PersonHistoryReference.from(two);
-				
-				// Detection probability. 
-				// This depends on the intensity of the contact, and the proabability
-				// that both users have their phone switched on etc.
-				// Contact detected is going to be a function of compliance
-				double jointDetect = one.getContactDetectedProbability()*two.getContactDetectedProbability();
-				boolean detected = sampler.bern(jointDetect);
-				boolean transmitted = sampler.bern(jointTrans);
-				out.putIfAbsent(oneref, ConcurrentHashMap.newKeySet());
-				out.get(oneref)
-					.add(ImmutableContact.builder()
-							.setProximityDuration(jointProb)
-							.setDetected(detected)
-							.setTransmitted(transmitted)
-							.setParticipant(tworef)
-							.build());
-				// Significant overhead here I think
-				out.putIfAbsent(tworef, ConcurrentHashMap.newKeySet());
-				out.get(tworef)
-					.add(ImmutableContact.builder()
-							.setProximityDuration(jointProb)
-							.setDetected(detected)
-							.setTransmitted(transmitted)
-							.setParticipant(oneref)
-							.build());
-				
-			}
-		});
-		
-		return out;
-	}
+	
+	
 	
 	/**
 	 * Creates the next model state factory, as a copy of current state and 
@@ -289,36 +216,8 @@ public class Updater {
 		
 			// update infection network...
 			// TODO: this does not look to be correct...
-			DirectedAcyclicGraph<PersonHistory, Infection> infections = m.getInfections();
-			outbreak.getPeople()
-				.stream()
-				.flatMap(p -> p.getCurrentHistory().stream())
-				.filter(ph -> ph.isInfectious())
-				.forEach(p -> {
-					// getInfector() is only defined on first day of infection
-					// It also decides which person is the infector if there were
-					// multiple exposures
-					// If there is an importation then this will most likely
-					// not have an infector.
-					p.getInfector().ifPresent(i -> {
-						infections.addVertex(i);
-						infections.addVertex(p);
-						Contact contact = p.getInfectiousContact().get();
-						try {
-							infections.addEdge(i, p, Infection.create(contact));
-						} catch (Exception e) {
-							// TODO: figure out this exception cause.
-							// It is because the infection network can cause a cycle
-							// which could be because the heuristics for determining
-							// who infected whom depends on picking the person]
-							// who contributed the largest viral load in recent
-							// history.
-							log.debug(e.getMessage());
-						}
-					});
-				});
-			
-			
+			//NetworkBuilder<PersonHistory, Infection> infections = 
+			// Contact.updateInfectionNetwork(outbreak);
 			
 		}
 	}
@@ -345,7 +244,7 @@ public class Updater {
 			nextState
 				// Update the viral load model.
 				// This requires an up to date history for the exposures.
-				.setViralLoad(m.getCurrentState().getViralLoad().update(sampler))
+				.setInHostModel(m.getCurrentState().getInHostModel().update(person, sampler))
 				;
 			
 			
@@ -370,13 +269,18 @@ public class Updater {
 	 * @param outbreak the mutable model.
 	 */
 	private void switchHistory(Outbreak outbreak) {
+		int limit = (int) outbreak.getExecutionConfiguration().getInfectivityProfile().size()*2;
 		if (outbreak instanceof ModifiableOutbreak m) {
 			m.getPeople()
 				.parallelStream()
 				.forEach(person -> {
 					if (person instanceof ModifiablePerson p) {
 						synchronized(p) {
-							p.getHistory().add(0, p.getNextHistory().toOptional().get().build());
+							List<PersonHistory> tmp = p.getHistory();
+							tmp.add(0, p.getNextHistory().toOptional().get().build());
+							while (tmp.size() > limit) {
+								tmp.remove(limit);
+							}
 							p.setNextHistory( p.getNextHistory().clear());
 						}
 					}

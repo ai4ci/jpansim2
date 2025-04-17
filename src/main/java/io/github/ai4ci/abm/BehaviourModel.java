@@ -17,7 +17,17 @@ import io.github.ai4ci.util.StateUtils.DoesPCRIfSymptomatic;
  */
 public interface BehaviourModel extends StateMachine.BehaviourState {
 	
-	
+	public static enum Test implements BehaviourModel, DefaultNoTesting {
+		NONE {
+			@Override
+			public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				return Test.NONE;
+			}
+		};
+		
+		public String getName() {return NonCompliant.class.getSimpleName()+"."+this.name();}
+	}
 	
 	public static enum NonCompliant implements BehaviourModel, DefaultNoTesting {
 		
@@ -35,6 +45,8 @@ public interface BehaviourModel extends StateMachine.BehaviourState {
 			}
 		};
 		
+		
+		
 		public String getName() {return NonCompliant.class.getSimpleName()+"."+this.name();}
 		
 	}
@@ -50,7 +62,7 @@ public interface BehaviourModel extends StateMachine.BehaviourState {
 			@Override
 			public void updateHistory(ImmutablePersonHistory.Builder builder, 
 					PersonState person, StateMachineContext context, Sampler rng) {
-				seekPcrIfSymptomatic(builder, person, 1);
+				seekPcrIfSymptomatic(builder, person, 2);
 			}
 	
 			@Override
@@ -155,7 +167,7 @@ public interface BehaviourModel extends StateMachine.BehaviourState {
 			public void updateHistory(ImmutablePersonHistory.Builder builder, 
 					PersonState person, StateMachineContext context, Sampler rng) {
 				
-				if (isSymptomatic(person, 2) || isHighRiskOfInfection(person, 0.5)  ) {
+				if (isSymptomatic(person, 2) || isHighRiskOfInfection(person, 0.25)  ) {
 					if (isTestingAllowed(person)) doPCR(builder,person);
 				}
 				

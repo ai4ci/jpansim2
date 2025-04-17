@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.immutables.value.Value;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
 import io.github.ai4ci.abm.Abstraction.Entity;
@@ -31,7 +30,7 @@ public abstract class Outbreak implements Entity, HistoricalStateProvider<Outbre
 	public abstract List<OutbreakHistory> getHistory();
 	
 	public abstract SimpleWeightedGraph<Person, Person.Relationship> getSocialNetwork();
-	public abstract DirectedAcyclicGraph<PersonHistory, PersonHistory.Infection> getInfections();
+	//public abstract NetworkBuilder<PersonHistory, PersonHistory.Infection> getInfections();
 	
 	Optional<Person> getPersonById(int id) {
 		if (id >= getPeople().size()) return Optional.empty(); 
@@ -59,4 +58,7 @@ public abstract class Outbreak implements Entity, HistoricalStateProvider<Outbre
 		tmp.setStateMachine(StateMachine.stub());
 		return tmp;
 	}
+	public Optional<PersonHistory> getPersonHistoryByIdAndTime(int id, int time) {
+		return this.getPersonById(id).flatMap(p -> p.getHistoryEntry(time));
+	}; 
 }

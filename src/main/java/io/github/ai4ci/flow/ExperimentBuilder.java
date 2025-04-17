@@ -40,18 +40,24 @@ public class ExperimentBuilder {
 					ExperimentBuilder builder2 = builder.copy();
 					builder2.baselineModel(exCfg);
 					builder2.initialiseStatus(exCfg);
-					return builder2.build();
+					return builder2;
 				});	
 			})
-			.map( outbreak -> {
-				IntStream.range(0, toStep).forEach(i -> {
-					updater.update(outbreak);
-					exporter.export(outbreak);
-				});
-				finalState.export(outbreak);
-				return outbreak;
+			.subscribe( builder2 -> {
+				log.debug("Executing new simulation - memory free: "+freeMem());
+				{
+					// Limit scope of outbreak
+					Outbreak outbreak = builder2.build();
+					IntStream.range(0, toStep).forEach(i -> {
+						updater.update(outbreak);
+						exporter.export(outbreak);
+					});
+					finalState.export(outbreak);
+				}
+				log.debug("Finishing simulation - memory free: "+freeMem());
+				System.gc();
+				log.debug("Post clean up - memory free: "+freeMem());
 			})
-			.blockingSubscribe();
 			;
 			
 		
@@ -92,6 +98,13 @@ public class ExperimentBuilder {
 		experiment.baselineModel(execConfig);
 		experiment.initialiseStatus(execConfig);
 		return experiment.build();
+	}
+	
+	public static double freeMem() {
+		Runtime runtime = Runtime.getRuntime();
+		long allocatedMemory = runtime.totalMemory() - runtime.freeMemory();
+		// allocatedMemory = allocatedMemory > maxMem ? maxMem : allocatedMemory;  
+		return ((double) runtime.maxMemory() - allocatedMemory)/(1024*1024*1024);
 	}
 	
 	ExperimentBuilder() {
@@ -229,7 +242,9 @@ public class ExperimentBuilder {
 	public Outbreak build() {
 		if (!outbreak.isInitialized()) 
 			throw new RuntimeException("Not initialised");
-		return outbreak;
+		Outbreak tmp = outbreak;
+		this.outbreak = null;
+		return tmp;
 	}
 	
 }

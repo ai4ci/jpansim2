@@ -30,8 +30,6 @@ import io.github.ai4ci.config.PartialSetupConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableExperimentConfiguration.class)
-@JsonDeserialize(as = ImmutableExperimentConfiguration.class)
 public interface ExperimentConfiguration {
 
 	ExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()

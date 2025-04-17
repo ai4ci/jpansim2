@@ -4,7 +4,10 @@ import java.io.Serializable;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.github.ai4ci.abm.StateMachine.BehaviourState;
+import io.github.ai4ci.config.InHostConfiguration;
 
 @Value.Immutable
 public interface PersonBaseline extends Serializable {
@@ -16,11 +19,12 @@ public interface PersonBaseline extends Serializable {
 	 */
 	Double getMobilityBaseline();
 	/**
-	 * A probability of transmission to someone else given an infectious contact
-	 * which is likely to depend on behaviour.
+	 * Am odds ratio on the probability of transmission to someone else given 
+	 * an infectious contact that reflects intrinsic host specific factors that
+	 * don't vary with time. Inherent susceptibility due to e.g. age.
 	 * @return
 	 */
-	Double getTransmissibilityBaseline();
+	Double getTransmissibilityModifier();
 	
 	Double getComplianceBaseline();
 	
@@ -28,18 +32,13 @@ public interface PersonBaseline extends Serializable {
 //	Double getHighRiskMobilityDecreaseTrigger();
 //	Double getHighRiskMobilityModifier();
 	
-	Integer getTargetCellCount();
-	Double getImmuneTargetRatio();
-	Double getImmuneActivationRate();
-	Double getImmuneWaningRate();
-	Double getInfectionCarrierProbability();
-	Double getTargetRecoveryRate();
-	
 	Double getSymptomSpecificity();
 	Double getSymptomSensitivity();
 	
 	BehaviourState getDefaultBehaviourState();
 	Double getSelfIsolationDepth();
 	Double getAppUseProbability();
+	
+	
 	
 }

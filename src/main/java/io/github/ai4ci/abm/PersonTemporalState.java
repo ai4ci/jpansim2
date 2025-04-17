@@ -11,7 +11,7 @@ public interface PersonTemporalState extends TemporalState<Person> {
 	 * infectivity.
 	 */
 	@Value.Derived default boolean isInfectious() {
-		return getNormalisedViralLoad() > 1;
+		return getNormalisedViralLoad() > 0;
 	}
 	
 	/**

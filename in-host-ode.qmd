@@ -509,20 +509,84 @@ lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", ph
 
 ```
 
+
+## Invasion and infection
+
+Infection of the organism can be thought of as the conditions underwhich 
+replication in host is established. This is analagous to R0 in a SEIR model.
+At the disease free equilibrium point we consider the next generation matrices
+of the infected classes E and I.
+
 $$
 \begin{align}
-
-V_{add} &= \beta_{rep} \times I \\
-\beta_{remov} &= \beta_{neut} \times A + \beta_{inf} \times S \\ 
-V_{remov} &= \beta_{remov} \times V \\
-V_{neut} &= \frac{\beta_{neut} \times A}{\beta_{remov}} \times V_{remov} \\
-V_{inf} &= \frac{\beta_{inf} \times S}{\beta_{remov}} \times V_{remov}\\
-
-\frac{dV}{dt} &= X_t - V_{remov} + V_{add}\\
-
-\frac{dV}{dt} &< 0 \\
-V_{remov} &> V_{add}\\
-(\beta_{neut} \times A + \beta_{inf} \times S) \times V &> \beta_{rep} \times I
-
+\beta_{infcell} &= \beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S}}\bigg) \\
+S_E &= \beta_{infcell} \times S \\
+\beta_{E-} &= \gamma\beta_{neut} \times A + \beta_{EI} \\
+E_{-} &= \beta_{E-} \times E \\
+E_R &= \frac{\gamma\beta_{neut} \times A}{\beta_{E-}} \times E_{-} \\
+E_I &= \frac{\beta_{EI}}{\beta_{E-}} \times E_{-} \\
+I_R &= \beta_{neut} \times A \times I \\
+\frac{dS}{dt} &= \beta_{recov} R - S_E \\
+\frac{dE}{dt} &= S_E - E_{-} \\
+\frac{dI}{dt} &= E_I - I_R\\
+\frac{dR}{dt} &= E_R + I_R - \beta_{recov} R\\ 
 \end{align}
 $$
+
+linearize at disease free equilibrium, and assume known value for A
+
+S = 1, E=I=R=0;
+
+
+$$
+\begin{align}
+\dot{E} &= \beta_{infcell}I - (\gamma\beta_{neut} \times A + \beta_{EI}) \times E\\
+\dot{I} &= \beta_{EI} \times E - \beta_{neut} \times A \times I \\
+\end{align}
+$$
+
+$$
+\begin{align}
+F &= \begin{bmatrix}
+0 & \beta_{infcell}S_0\\
+0 & 0
+\end{bmatrix} \\
+V &= \begin{bmatrix}
+- (\gamma\beta_{neut} \times A + \beta_{EI}) & 0 \\
+\beta_{EI} & - \beta_{neut} \times A
+\end{bmatrix} \\
+\end{align}
+$$
+
+$$
+\begin{align}
+R_0 &= \frac{\beta_{EI}S_0\beta_{infcell}}{(\gamma\beta_{neut} \times A + \beta_{EI})(\beta_{neut} \times A)} \\
+R_0 &= \frac{\beta_{EI}S_0\beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S_0}}\bigg)}{(\gamma\beta_{neut} \times A + \beta_{EI})(\beta_{neut} \times A)} \\
+\end{align}
+$$
+
+```{r}
+mod = ode$new()
+tmp = mod$run(c(0,1))
+conditions = tmp[2,-1]
+
+R0 = function(conditions, params = mod$contents()) {
+  tmp = c(conditions,params)
+  with(tmp, {
+    (rate_infected_given_exposed * target_susceptible * rate_infection * (1-exp(-virions/target_susceptible))) / 
+      (((1-p_propensity_chronic) * rate_neutralization * immune_active + rate_infected_given_exposed) * (rate_neutralization * immune_active))
+  })
+}
+
+
+
+conditions[["immune_active"]] = 0.7
+conditions[["virions"]] = 0.01
+R0(conditions)
+
+y = mod$run(seq(0,100,0.1), y= conditions)
+
+plot(y)
+
+
+```
