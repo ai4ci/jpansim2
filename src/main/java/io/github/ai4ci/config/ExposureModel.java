@@ -4,13 +4,15 @@ import static java.lang.Math.exp;
 import static java.lang.Math.log;
 import static java.lang.Math.sqrt;
 
+import java.io.Serializable;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface ExposureModel {
+public interface ExposureModel extends Serializable {
 	
 	@Value.Immutable
-	public static interface BiPhasicLogistic {
+	public static interface BiPhasicLogistic extends Serializable {
 		
 		double getGrowthRate();
 		double getGrowthTime();

@@ -20,34 +20,75 @@ import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 import io.github.ai4ci.output.StateExporter;
 import io.github.ai4ci.util.Sampler;
-import io.reactivex.rxjava3.core.Flowable;
 
 public class ExperimentBuilder {
 
 	static Logger log = LoggerFactory.getLogger(ExperimentBuilder.class);
+	static int OOM_REPEAT = 10;
 	
-	public static void runExperiments(ExperimentConfiguration config, String urnBase, Updater updater, StateExporter exporter, int toStep, StateExporter finalState ) {
+	public static void runExperiments(ExperimentConfiguration config, String urnBase, Updater updater, StateExporter exporter, int toStep, StateExporter finalState ) throws InterruptedException {
 		
-		Flowable
-			.fromIterable(config.getSetup())
-			.map(cfg -> {
-				ExperimentBuilder builder = new ExperimentBuilder();
-				builder.setupOutbreak(cfg, urnBase);
-				return builder;
-			})
-			.flatMapStream(builder -> {
-				return config.getExecution().stream().map(exCfg -> {
-					ExperimentBuilder builder2 = builder.copy();
-					builder2.baselineModel(exCfg);
-					builder2.initialiseStatus(exCfg);
-					return builder2;
-				});	
-			})
-			.subscribe( builder2 -> {
+//		Scheduler configScheduler = Schedulers.single(); // For configuration
+//		Scheduler executionScheduler = Schedulers.single(); // For parallel execution
+//		
+//		Iterator<SetupConfiguration> cfgSetup = config.getSetup().iterator();
+//		
+//		Flowable
+//			.create(emitter -> {
+//				if (cfgSetup.hasNext()) {
+//					emitter.onNext(cfgSetup.next());
+//				} else {
+//					emitter.onComplete();
+//				}
+//			}, BackpressureStrategy.BUFFER)
+//			.map(cfg -> {
+//				ExperimentBuilder builder = new ExperimentBuilder();
+//				builder.setupOutbreak((SetupConfiguration) cfg, urnBase);
+//				return builder;
+//			})
+//			.flatMapStream(builder -> {
+//				return config.getExecution().stream().map(exCfg -> {
+//					ExperimentBuilder builder2 = builder.copy();
+//					builder2.baselineModel(exCfg);
+//					builder2.initialiseStatus(exCfg);
+//					return builder2;
+//				});	
+//			}, 2) //prefetch 2 items
+//			.onBackpressureBuffer(2)
+//			.subscribeOn(configScheduler)
+//			.observeOn(executionScheduler)
+//			.blockingSubscribe( builder2 -> {
+//				log.debug("Executing new simulation - memory free: "+freeMem());
+//				{
+//					// Limit scope of outbreak
+//					Outbreak outbreak = builder2.build();
+//					IntStream.range(0, toStep).forEach(i -> {
+//						updater.update(outbreak);
+//						exporter.export(outbreak);
+//					});
+//					finalState.export(outbreak);
+//				}
+//				log.debug("Finishing simulation - memory free: "+freeMem());
+//				System.gc();
+//				log.debug("Post clean up - memory free: "+freeMem());
+//			})
+//			;
+		
+		SimulationFactory factory = SimulationFactory.startFactory(config, urnBase);
+		
+		while (!factory.completed()) {
+			
+			
+			if (!factory.oom()) {
+			
+				if (!factory.ready()) log.debug("Execution thread waiting for simulation to be built");
+				while (!factory.ready()) {
+					Thread.sleep(10);
+				}
+				
 				log.debug("Executing new simulation - memory free: "+freeMem());
 				{
-					// Limit scope of outbreak
-					Outbreak outbreak = builder2.build();
+					Outbreak outbreak = factory.deliver();
 					IntStream.range(0, toStep).forEach(i -> {
 						updater.update(outbreak);
 						exporter.export(outbreak);
@@ -57,9 +98,26 @@ public class ExperimentBuilder {
 				log.debug("Finishing simulation - memory free: "+freeMem());
 				System.gc();
 				log.debug("Post clean up - memory free: "+freeMem());
-			})
-			;
 			
+			} else {
+				
+				log.debug("Execution thread waiting for simulation but factory is out of memory.");
+				for (int i = 0; i<OOM_REPEAT; i++) {
+					System.gc();
+					Thread.sleep(100);
+					if (factory.oom()) {
+						log.debug("Execution thread waiting for memory to be free... "+i+"/"+OOM_REPEAT);
+					} else {
+						break;
+					}
+				}
+				if (factory.oom()) {
+					log.error("Could not clear low memory issue. Aborting.");
+					throw new RuntimeException("Out of memory.");
+				}
+				
+			}
+		}
 		
 	}
 	
@@ -154,7 +212,7 @@ public class ExperimentBuilder {
 		return tmp;
 	}
 	
-	private void setupOutbreak(SetupConfiguration setupConfig, String urnBase) {
+	void setupOutbreak(SetupConfiguration setupConfig, String urnBase) {
 		outbreak.setUrn(
 				(urnBase != null ? urnBase+":" : "")
 				+setupConfig.getName()+":"+setupConfig.getReplicate());
@@ -163,7 +221,7 @@ public class ExperimentBuilder {
 		setupFn.getConsumer().accept(outbreak, setupConfig, sampler);
 	}
 	
-	private void baselineModel(ExecutionConfiguration execConfig) {
+	void baselineModel(ExecutionConfiguration execConfig) {
 		outbreak.setUrn(
 			outbreak.getUrn()+":"+execConfig.getName()+":"+execConfig.getReplicate()	
 		);
@@ -200,7 +258,7 @@ public class ExperimentBuilder {
 	}
 	
 	
-	private void initialiseStatus(ExecutionConfiguration execConfig) {
+	void initialiseStatus(ExecutionConfiguration execConfig) {
 		Sampler sampler = Sampler.getSampler(outbreak.getUrn());
 		if (!outbreakInitFn.getSelector().test(outbreak)) throw new RuntimeException("Not baselined");
 		

@@ -41,6 +41,7 @@ public class CSVWriter<X> implements Closeable {
 		
 		public void run() {
 			try {
+				
 				while (!stop) {
 					while (!this.queue.isEmpty()) {
 						seqW.write(queue.poll());
@@ -51,7 +52,12 @@ public class CSVWriter<X> implements Closeable {
 						stop = true;
 					}
 				}
+				
+				while (!this.queue.isEmpty()) {
+					seqW.write(queue.poll());
+				}
 				this.seqW.close();
+				
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -78,7 +84,7 @@ public class CSVWriter<X> implements Closeable {
 				.withColumnReordering(false);
 		FileWriter strW = new FileWriter(file);
 		queueWriter = new QueueWriter<X>(cm.writer(sch).writeValues(strW));
-		queueWriter.setDaemon(true);
+		//queueWriter.setDaemon(true);
 		queueWriter.start();
 		
 	}
@@ -88,7 +94,7 @@ public class CSVWriter<X> implements Closeable {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		queueWriter.halt();
 	}
 	

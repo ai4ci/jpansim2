@@ -1,5 +1,6 @@
 package io.github.ai4ci.output;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,9 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.output.StateExporter.ExportSelector;
 
-public class StateExporter {
+public class StateExporter implements Closeable {
 
 	static Logger log = LoggerFactory.getLogger(StateExporter.class);
 	
@@ -67,6 +67,9 @@ public class StateExporter {
 		public static <X> ExportSelector<X> ofOne(Class<X> type, Function<Outbreak,X> selector, String file) {
 			return new  ExportSelector<X>(type,o -> Stream.of(selector.apply(o)),file);
 		}
+		public void close() {
+			writer.close();
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -79,6 +82,10 @@ public class StateExporter {
 				);
 		});
 		return outbreak;
+	}
+
+	public void close() {
+		this.writers.forEach(e -> e.close());
 	}
 	
 	

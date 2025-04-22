@@ -1,5 +1,6 @@
 package io.github.ai4ci.abm;
 
+import java.io.Serializable;
 import java.util.Optional;
 
 import org.immutables.value.Value;
@@ -10,7 +11,7 @@ import io.github.ai4ci.util.PagedArray;
 import io.github.ai4ci.util.Sampler;
 
 @Value.Immutable
-public interface Contact {
+public interface Contact extends Serializable {
 
 	/**
 	 * The joint transmissibility of both participants defines the intensity of
@@ -37,7 +38,7 @@ public interface Contact {
 		return one.getEntity().getOutbreak().getPersonById(id).flatMap(p -> p.getCurrentHistory()).get();
 	}
 	
-	public static class Network {
+	public static class Network implements Serializable {
 		PagedArray<Contact>[] network;
 		PagedArray<Exposure>[] exposure;
 		int maxSize;

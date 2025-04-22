@@ -71,7 +71,7 @@ class TestDefaultSim {
 					.setInitialImports(30)
 					.setNetworkRandomness(1D)
 			)
-			
+			.withSetupReplications(2)
 			.adjustExecution(e -> e
 					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
 					.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
@@ -79,6 +79,7 @@ class TestDefaultSim {
 					.setContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
 					// .setInHostConfiguration(StochasticModel.DEFAULT)
 			)
+			.withExecutionReplications(5)
 			.withFacets(
 						
 						ImmutableExperimentFacet.builder()
@@ -104,7 +105,7 @@ class TestDefaultSim {
 						.build()
 				);
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		
 		Configurator.initialize(new DefaultConfiguration());
 		Configurator.setRootLevel(Level.DEBUG);
@@ -130,17 +131,8 @@ class TestDefaultSim {
 		
 		ExperimentBuilder.runExperiments(tmp, "test", updater, exporter, 100, finalState);
 		
-//		IntStream.range(0, 100).forEach(i -> {
-//			updater.update(outbreak);
-//			exporter.export(outbreak);
-//			System.out.println(outbreak.getCurrentState());
-//		});
-//		
-//		Person per = outbreak.getPeople()
-//				.stream().filter(p -> p.getCurrentState().isInfectious())
-//				.findFirst().get();
-//		
-//		System.out.println(per);
+		exporter.close();
+		finalState.close();
 		
 		System.out.println("finished");
 	} 

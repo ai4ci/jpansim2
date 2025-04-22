@@ -14,5 +14,6 @@ public interface PersonCSV extends CommonCSV {
 	double getContactExposure();
 	double getPresumedLocalPrevalence();
 	double getProbabilityInfectiousToday();
-	
+	long getContactCount();
+	long getExposureCount();
 }

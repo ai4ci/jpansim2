@@ -45,7 +45,7 @@ public class Calibration {
 		
 		Distribution jointMob = configuration.getContactProbability().combine(
 				configuration.getContactProbability(), (d1,d2) -> Math.sqrt(d1)*Math.sqrt(d2));
-		double meanProbContact = jointMob.getMedian();
+		double meanProbContact = jointMob.getCentral();
 		double socialContacts = getConnectedness(outbreak);
 		return meanProbContact * socialContacts; 
 		

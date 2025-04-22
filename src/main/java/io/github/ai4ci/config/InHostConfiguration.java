@@ -79,9 +79,9 @@ public interface InHostConfiguration extends Serializable {
 			return InHostStochasticState.initialise((StochasticModel) config, rng, time);
 		}
 		
-		public static ImmutableStochasticModel copyOf(InHostConfiguration source) {
-			return ConfigMerger.INSTANCE.mapper((ImmutableStochasticModel) source);
-		}
+//		public static ImmutableStochasticModel copyOf(InHostConfiguration source) {
+//			return ConfigMerger.INSTANCE.mapper((ImmutableStochasticModel) source);
+//		}
 
 	}
 
@@ -122,9 +122,9 @@ public interface InHostConfiguration extends Serializable {
 			return InHostPhenomenologicalState.initialise((PhenomenologicalModel) config, rng, time);
 		}
 		
-		public static ImmutablePhenomenologicalModel copyOf(InHostConfiguration source) {
-			return ConfigMerger.INSTANCE.mapper((ImmutablePhenomenologicalModel) source);
-		}
+//		public static ImmutablePhenomenologicalModel copyOf(InHostConfiguration source) {
+//			return ConfigMerger.INSTANCE.mapper((ImmutablePhenomenologicalModel) source);
+//		}
 
 	}
 

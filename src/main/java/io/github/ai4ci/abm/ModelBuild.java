@@ -20,11 +20,14 @@ import io.github.ai4ci.abm.ModelOperation.PersonBaseliner;
 import io.github.ai4ci.abm.ModelOperation.PersonInitialiser;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 public class ModelBuild {
 
 	static Logger log = LoggerFactory.getLogger(ModelBuild.class);
 	
 	public static enum OutbreakSetupFn {
+		
 		
 		@SuppressWarnings("unchecked")
 		DEFAULT(

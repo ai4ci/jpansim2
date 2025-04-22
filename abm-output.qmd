@@ -23,6 +23,14 @@ library(tidyverse)
 
 ```{r}
 linelist = readr::read_csv("~/tmp/linelist.csv")
+
+tmp = linelist %>% group_by(contactCount,experimentName) %>% count()
+ggplot(tmp,aes(x=contactCount, y=n/sum(n),colour=experimentName)) + geom_line() + scale_x_continuous(trans="log1p")
+
+```
+
+
+```{r}
 ggplot(linelist,aes(x=time,y=normalisedViralLoad,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName)
 ggplot(linelist %>% group_by(time,experimentName) %>% summarise(virionExposure=mean(virionExposure)),aes(x=time,y=virionExposure,colour = experimentName))+geom_line()
 
@@ -47,16 +55,16 @@ linelist %>% group_by(behaviour) %>% count()
 
 ```{r}
 summary = readr::read_csv("~/tmp/summary.csv")
-ggplot(summary,aes(x=time,y=incidence, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=cumulativeInfections, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=infectedCount/10000, colour=experimentName))+geom_line()+ylab("actual prevalence")
-ggplot(summary,aes(x=time,y=averageMobility, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=averageCompliance, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=presumedTestPositivePrevalence, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=testPositives, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=testNegatives, colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=testPositives/(testPositives+testNegatives), colour=experimentName))+geom_line()
-ggplot(summary,aes(x=time,y=rtEffective, colour=experimentName))+geom_line()+coord_cartesian(ylim=c(0,5))
+ggplot(summary,aes(x=time,y=incidence, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=cumulativeInfections, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=infectedCount/10000, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()+ylab("actual prevalence")
+ggplot(summary,aes(x=time,y=averageMobility, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=averageCompliance, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=presumedTestPositivePrevalence, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=testPositives, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=testNegatives, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=testPositives/(testPositives+testNegatives), colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=rtEffective, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()+coord_cartesian(ylim=c(0,5))
 
 ggplot(summary,aes(x=time,fill=as.factor(policy),colour=as.factor(policy),y=1))+geom_bar(stat="identity")
 
@@ -69,21 +77,22 @@ summary %>% group_by(policy) %>% count()
 
 # ip = ggoutbreak::make_gamma_ip(median_of_mean = 7, median_of_sd = 4)
 ip = readr::read_csv("~/tmp/ip.csv")
-ip = ip %>% mutate(boot = as.integer(as.factor(experiment))) %>% group_by(boot)
+ip = ip %>% mutate(boot = as.integer(as.factor(experiment))) %>% group_by(boot,tau) %>%
+  summarise(probability = mean(probability))
 
 summary2 = summary %>% mutate(
     time = ggoutbreak::as.time_period(time, unit="1 day"),
     count = incidence) %>%
-    group_by(experimentName)
+    group_by(experimentName,experimentReplica)
 
 estimate = summary2 %>%
   ggoutbreak::poisson_locfit_model() %>%
   ggoutbreak::rt_from_incidence(ip)
   
 
-summary2 %>% ggoutbreak::plot_counts(mapping = aes(colour=experimentName))
-estimate %>% ggoutbreak::plot_growth_rate(mapping = aes(colour=experimentName))
-estimate %>% ggoutbreak::plot_rt(mapping = aes(colour=experimentName)) +
+summary2 %>% ggoutbreak::plot_counts(mapping = aes(colour=experimentName, group=interaction(experimentName,experimentReplica)))
+estimate %>% ggoutbreak::plot_growth_rate(mapping = aes(colour=experimentName,group=interaction(experimentName,experimentReplica)))
+estimate %>% ggoutbreak::plot_rt(mapping = aes(colour=experimentName,group=interaction(experimentName,experimentReplica))) +
   geom_point(data = summary,aes(x=as.Date(ggoutbreak::as.time_period(time, unit="1 day")),y=rtEffective, colour=experimentName))
 
 ```

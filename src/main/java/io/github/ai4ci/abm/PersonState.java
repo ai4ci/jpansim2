@@ -239,7 +239,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy default double getPresumedLocalPrevalence() {
 		// double prev2 = ModelNav.modelState(this).getPresumedTestPositivePrevalence();
-		double prev =  getContacts()
+		double prev =  getContactHistory()
 			.filter(c -> c.isDetected())
 			.map(c -> c.getParticipant(this))
 			.mapToDouble(ph -> ph.getProbabilityInfectiousToday())
@@ -351,7 +351,7 @@ public interface PersonState extends PersonTemporalState {
 //		return out.getRight();
 		
 		return 
-				this.getContacts()
+				this.getContactHistory()
 					.filter(c -> c.isDetected())
 					.mapToDouble(c -> 
 							c.getProximityDuration() *
@@ -419,21 +419,31 @@ public interface PersonState extends PersonTemporalState {
 	
 	/**
 	 * Reassemble the weighted contacts from the PersonHistory
-	 * graph within the infectious period.  
+	 * graph within the expected infectious period. This is the contact history
+	 * as the app might collect it.  
 	 * @return
 	 */
-	default Stream<Contact> getContacts() {
+	default Stream<Contact> getContactHistory() {
 		return ModelNav.history(this, limit())
 			.flatMap(ph -> Arrays.stream(ph.getTodaysContacts()));
 	}
 	
 	/**
 	 * Reassemble the exposures from the PersonHistory
-	 * graph within the infectious period.  
+	 * graph within the infectious period. This is the exposures history
+	 * as the app might collect it.  
 	 * @return
 	 */
-	default Stream<Exposure> getExposures() {
+	default Stream<Exposure> getExposureHistory() {
 		return ModelNav.history(this, limit())
 			.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()));
+	}
+	
+	default long getContactCount() {
+		return ModelNav.history(this).get().getTodaysContacts().length;
+	}
+	
+	default long getExposureCount() {
+		return ModelNav.history(this).get().getTodaysExposures().length;
 	}
 }
