@@ -20,12 +20,18 @@ import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ModelNav;
+import io.github.ai4ci.util.ResampledDistribution;
 import io.github.ai4ci.util.Sampler;
 
 public interface Abstraction {
 
 	@JsonTypeInfo(use = Id.SIMPLE_NAME,requireTypeIdForSubtypes = OptBoolean.TRUE)
-	@JsonSubTypes( {@Type(PartialWattsStrogatzConfiguration.class), @Type(PartialExecutionConfiguration.class), @Type(PartialAgeStratifiedNetworkConfiguration.class)})
+	
+	@JsonSubTypes( {
+		@Type(PartialWattsStrogatzConfiguration.class), 
+		@Type(PartialExecutionConfiguration.class), 
+		@Type(PartialAgeStratifiedNetworkConfiguration.class)
+	})
 	public interface Modification {}
  
 
@@ -48,7 +54,7 @@ public interface Abstraction {
 			return sample(Sampler.getSampler());
 		}
 		
-		default Distribution combine(Distribution with, BiFunction<Double,Double,Double> using) {
+		default ResampledDistribution combine(Distribution with, BiFunction<Double,Double,Double> using) {
 			return ImmutableResampledDistribution.builder()
 					.setFirst(this)
 					.setSecond(with)

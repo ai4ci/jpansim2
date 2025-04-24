@@ -4,6 +4,8 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
+
 class TestDistribution {
 
 	@Test
@@ -37,5 +39,20 @@ class TestDistribution {
 		System.out.println(dist.pLessThan(25));
 		
 		IntStream.range(0, 10000).mapToDouble(i -> dist.sample()).average().ifPresent(System.out::println);
+	}
+	
+	@Test
+	void testResample() {
+		
+		ResampledDistribution dist = SimpleDistribution.gamma(5D, 2D).combine(
+				SimpleDistribution.beta(0.5, 0.2), (d1,d2) -> d1+d2);
+		
+		System.out.println(dist.getCentral());
+		System.out.println(dist.sample());
+		System.out.println(dist.getMedian());
+		System.out.println(dist.getInterpolation().getMedian());
+		System.out.println(dist.pLessThan(25));
+		
+		IntStream.range(0, 10000).mapToDouble(i -> dist.getInterpolation().sample()).average().ifPresent(System.out::println);
 	}
 }

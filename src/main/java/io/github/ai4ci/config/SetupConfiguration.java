@@ -2,6 +2,7 @@ package io.github.ai4ci.config;
 
 import java.io.Serializable;
 
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,12 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 // @JsonDeserialize(as = ImmutableSetupConfiguration.class)
 // @JsonTypeInfo(use = Id.SIMPLE_NAME, requireTypeIdForSubtypes = OptBoolean.TRUE)
 @JsonTypeInfo(use = Id.DEDUCTION)
-@JsonSubTypes( {@Type(ImmutableWattsStrogatzConfiguration.class), @Type(ImmutableAgeStratifiedNetworkConfiguration.class) } )
+// @Value.Immutable
+// @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As..PROPERTY, property = "type")
+@JsonSubTypes( {
+	@Type(value = ImmutableWattsStrogatzConfiguration.class), 
+	@Type(value = ImmutableAgeStratifiedNetworkConfiguration.class) 
+} )
 public interface SetupConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable {
 
 	// public static Logger log = LoggerFactory.getLogger(SetupConfiguration.class);

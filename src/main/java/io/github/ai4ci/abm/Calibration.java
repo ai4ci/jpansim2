@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.github.ai4ci.abm.Person.Relationship;
 import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 
 public class Calibration {
@@ -42,7 +43,8 @@ public class Calibration {
 				// of contact probability
 		
 		Distribution jointMob = configuration.getContactProbability().combine(
-				configuration.getContactProbability(), (d1,d2) -> Math.sqrt(d1)*Math.sqrt(d2));
+				configuration.getContactProbability(), (d1,d2) -> Math.sqrt(d1)*Math.sqrt(d2))
+				.getInterpolation();
 		double meanProbContact = jointMob.getCentral();
 		double socialContacts = getConnectedness(outbreak);
 		return meanProbContact * socialContacts; 
@@ -145,55 +147,33 @@ public class Calibration {
 	 * the sum of each individuals contacts per day multiplied by the 
 	 * transmission probability per day. This is defined as a linear scale factor 
 	 * of the viral load per day. 
+	 * 
+	 * This tends to produce outbreaks with larger effective reproduction numbers 
+	 * than R0 in the simulation because (I think) of the number of exposures
+	 * people have, means there is a difference between the R0 in a completely
+	 * random population at the R0 in a network where repeated exposure is the
+	 * norm. In this case I think the effective generation time will also be
+	 * shorter. This comes down to the rate of repeated exposure.
+	 * 
 	 * @param outbreak
 	 * @param R0
 	 * @return
 	 */
 	public static double inferViralLoadTransmissionProbabilityFactor(Outbreak outbreak, double R0) {
 		double c = contactsPerDay(outbreak);
+		
 		DelayDistribution dd = outbreak.getExecutionConfiguration().getInfectivityProfile();
+		// The expected value here is what you would see in terms of
+		// the average number of days over which the infection is distributed. This sets
+		// an upper limit on the R0, given this contact network.
 		if (c*dd.expected()<R0) throw new RuntimeException("Max R0 for this network is: "+c*dd.expected());
+		// The delay distribution here is initialised from the viral load profile
+		// and the total is the viral load total over the course of the in host
+		// infection. This is where the difference between R0 in an infinite 
+		// population
 		double tmp =  R0 / (c * dd.total());
-		log.debug("Effective contact network degree: "+c+"; P(transmission|contact): "+tmp+"; for RO: "+R0);
+		log.debug("Effective contact network degree: "+c+"; P(transmission|contact with viral load = 1): "+tmp+"; for RO: "+R0);
 		return tmp;
-		
-//		ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
-//		
-//		Distribution jointMobility = configuration.getContactProbability().combine(
-//				configuration.getContactProbability(), (d1,d2) -> d1*d2);
-//		DelayDistribution dd = outbreak.getExecutionConfiguration().getInfectivityProfile();
-//		SimpleWeightedGraph<Person, Person.Relationship> social = outbreak.getSocialNetwork();
-//		
-//		BrentSolver solver = new BrentSolver();
-//		try {
-//			double pTrans = solver.solve(1000, x -> guesstimateR0(x, dd, jointMobility, social) - R0, 0, 1);
-//			return pTrans;
-//		} catch (Exception e) {
-//			log.warn("This network cannot sustain a R0 greater than: "+Calibration.guestimateR0(outbreak, 1));
-//			return 1.0;
-//		}
-//		
-////		SimpleWeightedGraph<Person, Person.Relationship> social = outbreak.getSocialNetwork();
-////		long peopleCount = social.iterables().vertexCount();
-////		double meanDegree = stream(social.iterables().edges())
-////				.mapToDouble(
-////					c -> 1-jointMobility.pLessThan(c.getConnectednessQuantile())
-////				)
-////				.sum() / peopleCount;
-////		double moment2Degree = stream(social.iterables().vertices())
-////			.mapToDouble(
-////				pers -> stream(social.iterables().edgesOf(pers))
-////					// This is a probability that this contact is made on a 
-////					// given time step
-////					.mapToDouble(c -> 1-jointMobility.pLessThan(c.getConnectednessQuantile()))
-////					.sum()
-////			)
-////			.map(d -> 
-////				//Math.pow(d-meanDegree, 2))
-////				Math.pow(d, 2))
-////			.average().getAsDouble();
-		
-
 		
 	}
 	

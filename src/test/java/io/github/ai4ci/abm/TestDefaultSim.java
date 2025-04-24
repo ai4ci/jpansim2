@@ -11,7 +11,8 @@ import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.flow.ExperimentBuilder;
 import io.github.ai4ci.flow.ExperimentConfiguration;
-import io.github.ai4ci.flow.ImmutableExperimentConfiguration;
+import io.github.ai4ci.flow.ExperimentConfiguration.BasicExperimentConfiguration;
+import io.github.ai4ci.flow.ImmutableBasicExperimentConfiguration;
 import io.github.ai4ci.flow.ImmutableExperimentFacet;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutableInfectivityProfileCSV;
@@ -24,9 +25,9 @@ import io.github.ai4ci.util.SimpleDistribution;
 
 class TestDefaultSim {
 
-	static ExperimentConfiguration config1 =  
-			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
+	static BasicExperimentConfiguration config1 =  
+			ImmutableBasicExperimentConfiguration.copyOf(	
+					BasicExperimentConfiguration.DEFAULT
 				)
 			.adjustSetup(b -> b
 					.setNetworkSize(10000)
@@ -62,9 +63,9 @@ class TestDefaultSim {
 						.build()
 				);
 	
-	static ExperimentConfiguration testR0 =  
-			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
+	static BasicExperimentConfiguration testR0 =  
+			ImmutableBasicExperimentConfiguration.copyOf(	
+					BasicExperimentConfiguration.DEFAULT
 				)
 			.adjustSetup(b -> b
 					.setNetworkSize(10000)
@@ -111,7 +112,7 @@ class TestDefaultSim {
 		Configurator.initialize(new DefaultConfiguration());
 		Configurator.setRootLevel(Level.DEBUG);
 		
-		ExperimentConfiguration tmp = testR0;
+		ExperimentConfiguration<?> tmp = testR0;
 		
 		tmp.writeToYaml(SystemUtils.getUserHome().toPath().resolve("tmp"));
 		

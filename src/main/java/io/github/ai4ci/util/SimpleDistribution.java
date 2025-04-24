@@ -7,6 +7,8 @@ import java.util.stream.IntStream;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
@@ -15,6 +17,8 @@ import io.reactivex.rxjava3.annotations.Nullable;
 
 
 @Value.Immutable
+@JsonSerialize(as = ImmutableSimpleDistribution.class)
+@JsonDeserialize(as = ImmutableSimpleDistribution.class)
 public interface SimpleDistribution extends Abstraction.Distribution, Serializable {
 
 	public static enum Type {

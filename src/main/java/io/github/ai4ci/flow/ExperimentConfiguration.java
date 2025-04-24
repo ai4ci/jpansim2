@@ -14,8 +14,11 @@ import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.ConfigMerger;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ImmutableExecutionConfiguration;
@@ -27,42 +30,69 @@ import io.github.ai4ci.config.WattsStrogatzConfiguration;
 
 
 @Value.Immutable
-public interface ExperimentConfiguration {
+@JsonSerialize(as = ImmutableBasicExperimentConfiguration.class)
+@JsonDeserialize(as = ImmutableBasicExperimentConfiguration.class)
+public interface ExperimentConfiguration<SETUP extends SetupConfiguration> {
 
-	ExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
-			.setSetupConfig(WattsStrogatzConfiguration.DEFAULT)
-			.setExecutionConfig(ExecutionConfiguration.DEFAULT)
-			.setExecutionReplications(1)
-			.setSetupReplications(1)
-			.build();
 	
-	SetupConfiguration getSetupConfig();
+	public interface BasicExperimentConfiguration extends ExperimentConfiguration<WattsStrogatzConfiguration> {
+		
+		BasicExperimentConfiguration DEFAULT = ImmutableBasicExperimentConfiguration.builder()
+				.setSetupConfig(WattsStrogatzConfiguration.DEFAULT)
+				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+				.setExecutionReplications(1)
+				.setSetupReplications(1)
+				.build();
+		
+		default ImmutableBasicExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
+			ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
+			tweaks.accept(tmp);
+			
+			return ImmutableBasicExperimentConfiguration.builder()
+				.from(this)
+				.setSetupConfig(
+					tmp.build()
+				).build();
+		}
+		
+		default ImmutableBasicExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
+			ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
+			tweaks.accept(tmp);
+			
+			return ImmutableBasicExperimentConfiguration.builder()
+				.from(this)
+				.setExecutionConfig(
+					tmp.build()
+				).build();
+		}
+		
+	}
+	
+	@Value.Immutable
+	@JsonSerialize(as = ImmutableAgeStratifiedExperimentConfiguration.class)
+	@JsonDeserialize(as = ImmutableAgeStratifiedExperimentConfiguration.class)
+	public interface AgeStratifiedExperimentConfiguration extends ExperimentConfiguration<AgeStratifiedNetworkConfiguration> {
+		
+		AgeStratifiedExperimentConfiguration DEFAULT = ImmutableAgeStratifiedExperimentConfiguration.builder()
+				.setSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
+				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+				.setExecutionReplications(1)
+				.setSetupReplications(1)
+				.build();
+		
+	}
+	
+	
+	
+	SETUP getSetupConfig();
 	ExecutionConfiguration getExecutionConfig();
 	List<ExperimentFacet> getFacets();
 	int getSetupReplications();
 	int getExecutionReplications();
 	
-	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
-		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
-		tweaks.accept(tmp);
-		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setSetupConfig(
-				tmp.build()
-			).build();
-	}
 	
-	default ImmutableExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
-		ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
-		tweaks.accept(tmp);
-		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setExecutionConfig(
-				tmp.build()
-			).build();
-	}
+	
+	
 	
 	@JsonIgnore
 	default List<SetupConfiguration> getSetup() {
@@ -170,11 +200,11 @@ public interface ExperimentConfiguration {
 		om.writeValue(file.toFile(), this);
 	}
 	
-	static ExperimentConfiguration readFromYaml(Path file) throws StreamWriteException, DatabindException, IOException {
+	static <X extends ExperimentConfiguration<?>> X readFromYaml(Path file, Class<X> type) throws StreamWriteException, DatabindException, IOException {
 		ObjectMapper om = new ObjectMapper(new YAMLFactory());
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.setSerializationInclusion(Include.NON_NULL);
-		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(file.toFile());
+		X rt = om.readerFor(type).readValue(file.toFile());
 		return rt;
 	}
 	

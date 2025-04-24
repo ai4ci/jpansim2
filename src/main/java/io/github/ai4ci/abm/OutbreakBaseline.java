@@ -11,6 +11,12 @@ public interface OutbreakBaseline extends Serializable {
 
 	// Simulation baseline viral factors
 	
+	/**
+	 * This value is a scale factor for the viral load to make a 
+	 * probability that a transmission will occur given a particular
+	 * viral load.  
+	 * @return
+	 */
 	double getViralLoadTransmissibilityProbabilityFactor();
 
 	/**

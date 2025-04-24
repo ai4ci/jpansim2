@@ -16,14 +16,17 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
 import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
 import io.github.ai4ci.abm.PolicyModel.NoControl;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
-import io.github.ai4ci.config.ImmutableAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.flow.ExperimentConfiguration;
-import io.github.ai4ci.flow.ImmutableExperimentConfiguration;
+import io.github.ai4ci.flow.ExperimentConfiguration.AgeStratifiedExperimentConfiguration;
+import io.github.ai4ci.flow.ExperimentConfiguration.BasicExperimentConfiguration;
+import io.github.ai4ci.flow.ImmutableAgeStratifiedExperimentConfiguration;
+import io.github.ai4ci.flow.ImmutableBasicExperimentConfiguration;
 import io.github.ai4ci.flow.ImmutableExperimentFacet;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutablePersonCSV;
@@ -34,17 +37,18 @@ class TestJackson {
 	void testJson() throws JsonProcessingException {
 		ObjectMapper om = new ObjectMapper(new YAMLFactory());
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
 		
-		ExperimentConfiguration tmp0 = ExperimentConfiguration.DEFAULT;
+		BasicExperimentConfiguration tmp0 = BasicExperimentConfiguration.DEFAULT;
 		
 		String json0 = om.writeValueAsString(tmp0);
 		System.out.println(json0);
 		System.out.print("\n\n");
 		
-		ExperimentConfiguration tmp = 
-			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
+		AgeStratifiedExperimentConfiguration tmp = 
+				ImmutableAgeStratifiedExperimentConfiguration.copyOf(	
+					AgeStratifiedExperimentConfiguration.DEFAULT
 				)
 			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
 			.withFacets(
@@ -65,7 +69,7 @@ class TestJackson {
 		String json = om.writeValueAsString(tmp);
 		System.out.println(json);
 		
-		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json0);
+		AgeStratifiedExperimentConfiguration rt = om.readerFor(AgeStratifiedExperimentConfiguration.class).readValue(json);
 		String json2 = om.writeValueAsString(rt);
 		assertEquals(json, json2);
 	}

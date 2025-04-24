@@ -56,6 +56,13 @@ public interface InHostConfiguration extends Serializable {
 	 *  the generation time, and the effective generation time, and parallels
 	 *  R0 and Rt. This is effectively G0 not Gt, and is determined only by the 
 	 *  average viral load in a naive host, following a standard exposure.
+	 *  
+	 *  There is a question as to whether the infectivity profile is solely
+	 *  dependent on viral load, or there is an element of contact behaviour in 
+	 *  here as well. If the latter then repeated contacts would make viral load
+	 *  a haxard function of generation time, as people with multiple exposures
+	 *  eventually get infected. This would tend to make the GT look shorter than
+	 *  the infectious period.
 	 * @param config
 	 * @param samples
 	 * @param duration

@@ -440,10 +440,14 @@ public interface PersonState extends PersonTemporalState {
 	}
 	
 	default long getContactCount() {
-		return ModelNav.history(this).get().getTodaysContacts().length;
+		return ModelNav.history(this)
+			.map(m -> m.getTodaysContacts().length)
+			.orElse(0);
 	}
 	
 	default long getExposureCount() {
-		return ModelNav.history(this).get().getTodaysExposures().length;
+		return ModelNav.history(this)
+			.map(m -> m.getTodaysExposures().length)
+			.orElse(0);
 	}
 }

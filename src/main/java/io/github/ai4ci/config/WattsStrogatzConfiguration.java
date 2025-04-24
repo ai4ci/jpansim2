@@ -9,8 +9,8 @@ import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 
 @Value.Immutable(copy=false)
-//@JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
-//@JsonDeserialize(as = ImmutableWattsStrogatzConfiguration.class)
+@JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
+@JsonDeserialize(as = ImmutableWattsStrogatzConfiguration.class)
 public interface WattsStrogatzConfiguration extends SetupConfiguration {
 
 	WattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration.builder()

@@ -11,8 +11,8 @@ import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 
 @Value.Immutable(copy=false)
-//@JsonSerialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
-//@JsonDeserialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
+@JsonSerialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
+@JsonDeserialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
 public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 
 	@Partial @Value.Immutable

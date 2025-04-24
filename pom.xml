@@ -118,6 +118,11 @@
     		<artifactId>jackson-dataformat-csv</artifactId>
     		<version>${com.fasterxml.jackson.version}</version>
 		</dependency>
+		<dependency>
+    		<groupId>com.fasterxml.jackson.datatype</groupId>
+    		<artifactId>jackson-datatype-guava</artifactId>
+    		<version>${com.fasterxml.jackson.version}</version>
+		</dependency>
 		
 	</dependencies>
 
