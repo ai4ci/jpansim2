@@ -5,15 +5,13 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.apache.commons.math3.analysis.solvers.BrentSolver;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.Abstraction.Distribution;
 import io.github.ai4ci.abm.Person.Relationship;
+import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
 import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 
 public class Calibration {
@@ -35,7 +33,7 @@ public class Calibration {
 	}
 	
 	public static double contactsPerDay(Outbreak outbreak) {
-		SimpleWeightedGraph<Person, Person.Relationship> social = outbreak.getSocialNetwork();
+		// SimpleWeightedGraph<Person, Person.Relationship> social = outbreak.getSocialNetwork();
 		ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
 		// Distribution jointMob = configuration.getContactProbability();
 				//.combine(

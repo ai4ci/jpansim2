@@ -13,32 +13,35 @@ import org.mapstruct.factory.Mappers;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class HistoryMapper {
+	
+	// N.B. must be in same directory as data otherwise generated code
+	// does not import properly
 	 
 	public static HistoryMapper MAPPER = Mappers.getMapper( HistoryMapper.class );
 	
 	@Mapping( target = "todaysContacts", expression = "java(new Contact[0])")
 	@Mapping( target = "todaysExposures", expression = "java(new Exposure[0])")
 	@Mapping( target = "todaysTests", expression = "java(new java.util.ArrayList<>())")
-	abstract PersonHistory createHistory(PersonState currentState);
+	public abstract PersonHistory createHistory(PersonState currentState);
 	
 	
 	@Mapping( target = "previous", expression = "java(currentHistory(currentState, 1))")
-	abstract OutbreakHistory createHistory(OutbreakState currentState);
+	public abstract OutbreakHistory createHistory(OutbreakState currentState);
 	
 //	@Mapping( target = "personId", source = "entity.id")
 //	abstract PersonHistoryReference createReference(PersonState history);
 	
-	Integer personStateId( PersonState source ) {
+	public Integer personStateId( PersonState source ) {
 		return source.getEntity().getId();
 	};
 	
-	Optional<PersonHistory> currentHistory( PersonState currentState, int offset) {
+	public Optional<PersonHistory> currentHistory( PersonState currentState, int offset) {
 		int time = currentState.getTime()-offset;
 		return currentState.getEntity().getHistoryEntry( time );
 	};
 	
 	
-	Optional<OutbreakHistory> currentHistory( OutbreakState currentState, int offset) {
+	public Optional<OutbreakHistory> currentHistory( OutbreakState currentState, int offset) {
 		int time = currentState.getTime()-offset;
 		return currentState.getEntity().getHistoryEntry( time );
 	};

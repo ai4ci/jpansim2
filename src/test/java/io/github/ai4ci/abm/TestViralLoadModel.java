@@ -6,9 +6,11 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.abm.BehaviourModel.ReactiveTestAndIsolate;
-import io.github.ai4ci.config.InHostConfiguration.StochasticModel;
+import io.github.ai4ci.abm.mechanics.StateMachine;
+import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.StochasticModel;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.Sampler;
 

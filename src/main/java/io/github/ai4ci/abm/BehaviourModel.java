@@ -1,14 +1,15 @@
 package io.github.ai4ci.abm;
 
-import static io.github.ai4ci.util.ModelNav.modelState;
-import static io.github.ai4ci.util.StateUtils.*;
+import static io.github.ai4ci.abm.mechanics.StateUtils.*;
+import static io.github.ai4ci.util.ModelNav.*;
 
-import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
-import io.github.ai4ci.abm.StateMachine.BehaviourState;
 import io.github.ai4ci.abm.TestResult.Result;
+import io.github.ai4ci.abm.mechanics.StateMachine;
+import io.github.ai4ci.abm.mechanics.StateMachineContext;
+import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
+import io.github.ai4ci.abm.mechanics.StateUtils.DefaultNoTesting;
+import io.github.ai4ci.abm.mechanics.StateUtils.DoesPCRIfSymptomatic;
 import io.github.ai4ci.util.Sampler;
-import io.github.ai4ci.util.StateUtils.DefaultNoTesting;
-import io.github.ai4ci.util.StateUtils.DoesPCRIfSymptomatic;
 
 /**
  * Called during an update cycle before any changes have been made

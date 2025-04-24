@@ -4,10 +4,7 @@ import java.io.Serializable;
 
 import org.immutables.value.Value;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import io.github.ai4ci.abm.StateMachine.BehaviourState;
-import io.github.ai4ci.config.InHostConfiguration;
+import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
 
 @Value.Immutable
 public interface PersonBaseline extends Serializable {

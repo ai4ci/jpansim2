@@ -5,8 +5,8 @@ import java.util.Arrays;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.abm.Abstraction;
-import io.github.ai4ci.abm.ModelOperation.BiFunction;
+import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 
 @Value.Immutable
 public interface ResampledDistribution extends Abstraction.Distribution,Serializable {

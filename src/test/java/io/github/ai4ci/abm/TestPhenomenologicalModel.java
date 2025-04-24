@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.config.ExposureModel;
 import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
-import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.PhenomenologicalModel;
 
 class TestPhenomenologicalModel {
 

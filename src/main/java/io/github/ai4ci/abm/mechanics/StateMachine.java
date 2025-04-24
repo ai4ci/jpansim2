@@ -1,47 +1,34 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
 
+import io.github.ai4ci.abm.ImmutableOutbreakHistory;
+import io.github.ai4ci.abm.ImmutableOutbreakState;
+import io.github.ai4ci.abm.ImmutablePersonHistory;
+import io.github.ai4ci.abm.ImmutablePersonState;
+import io.github.ai4ci.abm.OutbreakState;
+import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.util.Sampler;
 
 public class StateMachine implements Serializable {
 
 	
 
-	public static interface State<BUILDER,HISTORY,STATE,X extends State<BUILDER,HISTORY,STATE,X>> extends Serializable {
-		
-		default boolean filter(STATE person, StateMachineContext context, Sampler rng) {
-			return true;
-		}
-		
-		/**
-		 * Depending on the type this updated the outbreak or person history, and
-		 * this will include testing in the person history.
-		 * @param builder
-		 * @param current
-		 * @param context
-		 * @param rng
-		 */
-		void updateHistory(HISTORY builder, STATE current, StateMachineContext context, Sampler rng); 
-		
-		X nextState(BUILDER builder, STATE current, StateMachineContext context, Sampler rng);
-	
-		String getName();
-	}
-	
 	public static interface BehaviourState extends State<ImmutablePersonState.Builder, ImmutablePersonHistory.Builder, PersonState, BehaviourState> {}
 	
 	public static interface PolicyState extends State<ImmutableOutbreakState.Builder, ImmutableOutbreakHistory.Builder, OutbreakState, PolicyState> {}
 	
 	public void performHistoryUpdate(ImmutablePersonHistory.Builder builder, PersonState person, Sampler rng) {
-		if (this.getState() instanceof BehaviourState state) {
+		if (this.getState() instanceof BehaviourState) {
+			BehaviourState state = (BehaviourState) this.getState();
 			if (state.filter(person, context, rng))
 				state.updateHistory(builder, person, context, rng);
 		}
 	}
 	
 	public void performHistoryUpdate(ImmutableOutbreakHistory.Builder builder, OutbreakState outbreak, Sampler rng) {
-		if (this.getState() instanceof PolicyState state) {
+		if (this.getState() instanceof PolicyState) {
+			PolicyState state = (PolicyState) this.getState();
 			if (state.filter(outbreak, context, rng))
 				state.updateHistory(builder, outbreak, context, rng);
 		}
@@ -54,7 +41,8 @@ public class StateMachine implements Serializable {
 	 * @param rng
 	 */
 	public synchronized void performStateUpdate(ImmutablePersonState.Builder builder, PersonState person, Sampler rng) {
-		if (this.getState() instanceof BehaviourState state) {
+		if (this.getState() instanceof BehaviourState) {
+			BehaviourState state = (BehaviourState) this.getState();
 			if (state.filter(person, context, rng)) {
 				BehaviourState next = state.nextState(builder, person, context, rng);
 				currentState = next;
@@ -63,7 +51,8 @@ public class StateMachine implements Serializable {
 	}
 	
 	public synchronized void performStateUpdate(ImmutableOutbreakState.Builder builder, OutbreakState outbreak, Sampler rng) {
-		if (this.getState() instanceof PolicyState state) {
+		if (this.getState() instanceof PolicyState) {
+			PolicyState state = (PolicyState) this.getState();
 			if (state.filter(outbreak, context, rng)) {
 				PolicyState next = state.nextState(builder, outbreak, context, rng);
 				currentState = next;

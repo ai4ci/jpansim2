@@ -1,13 +1,12 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
 import java.util.List;
 
 import org.immutables.value.Value.Modifiable;
 
-import io.github.ai4ci.abm.StateMachine.BehaviourState;
-import io.github.ai4ci.abm.StateMachine.PolicyState;
-import io.github.ai4ci.abm.StateMachine.State;
+import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
+import io.github.ai4ci.abm.mechanics.StateMachine.PolicyState;
 
 @Modifiable
 public interface StateMachineContext extends Serializable {
@@ -28,7 +27,7 @@ public interface StateMachineContext extends Serializable {
 		} else {
 			out = this.getBaselineState();
 		}
-		if (out instanceof BehaviourState b) return b;
+		if (out instanceof BehaviourState) return (BehaviourState) out;
 		throw new RuntimeException("Worng type of state");
 	}
 	
@@ -41,7 +40,7 @@ public interface StateMachineContext extends Serializable {
 		} else {
 			out = this.getBaselineState();
 		}
-		if (out instanceof PolicyState b) return b;
+		if (out instanceof PolicyState) return (PolicyState) out;
 		throw new RuntimeException("Worng type of state");
 	}
 	

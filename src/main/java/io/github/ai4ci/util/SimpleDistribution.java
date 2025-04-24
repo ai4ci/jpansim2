@@ -8,9 +8,9 @@ import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.github.ai4ci.abm.Abstraction;
-import io.github.ai4ci.abm.ModelOperation.BiFunction;
-import io.github.ai4ci.abm.ModelOperation.TriFunction;
+import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
+import io.github.ai4ci.abm.mechanics.ModelOperation.TriFunction;
 import io.reactivex.rxjava3.annotations.Nullable;
 
 
@@ -114,6 +114,7 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 			.count() / PRECISION;
 	}
 	
+	@JsonIgnore 
 	@Value.Derived default double getMedian() {
 		double[] tmp = getSamples();
 		Arrays.sort(tmp);

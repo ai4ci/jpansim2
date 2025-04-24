@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.github.ai4ci.abm.ModelBuild;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
@@ -111,7 +112,13 @@ public class SimulationFactory extends Thread {
 				
 				if (exec == 0) {
 					// Click back to new setup
-					setupBuilder = new ExperimentBuilder();
+					setupBuilder = new ExperimentBuilder(
+							ModelBuild.getSetupForConfiguration(setups.get(setup)),
+							ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
+							ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
+							ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
+							ModelBuild.PersonStateInitialiserFn.DEFAULT.fn()
+					);
 					setupBuilder.setupOutbreak(setups.get(setup), urnBase);
 				}
 				

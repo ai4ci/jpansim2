@@ -1,13 +1,10 @@
 package io.github.ai4ci.abm;
 
-import static java.lang.Math.exp;
-import static java.lang.Math.floor;
-import static java.lang.Math.log;
-import static java.lang.Math.pow;
+import static java.lang.Math.*;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.config.InHostConfiguration.StochasticModel;
+import io.github.ai4ci.config.StochasticModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 

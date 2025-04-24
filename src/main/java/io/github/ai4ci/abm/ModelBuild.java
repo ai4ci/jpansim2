@@ -1,9 +1,9 @@
 package io.github.ai4ci.abm;
-import static io.github.ai4ci.abm.ModelOperation.baselineOutbreak;
-import static io.github.ai4ci.abm.ModelOperation.baselinePerson;
-import static io.github.ai4ci.abm.ModelOperation.initialiseOutbreak;
-import static io.github.ai4ci.abm.ModelOperation.initialisePerson;
-import static io.github.ai4ci.abm.ModelOperation.setupOutbreak;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.baselineOutbreak;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.baselinePerson;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.initialiseOutbreak;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.initialisePerson;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.setupOutbreak;
 
 import java.io.Serializable;
 import java.util.function.Supplier;
@@ -13,26 +13,32 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.ModelOperation.OutbreakBaseliner;
-import io.github.ai4ci.abm.ModelOperation.OutbreakInitialiser;
-import io.github.ai4ci.abm.ModelOperation.OutbreakSetup;
-import io.github.ai4ci.abm.ModelOperation.PersonBaseliner;
-import io.github.ai4ci.abm.ModelOperation.PersonInitialiser;
+import io.github.ai4ci.abm.mechanics.ModelOperation;
+import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakBaseliner;
+import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakInitialiser;
+import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakSetup;
+import io.github.ai4ci.abm.mechanics.ModelOperation.PersonBaseliner;
+import io.github.ai4ci.abm.mechanics.ModelOperation.PersonInitialiser;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
-import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.github.ai4ci.config.WattsStrogatzConfiguration;
+
 public class ModelBuild {
 
 	static Logger log = LoggerFactory.getLogger(ModelBuild.class);
 	
+	public static OutbreakSetup getSetupForConfiguration(SetupConfiguration config) {
+		if (config instanceof WattsStrogatzConfiguration) return OutbreakSetupFn.DEFAULT.fn();
+		throw new RuntimeException("Undefined setup configuration type");
+	}
+	
 	public static enum OutbreakSetupFn {
-		
 		
 		@SuppressWarnings("unchecked")
 		DEFAULT(
-			setupOutbreak((outbreak, setupConfig, sampler) -> {
-				outbreak.setSetupConfiguration(setupConfig);
+			setupOutbreak((outbreak, config, sampler) -> {
+				WattsStrogatzConfiguration setupConfig = (WattsStrogatzConfiguration) config; 
+				outbreak.setSetupConfiguration( setupConfig );
 				outbreak.setSocialNetwork(
 						new SimpleWeightedGraph<Person, Person.Relationship>(
 								(Supplier<Person> & Serializable) () -> Person.createPersonStub(outbreak), 
@@ -130,12 +136,9 @@ public class ModelBuild {
 									configuration.getRO()
 							) 
 					);
-				outbreak.getStateMachine().init(configuration.getDefaultPolicyModel());
+				outbreak.getStateMachine().init( configuration.getDefaultPolicyModel() );
 				
-				// TODO: Viral load model calibration.
-				// Currently this is set on defaults but needs to look at 
-				// latent period, infectious period, virion cutoff
-				// and symptom delay, recovery delay, target cell cutoff.
+				
 				 
 			})
 		);

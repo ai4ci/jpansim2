@@ -7,10 +7,9 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.ImmutableInHostPhenomenologicalState.Builder;
 import io.github.ai4ci.config.ExposureModel;
 import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
-import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
+import io.github.ai4ci.config.PhenomenologicalModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 

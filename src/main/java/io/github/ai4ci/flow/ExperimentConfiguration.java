@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,37 +14,36 @@ import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
-import io.github.ai4ci.abm.PolicyModel.NoControl;
 import io.github.ai4ci.config.ConfigMerger;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ImmutableExecutionConfiguration;
-import io.github.ai4ci.config.ImmutableSetupConfiguration;
+import io.github.ai4ci.config.ImmutableWattsStrogatzConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PartialSetupConfiguration;
+import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.WattsStrogatzConfiguration;
+
 
 @Value.Immutable
 public interface ExperimentConfiguration {
 
 	ExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
-			.setSetupConfig(SetupConfiguration.DEFAULT)
+			.setSetupConfig(WattsStrogatzConfiguration.DEFAULT)
 			.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+			.setExecutionReplications(1)
+			.setSetupReplications(1)
 			.build();
 	
 	SetupConfiguration getSetupConfig();
 	ExecutionConfiguration getExecutionConfig();
 	List<ExperimentFacet> getFacets();
-	@Value.Default default int getSetupReplications() {return 1;}
-	@Value.Default default int getExecutionReplications() {return 1;}
+	int getSetupReplications();
+	int getExecutionReplications();
 	
-	
-	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableSetupConfiguration.Builder> tweaks) {
-		ImmutableSetupConfiguration.Builder tmp = ImmutableSetupConfiguration.builder().from(this.getSetupConfig());
+	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
+		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
 		tweaks.accept(tmp);
 		
 		return ImmutableExperimentConfiguration.builder()
@@ -81,12 +79,13 @@ public interface ExperimentConfiguration {
 			boolean changes = false;
 			for (String name: facet.getModifications().keySet()) {
 				
-				if (facet.getModifications().get(name) instanceof PartialSetupConfiguration modifier) {
+				if (facet.getModifications().get(name) instanceof PartialWattsStrogatzConfiguration) {
+					PartialWattsStrogatzConfiguration modifier = (PartialWattsStrogatzConfiguration) facet.getModifications().get(name);
 					
 					for (SetupConfiguration b: out) {
-						ImmutableSetupConfiguration.Builder modified = ConfigMerger.INSTANCE
+						ImmutableWattsStrogatzConfiguration.Builder modified = ConfigMerger.INSTANCE
 							.mergeConfiguration(
-								b, modifier
+								(WattsStrogatzConfiguration) b, modifier
 							).setName(
 								(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
 									+facetName+":"+name);
@@ -104,7 +103,7 @@ public interface ExperimentConfiguration {
 		for (int i =0; i<this.getSetupReplications(); i++) {
 			for (SetupConfiguration b: out) {
 				tmp.add(
-					ImmutableSetupConfiguration.builder().from(b)
+					ImmutableWattsStrogatzConfiguration.builder().from(b)
 						.setReplicate(i)
 						.build()
 					);
@@ -129,7 +128,8 @@ public interface ExperimentConfiguration {
 			
 			for (String name: facet.getModifications().keySet()) {
 				
-				if (facet.getModifications().get(name) instanceof PartialExecutionConfiguration modifier) {
+				if (facet.getModifications().get(name) instanceof PartialExecutionConfiguration) {
+					PartialExecutionConfiguration modifier = (PartialExecutionConfiguration) facet.getModifications().get(name);
 					
 					out.forEach(b -> {
 						ImmutableExecutionConfiguration.Builder modified = ConfigMerger.INSTANCE

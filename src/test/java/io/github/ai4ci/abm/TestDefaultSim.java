@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.DefaultConfiguration;
 
+import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.flow.ExperimentBuilder;
 import io.github.ai4ci.flow.ExperimentConfiguration;

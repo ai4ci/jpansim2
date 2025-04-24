@@ -11,11 +11,11 @@ import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonBaseline;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.ModelBuild;
-import io.github.ai4ci.abm.ModelOperation;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.abm.Updater;
+import io.github.ai4ci.abm.mechanics.ModelOperation;
+import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 import io.github.ai4ci.output.StateExporter;
@@ -128,7 +128,7 @@ public class ExperimentBuilder {
 		return buildExperiment(
 			setupConfig,
 			execConfig,
-			ModelBuild.OutbreakSetupFn.DEFAULT.fn(),
+			ModelBuild.getSetupForConfiguration(setupConfig),
 			ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
 			ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
 			ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
@@ -165,15 +165,15 @@ public class ExperimentBuilder {
 		return ((double) runtime.maxMemory() - allocatedMemory)/(1024*1024*1024);
 	}
 	
-	ExperimentBuilder() {
-		this(
-				ModelBuild.OutbreakSetupFn.DEFAULT.fn(),
-				ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
-				ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
-				ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
-				ModelBuild.PersonStateInitialiserFn.DEFAULT.fn()
-		);
-	}
+//	ExperimentBuilder() {
+//		this(
+//				ModelBuild.OutbreakSetupFn.DEFAULT.fn(),
+//				ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
+//				ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
+//				ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
+//				ModelBuild.PersonStateInitialiserFn.DEFAULT.fn()
+//		);
+//	}
 	
 	ExperimentBuilder(
 		ModelOperation.OutbreakSetup setupFn,
@@ -235,7 +235,8 @@ public class ExperimentBuilder {
 				p -> {
 					if (!personBaselineFn.getSelector().test(p)) throw new RuntimeException("Not correctly configured");
 					Sampler sampler2 = Sampler.getSampler(outbreak.getUrn());
-					if (p instanceof ModifiablePerson m) {
+					if (p instanceof ModifiablePerson) {
+						ModifiablePerson m = (ModifiablePerson) p;
 						
 						ImmutablePersonBaseline.Builder builder = 
 								m.initialisedBaseline() ?
@@ -275,7 +276,9 @@ public class ExperimentBuilder {
 		outbreak.getPeople()
 			.parallelStream()
 			.forEach(p -> {
-				if (p instanceof ModifiablePerson m) {
+				if (p instanceof ModifiablePerson) {
+					ModifiablePerson m = (ModifiablePerson) p;
+					
 					Sampler sampler2 = Sampler.getSampler(outbreak.getUrn());
 					if (!personInitFn.getSelector().test(m)) throw new RuntimeException("Person not baselined");
 				

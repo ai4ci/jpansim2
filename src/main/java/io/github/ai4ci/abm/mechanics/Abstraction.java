@@ -1,10 +1,8 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import org.immutables.value.Value;
 
@@ -13,18 +11,21 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.OptBoolean;
 
-import io.github.ai4ci.abm.ModelOperation.BiFunction;
+import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
+import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PartialSetupConfiguration;
+import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.Sampler;
 
 public interface Abstraction {
 
-	@JsonTypeInfo(use = Id.DEDUCTION)
-	@JsonSubTypes( {@Type(PartialSetupConfiguration.class), @Type(PartialExecutionConfiguration.class)})
+	@JsonTypeInfo(use = Id.SIMPLE_NAME,requireTypeIdForSubtypes = OptBoolean.TRUE)
+	@JsonSubTypes( {@Type(PartialWattsStrogatzConfiguration.class), @Type(PartialExecutionConfiguration.class), @Type(PartialAgeStratifiedNetworkConfiguration.class)})
 	public interface Modification {}
  
 
@@ -38,6 +39,9 @@ public interface Abstraction {
 		int PRECISION = 10000;
 		
 		double getCentral();
+		double pLessThan(double x);
+		double getMedian();
+		
 		double sample(Sampler rng);
 		
 		default double sample() {
@@ -52,15 +56,9 @@ public interface Abstraction {
 					.build();
 		};
 		
-		double pLessThan(double x);
-		double getMedian();
+
 	}
 	
-	// This has potential to be problematic if multiple entities are sampling
-	// on the same thread and keep resetting the seed
-//	public interface SamplingEntity extends Entity {
-//		default Sampler getSampler() {return Sampler.getSampler(getUrn());}
-//	}
 	
 	public interface TemporalState<E extends Entity> extends Serializable {
 		

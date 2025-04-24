@@ -1,8 +1,18 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
 import java.util.function.Predicate;
 
+import io.github.ai4ci.abm.ImmutableOutbreakBaseline;
+import io.github.ai4ci.abm.ImmutableOutbreakState;
+import io.github.ai4ci.abm.ImmutablePersonBaseline;
+import io.github.ai4ci.abm.ImmutablePersonState;
+import io.github.ai4ci.abm.ModifiableOutbreak;
+import io.github.ai4ci.abm.ModifiablePerson;
+import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.Person;
+import io.github.ai4ci.abm.PersonState;
+import io.github.ai4ci.abm.ImmutablePersonBaseline.Builder;
 import io.github.ai4ci.config.SetupConfiguration;
 import io.github.ai4ci.util.Sampler;
 
@@ -174,7 +184,7 @@ public class ModelOperation {
 			super(selector, consumer);
 		}}
 	
-	public static OutbreakSetup setupOutbreak(TriConsumer<ModifiableOutbreak,  SetupConfiguration, Sampler> consumer) {
+	public static OutbreakSetup setupOutbreak(TriConsumer<ModifiableOutbreak, SetupConfiguration, Sampler> consumer) {
 		return new OutbreakSetup(
 				x -> {
 					if (x != null) return true;
@@ -194,7 +204,8 @@ public class ModelOperation {
 					// Filter only to people that have been fully initialised
 					// TODO: realistically this should throw exceptions
 					// rather that skip the setup if it is not ready
-					if (p.getOutbreak() instanceof ModifiableOutbreak m) {
+					if (p.getOutbreak() instanceof ModifiableOutbreak) {
+						ModifiableOutbreak m = (ModifiableOutbreak) p.getOutbreak();
 						if (m.initialisedSetupConfiguration() &&
 								m.initialisedExecutionConfiguration() &&
 								m.initialisedSocialNetwork()
@@ -213,7 +224,8 @@ public class ModelOperation {
 	public static OutbreakBaseliner baselineOutbreak(TriConsumer<ImmutableOutbreakBaseline.Builder, Outbreak, Sampler> consumer) {
 		return new OutbreakBaseliner(
 				o -> {
-					if (o instanceof ModifiableOutbreak m) {
+					if (o instanceof ModifiableOutbreak) {
+						ModifiableOutbreak m = (ModifiableOutbreak) o;
 						if(
 								!m.getPeople().isEmpty() &&
 								m.initialisedSetupConfiguration() &&
@@ -235,8 +247,10 @@ public class ModelOperation {
 		return new PersonInitialiser(
 				p -> {
 					if (!selector.test(p)) return false;
-					if (p instanceof ModifiablePerson mp) {
-						if (p.getOutbreak() instanceof ModifiableOutbreak m) {
+					if (p instanceof ModifiablePerson) {
+						ModifiablePerson mp = (ModifiablePerson) p;
+						if (p.getOutbreak() instanceof ModifiableOutbreak) {
+							ModifiableOutbreak m = (ModifiableOutbreak) p.getOutbreak();
 							if (
 									mp.initialisedBaseline() &&
 									m.initialisedSetupConfiguration() &&
@@ -258,7 +272,8 @@ public class ModelOperation {
 	public static OutbreakInitialiser initialiseOutbreak(TriConsumer<ImmutableOutbreakState.Builder, Outbreak, Sampler> consumer) {
 		return new OutbreakInitialiser(
 				o -> {
-						if (o instanceof ModifiableOutbreak m) {
+						if (o instanceof ModifiableOutbreak) {
+							ModifiableOutbreak m = (ModifiableOutbreak) o;
 							if ( 
 									m.initialisedBaseline() &&
 									m.initialisedSetupConfiguration() &&

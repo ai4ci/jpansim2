@@ -1,4 +1,4 @@
-package io.github.ai4ci.util;
+package io.github.ai4ci;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

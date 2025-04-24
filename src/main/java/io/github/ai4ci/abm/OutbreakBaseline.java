@@ -4,9 +4,7 @@ import java.io.Serializable;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.abm.StateMachine.PolicyState;
-import io.github.ai4ci.config.InHostConfiguration;
-import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.abm.mechanics.StateMachine.PolicyState;
 
 @Value.Immutable
 public interface OutbreakBaseline extends Serializable {

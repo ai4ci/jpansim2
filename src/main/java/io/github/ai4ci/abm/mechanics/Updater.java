@@ -1,4 +1,4 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.mechanics;
 
 import static io.github.ai4ci.abm.HistoryMapper.MAPPER;
 
@@ -10,10 +10,22 @@ import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.Contact.Network;
-import io.github.ai4ci.abm.ModelOperation.OutbreakStateUpdater;
-import io.github.ai4ci.abm.ModelOperation.PersonStateUpdater;
-import io.github.ai4ci.abm.ModelOperation.TriConsumer;
+import io.github.ai4ci.abm.Contact;
+import io.github.ai4ci.abm.ImmutableOutbreakHistory;
+import io.github.ai4ci.abm.ImmutableOutbreakState;
+import io.github.ai4ci.abm.ImmutablePersonHistory;
+import io.github.ai4ci.abm.ImmutablePersonState;
+import io.github.ai4ci.abm.ModelUpdate;
+import io.github.ai4ci.abm.ModelUpdate.OutbreakUpdaterFn;
+import io.github.ai4ci.abm.ModelUpdate.PersonUpdaterFn;
+import io.github.ai4ci.abm.ModifiableOutbreak;
+import io.github.ai4ci.abm.ModifiablePerson;
+import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.Person;
+import io.github.ai4ci.abm.PersonHistory;
+import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakStateUpdater;
+import io.github.ai4ci.abm.mechanics.ModelOperation.PersonStateUpdater;
+import io.github.ai4ci.abm.mechanics.ModelOperation.TriConsumer;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.Sampler;
 
@@ -27,11 +39,11 @@ public class Updater {
 	
 	public Updater() {
 		this.outbreakProcessors = new ArrayList<>();
-		this.outbreakProcessors.add(ModelRun.OutbreakUpdaterFn.DEFAULT.fn());
+		this.outbreakProcessors.add(ModelUpdate.OutbreakUpdaterFn.DEFAULT.fn());
 		this.personProcessors = new ArrayList<>();
-		this.personProcessors.add(ModelRun.PersonUpdaterFn.DEFAULT.fn());
-		this.personProcessors.add(ModelRun.PersonUpdaterFn.IMPORTATION_PROTOCOL.fn());
-		this.personProcessors.add(ModelRun.PersonUpdaterFn.IMMUNISATION_PROTOCOL.fn());
+		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.DEFAULT.fn());
+		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.IMPORTATION_PROTOCOL.fn());
+		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.IMMUNISATION_PROTOCOL.fn());
 	}
 	
 	public Updater withPersonProcessor(
@@ -83,8 +95,8 @@ public class Updater {
 	
 	private void prepareUpdate(Outbreak outbreak) {
 		
-		if (outbreak instanceof ModifiableOutbreak m) {
-			
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			
 			m.setNextState(
 				Ephemeral.of(
@@ -103,7 +115,8 @@ public class Updater {
 		}
 		
 		outbreak.getPeople().parallelStream().forEach(person -> {
-			if (person instanceof ModifiablePerson p) {
+			if (person instanceof ModifiablePerson) {
+				ModifiablePerson p = (ModifiablePerson) person;
 				
 				p.setNextState(
 					Ephemeral.of(	
@@ -139,9 +152,9 @@ public class Updater {
 	private void updateHistory(Outbreak outbreak) {
 		// Sampler sampler = Sampler.getSampler();
 		// TODO: ? ImmutableOutbreakHistory.Builder nextOutbreakHistory = outbreak.getNextHistory().get();
-		if (outbreak instanceof ModifiableOutbreak m) {
-			
-			Network contactNetwork = Contact.contactNetwork(m);
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
+			PersonStateContacts contactNetwork = Contact.contactNetwork(m);
 			
 			// Update the next history entry with anything from the current 
 			Sampler sampler1 = Sampler.getSampler();
@@ -153,8 +166,8 @@ public class Updater {
 				Sampler sampler = Sampler.getSampler();
 				ImmutablePersonHistory.Builder nextPersonHistory = person.getNextHistory().toOptional().get();
 				
-				if (person instanceof ModifiablePerson p) {
-					
+				if (person instanceof ModifiablePerson) {
+					ModifiablePerson p = (ModifiablePerson) person;
 					
 					Integer ref = p.getId();
 					nextPersonHistory
@@ -198,8 +211,8 @@ public class Updater {
 		
 		Sampler sampler = Sampler.getSampler();
 		ImmutableOutbreakState.Builder nextState = outbreak.getNextState().toOptional().get();
-		if (outbreak instanceof ModifiableOutbreak m) {
-			
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			// Update the state machine.
 			m.getStateMachine().performStateUpdate(nextState, m.getCurrentState(), sampler);
 			
@@ -236,7 +249,8 @@ public class Updater {
 		// per thread. We shouldn't reset the seed though. 
 		Sampler sampler = Sampler.getSampler();
 		ImmutablePersonState.Builder nextState = person.getNextState().toOptional().get();
-		if (person instanceof ModifiablePerson m) {
+		if (person instanceof ModifiablePerson) {
+			ModifiablePerson m = (ModifiablePerson) person;
 			
 			// Update the state machine.
 			m.getStateMachine().performStateUpdate(nextState, person.getCurrentState(), sampler);
@@ -270,11 +284,13 @@ public class Updater {
 	 */
 	private void switchHistory(Outbreak outbreak) {
 		int limit = (int) outbreak.getExecutionConfiguration().getInfectivityProfile().size()*2;
-		if (outbreak instanceof ModifiableOutbreak m) {
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			m.getPeople()
 				.parallelStream()
 				.forEach(person -> {
-					if (person instanceof ModifiablePerson p) {
+					if (person instanceof ModifiablePerson) {
+						ModifiablePerson p = (ModifiablePerson) person;
 						synchronized(p) {
 							List<PersonHistory> tmp = p.getHistory();
 							tmp.add(0, p.getNextHistory().toOptional().get().build());
@@ -302,11 +318,13 @@ public class Updater {
 	 * @param outbreak the mutable model.
 	 */
 	private void switchState(Outbreak outbreak) {
-		if (outbreak instanceof ModifiableOutbreak m) {
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			m.getPeople()
 				.parallelStream()
 				.forEach(person -> {
-					if (person instanceof ModifiablePerson p) {
+					if (person instanceof ModifiablePerson) {
+						ModifiablePerson p = (ModifiablePerson) person;
 						synchronized(p) {
 							//TODO: Update spatio-temporal state network if explicit. 
 							// This is where the new and old state co-exist

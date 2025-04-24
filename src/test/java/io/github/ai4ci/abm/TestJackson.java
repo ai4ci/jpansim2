@@ -19,6 +19,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
 import io.github.ai4ci.abm.PolicyModel.NoControl;
+import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.ImmutableAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.flow.ExperimentConfiguration;
 import io.github.ai4ci.flow.ImmutableExperimentConfiguration;
@@ -43,7 +45,9 @@ class TestJackson {
 		ExperimentConfiguration tmp = 
 			ImmutableExperimentConfiguration.copyOf(	
 					ExperimentConfiguration.DEFAULT
-				).withFacets(
+				)
+			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
+			.withFacets(
 						ImmutableExperimentFacet.builder()
 							.putModification(
 								"smart-agent",
@@ -61,7 +65,7 @@ class TestJackson {
 		String json = om.writeValueAsString(tmp);
 		System.out.println(json);
 		
-		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json);
+		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json0);
 		String json2 = om.writeValueAsString(rt);
 		assertEquals(json, json2);
 	}

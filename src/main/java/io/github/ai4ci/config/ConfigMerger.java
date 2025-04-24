@@ -10,8 +10,6 @@ import org.mapstruct.NullValueMappingStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
-import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
-import io.github.ai4ci.config.InHostConfiguration.StochasticModel;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ImmutableDelayDistribution;
 
@@ -24,7 +22,7 @@ import io.github.ai4ci.util.ImmutableDelayDistribution;
 		
 )
 public abstract class ConfigMerger {
-	 
+	
 	public static ConfigMerger INSTANCE = Mappers.getMapper( ConfigMerger.class );
 	
 	public ImmutableExecutionConfiguration.Builder mergeConfiguration(
@@ -38,12 +36,12 @@ public abstract class ConfigMerger {
 				;
 	};
 	
-	public ImmutableSetupConfiguration.Builder mergeConfiguration(
-			SetupConfiguration target,
-			PartialSetupConfiguration source
+	public ImmutableWattsStrogatzConfiguration.Builder mergeConfiguration(
+			WattsStrogatzConfiguration target,
+			PartialWattsStrogatzConfiguration source
 	) {
 		return updateConfiguration(
-				ImmutableSetupConfiguration.builder().from(target),
+				ImmutableWattsStrogatzConfiguration.builder().from(target),
 				source);
 	};
 	
@@ -52,15 +50,18 @@ public abstract class ConfigMerger {
 			@MappingTarget ImmutableExecutionConfiguration.Builder target,
 			PartialExecutionConfiguration source); 
 	
-	abstract protected ImmutableSetupConfiguration.Builder updateConfiguration(
-			@MappingTarget ImmutableSetupConfiguration.Builder target,
-			PartialSetupConfiguration source);
+	
+	
+	abstract protected ImmutableWattsStrogatzConfiguration.Builder updateConfiguration(
+			@MappingTarget ImmutableWattsStrogatzConfiguration.Builder target,
+			PartialWattsStrogatzConfiguration source);
 	
 	abstract protected ImmutableStochasticModel mapper(StochasticModel source);
 	abstract protected ImmutablePhenomenologicalModel mapper(PhenomenologicalModel source);
+	
 	protected InHostConfiguration mapper(InHostConfiguration source) {
-		if (source instanceof PhenomenologicalModel p) return mapper(p);
-		if (source instanceof StochasticModel p) return mapper(p);
+		if (source instanceof PhenomenologicalModel) return mapper((PhenomenologicalModel) source);
+		if (source instanceof StochasticModel) return mapper((StochasticModel) source);
 		throw new RuntimeException("Unknown type: "+source.getClass());
 	};
 	

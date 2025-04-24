@@ -9,14 +9,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.abm.Abstraction;
+import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.BehaviourModel;
 import io.github.ai4ci.abm.PolicyModel;
 import io.github.ai4ci.abm.TestParameters;
 import io.github.ai4ci.abm.TestResult;
-import io.github.ai4ci.config.InHostConfiguration.PhenomenologicalModel;
-import io.github.ai4ci.util.Data.Partial;
+import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.Group;
 // import io.reactivex.rxjava3.annotations.Nullable;
 import io.github.ai4ci.util.SimpleDistribution;
 
@@ -107,7 +107,7 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	InHostConfiguration getInHostConfiguration();
 	
 	
-	TestParameters.Group getAvailableTests();
+	Group<TestParameters> getAvailableTests();
 	
 	SimpleDistribution getSymptomSensitivity();
 	SimpleDistribution getSymptomSpecificity();

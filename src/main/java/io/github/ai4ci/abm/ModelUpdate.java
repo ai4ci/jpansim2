@@ -1,18 +1,19 @@
 package io.github.ai4ci.abm;
 
-import static io.github.ai4ci.abm.ModelOperation.updateOutbreakState;
-import static io.github.ai4ci.abm.ModelOperation.updatePersonState;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.updateOutbreakState;
+import static io.github.ai4ci.abm.mechanics.ModelOperation.updatePersonState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.ModelOperation.OutbreakStateUpdater;
-import io.github.ai4ci.abm.ModelOperation.PersonStateUpdater;
+import io.github.ai4ci.abm.mechanics.ModelOperation;
+import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakStateUpdater;
+import io.github.ai4ci.abm.mechanics.ModelOperation.PersonStateUpdater;
 import io.github.ai4ci.util.ModelNav;
 
-public class ModelRun {
+public class ModelUpdate {
 
-	static Logger log = LoggerFactory.getLogger(ModelRun.class);
+	static Logger log = LoggerFactory.getLogger(ModelUpdate.class);
 	
 	public static enum OutbreakUpdaterFn {
 		

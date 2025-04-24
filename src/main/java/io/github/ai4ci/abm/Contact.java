@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.immutables.value.Value;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
+import io.github.ai4ci.abm.mechanics.PersonStateContacts;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.PagedArray;
 import io.github.ai4ci.util.Sampler;
 
 @Value.Immutable
@@ -38,51 +38,16 @@ public interface Contact extends Serializable {
 		return one.getEntity().getOutbreak().getPersonById(id).flatMap(p -> p.getCurrentHistory()).get();
 	}
 	
-	public static class Network implements Serializable {
-		PagedArray<Contact>[] network;
-		PagedArray<Exposure>[] exposure;
-		int maxSize;
-		
-		Network(Outbreak outbreak) {
-			this(
-				outbreak.getSetupConfiguration().getNetworkSize(),
-				outbreak.getSetupConfiguration().getNetworkConnectedness()
-			);
-		}
-		
-		@SuppressWarnings("unchecked")
-		Network(int nodes, int maxSize) {
-			network = new PagedArray[nodes];
-			exposure = new PagedArray[nodes];
-			this.maxSize = maxSize;	
-		}
-		
-		public PagedArray<Contact> write(int i) {
-			if (network[i]==null) network[i] = new PagedArray<Contact>(Contact.class, maxSize);
-			return network[i];
-		}
-		
-		public PagedArray<Exposure> writeExp(int i) {
-			if (exposure[i]==null) exposure[i] = new PagedArray<Exposure>(Exposure.class, maxSize);
-			return exposure[i];
-		}
-		
-		public PagedArray<Contact> get(int i) {
-			if (network[i]==null) return PagedArray.empty(Contact.class);
-			return network[i];
-		}
-		
-		public PagedArray<Exposure> getExp(int i) {
-			if (exposure[i]==null) return PagedArray.empty(Exposure.class);
-			return exposure[i];
-		}
-	}
-	
-	public static Network contactNetwork(Outbreak outbreak) {
+	public static PersonStateContacts contactNetwork(Outbreak outbreak) {
 		//Do the contact network here? and pass it as a parameter to the
 		//person updateState
 		SimpleWeightedGraph<Person, Person.Relationship> network = outbreak.getSocialNetwork();
-		Network out = new Network(outbreak);
+		PersonStateContacts out = new PersonStateContacts(
+				network.vertexSet().size(),
+				network.vertexSet().stream()
+					.mapToInt(v -> network.outDegreeOf(v))
+					.max().getAsInt()
+				);
 		
 		network.edgeSet().parallelStream().forEach(r -> {
 			Sampler sampler = Sampler.getSampler();
@@ -165,40 +130,5 @@ public interface Contact extends Serializable {
 				);
 	}
 	
-//	public static NetworkBuilder<PersonHistory, Infection> updateInfectionNetwork(Outbreak outbreak) {
-//		// update infection network...
-//		// TODO: this does not look to be correct...
-//		NetworkBuilder<PersonHistory, Infection> infections = outbreak.getInfections();
-//		infections.enableWriting();
-//		outbreak.getPeople()
-//			.stream()
-//			.parallel()
-//			.flatMap(p -> p.getCurrentHistory().stream())
-//			.filter(ph -> ph.isInfectious())
-//			.forEach(p -> {
-//				// getInfector() is only defined on first day of infection
-//				// It also decides which person is the infector if there were
-//				// multiple exposures
-//				// If there is an importation then this will most likely
-//				// not have an infector.
-//				p.getInfector().ifPresent(i -> {
-//					infections.addVertex(i);
-//					infections.addVertex(p);
-//					Contact contact = p.getInfectiousContact().get();
-//					try {
-//						infections.addEdge(i, p, Infection.create(contact));
-//					} catch (Exception e) {
-//						// TODO: figure out this exception cause.
-//						// It is because the infection network can cause a cycle
-//						// which could be because the heuristics for determining
-//						// who infected whom depends on picking the person]
-//						// who contributed the largest viral load in recent
-//						// history.
-//						// log.debug(e.getMessage());
-//					}
-//				});
-//			});
-//		infections.completeWriting();
-//		return infections;
-//	}
+
 }

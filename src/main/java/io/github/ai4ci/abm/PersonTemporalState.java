@@ -2,7 +2,7 @@ package io.github.ai4ci.abm;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.abm.Abstraction.TemporalState;
+import io.github.ai4ci.abm.mechanics.Abstraction.TemporalState;
 
 public interface PersonTemporalState extends TemporalState<Person> {
 	

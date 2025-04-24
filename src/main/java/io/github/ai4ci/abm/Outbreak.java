@@ -6,11 +6,12 @@ import java.util.Optional;
 import org.immutables.value.Value;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
-import io.github.ai4ci.abm.Abstraction.Entity;
-import io.github.ai4ci.abm.Abstraction.HistoricalStateProvider;
+import io.github.ai4ci.Data;
+import io.github.ai4ci.abm.mechanics.StateMachine;
+import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
+import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
-import io.github.ai4ci.util.Data;
 import io.github.ai4ci.util.Ephemeral;
 
 @Value.Modifiable
@@ -22,9 +23,9 @@ public abstract class Outbreak implements Entity, HistoricalStateProvider<Outbre
 	public abstract SetupConfiguration getSetupConfiguration();
 	public abstract ExecutionConfiguration getExecutionConfiguration();
 	public abstract OutbreakBaseline getBaseline();
-	protected abstract Ephemeral<ImmutableOutbreakState.Builder> getNextState();
-	protected abstract Ephemeral<ImmutableOutbreakHistory.Builder> getNextHistory();
-	protected abstract StateMachine getStateMachine();
+	public abstract Ephemeral<ImmutableOutbreakState.Builder> getNextState();
+	public abstract Ephemeral<ImmutableOutbreakHistory.Builder> getNextHistory();
+	public abstract StateMachine getStateMachine();
 	
 	public abstract OutbreakState getCurrentState();
 	public abstract List<OutbreakHistory> getHistory();

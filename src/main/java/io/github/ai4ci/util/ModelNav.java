@@ -3,7 +3,6 @@ package io.github.ai4ci.util;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.github.ai4ci.abm.Abstraction.TemporalState;
 import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
@@ -13,8 +12,8 @@ import io.github.ai4ci.abm.PersonBaseline;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.PersonTemporalState;
+import io.github.ai4ci.abm.mechanics.Abstraction.TemporalState;
 import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 
 public class ModelNav {
@@ -89,19 +88,19 @@ public class ModelNav {
 	}
 
 	public static ExecutionConfiguration modelParam(TemporalState<?> temporalState) {
-		if (temporalState instanceof OutbreakTemporalState s) {
-			return modelParam(s);
-		} else if (temporalState instanceof PersonTemporalState s) {
-			return modelParam(s);
+		if (temporalState instanceof OutbreakTemporalState) {
+			return modelParam((OutbreakTemporalState) temporalState);
+		} else if (temporalState instanceof PersonTemporalState) {
+			return modelParam((PersonTemporalState) temporalState);
 		}
 		throw new RuntimeException("Unknown temporal state type");
 	}
 
 	public static SetupConfiguration modelSetup(TemporalState<?> temporalState) {
-		if (temporalState instanceof OutbreakTemporalState s) {
-			return modelSetup(s);
-		} else if (temporalState instanceof PersonTemporalState s) {
-			return modelSetup(s);
+		if (temporalState instanceof OutbreakTemporalState) {
+			return modelSetup((OutbreakTemporalState) temporalState);
+		} else if (temporalState instanceof PersonTemporalState) {
+			return modelSetup((PersonTemporalState) temporalState);
 		}
 		throw new RuntimeException("Unknown temporal state type");
 	}

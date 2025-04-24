@@ -1,10 +1,12 @@
 package io.github.ai4ci.abm;
 
-import static io.github.ai4ci.util.StateUtils.branchTo;
+import static io.github.ai4ci.abm.mechanics.StateUtils.branchTo;
 
 import io.github.ai4ci.abm.BehaviourModel.LockdownIsolation;
 import io.github.ai4ci.abm.ImmutableOutbreakState.Builder;
-import io.github.ai4ci.abm.StateMachine.PolicyState;
+import io.github.ai4ci.abm.mechanics.StateMachine;
+import io.github.ai4ci.abm.mechanics.StateMachineContext;
+import io.github.ai4ci.abm.mechanics.StateMachine.PolicyState;
 import io.github.ai4ci.util.Sampler;
 
 public interface PolicyModel extends StateMachine.PolicyState {

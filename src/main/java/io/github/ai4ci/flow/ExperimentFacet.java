@@ -7,8 +7,8 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.abm.Abstraction;
-import io.github.ai4ci.abm.Abstraction.Modification;
+import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableExperimentFacet.class)

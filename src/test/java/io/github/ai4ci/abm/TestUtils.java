@@ -7,8 +7,8 @@ import org.immutables.value.Value;
 import io.github.ai4ci.config.ConfigMerger;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PartialSetupConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.ExperimentBuilder;
 
 @Value.Immutable
@@ -17,7 +17,7 @@ public interface TestUtils {
 	@Value.Derived default Outbreak getOutbreak() {
 		return ExperimentBuilder.buildExperiment(
 				ConfigMerger.INSTANCE.mergeConfiguration(
-						SetupConfiguration.DEFAULT,
+						WattsStrogatzConfiguration.DEFAULT,
 						getSetupTweak()
 				).build(),
 				ConfigMerger.INSTANCE.mergeConfiguration(
@@ -42,8 +42,8 @@ public interface TestUtils {
 		return getPerson().getCurrentState();
 	}
 	
-	@Value.Default default PartialSetupConfiguration getSetupTweak() {
-		return PartialSetupConfiguration.builder()
+	@Value.Default default PartialWattsStrogatzConfiguration getSetupTweak() {
+		return PartialWattsStrogatzConfiguration.builder()
 			.setNetworkSize(100)
 			.setNetworkConnectedness(30)
 			.setInitialImports(2)

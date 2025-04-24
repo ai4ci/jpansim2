@@ -1,4 +1,4 @@
-package io.github.ai4ci.util;
+package io.github.ai4ci.abm.mechanics;
 
 import static io.github.ai4ci.util.ModelNav.baseline;
 
@@ -7,11 +7,12 @@ import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.PersonState;
-import io.github.ai4ci.abm.StateMachine;
-import io.github.ai4ci.abm.StateMachine.BehaviourState;
-import io.github.ai4ci.abm.StateMachineContext;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.TestResult.Type;
+import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
+import io.github.ai4ci.util.Conversions;
+import io.github.ai4ci.util.ModelNav;
+import io.github.ai4ci.util.Sampler;
 
 public class StateUtils {
 
@@ -40,9 +41,9 @@ public class StateUtils {
 		return decayTo(p, 1, rate);
 	}
 	
-	private static double decayToZero(double p, double rate) {
-		return decayTo(p, 0, rate);
-	}
+//	private static double decayToZero(double p, double rate) {
+//		return decayTo(p, 0, rate);
+//	}
 	
 	private static double decayTo(double p, double target, double rate) {
 		return p + (target-p) * Conversions.probabilityFromRate(rate);
@@ -255,7 +256,7 @@ public class StateUtils {
 		return new BehaviourState() {
 			
 			// linear return to 1 as i changes on each call.
-			private static double frac(int i, double p) {
+			private double frac(int i, double p) {
 				if (i < 1) i=1;
 				return (1-p)/i+p;
 			}

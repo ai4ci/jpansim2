@@ -7,9 +7,10 @@ import java.util.Optional;
 import org.immutables.value.Value;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
-import io.github.ai4ci.abm.Abstraction.Entity;
-import io.github.ai4ci.abm.Abstraction.HistoricalStateProvider;
-import io.github.ai4ci.util.Data;
+import io.github.ai4ci.Data;
+import io.github.ai4ci.abm.mechanics.StateMachine;
+import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
+import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
 import io.github.ai4ci.util.Ephemeral;
 
 @Value.Modifiable
@@ -24,8 +25,8 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	public abstract PersonBaseline getBaseline();
 	public abstract PersonState getCurrentState();
 	
-	protected abstract Ephemeral<ImmutablePersonState.Builder> getNextState();
-	protected abstract Ephemeral<ImmutablePersonHistory.Builder> getNextHistory();
+	public abstract Ephemeral<ImmutablePersonState.Builder> getNextState();
+	public abstract Ephemeral<ImmutablePersonHistory.Builder> getNextHistory();
 	public abstract StateMachine getStateMachine();
 
 	public abstract List<PersonHistory> getHistory();
