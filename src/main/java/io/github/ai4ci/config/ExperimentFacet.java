@@ -1,4 +1,4 @@
-package io.github.ai4ci.flow;
+package io.github.ai4ci.config;
 
 import java.util.Map;
 

@@ -17,7 +17,7 @@ class TestCalibration {
 	@Test
 	void testR0() {
 		
-		System.out.println(Calibration.contactsPerDay(out));
+		System.out.println(Calibration.contactsPerPersonPerDay(out));
 		
 		double[] pTrans_0 = Calibration.inferTransmissionProbability(out, 1.0);
 		System.out.println("R0=1, trans="+Arrays.toString(pTrans_0));
@@ -27,7 +27,7 @@ class TestCalibration {
 		double pTrans[] = Calibration.inferTransmissionProbability(out, 1.5);
 		System.out.println("R0=1.5, trans="+Arrays.toString(pTrans));
 		
-		System.out.println(Arrays.stream(pTrans).sum()*Calibration.contactsPerDay(out));
+		System.out.println(Arrays.stream(pTrans).sum()*Calibration.contactsPerPersonPerDay(out));
 		
 		assertThrows(RuntimeException.class, () -> {
 			double[] pTrans_2 = Calibration.inferTransmissionProbability(out, 1000);

@@ -10,6 +10,7 @@ import org.mapstruct.NullValueMappingStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
+import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ImmutableDelayDistribution;
 
@@ -24,8 +25,8 @@ import io.github.ai4ci.util.ImmutableDelayDistribution;
 public abstract class ConfigMerger {
 	
 	public static ConfigMerger INSTANCE = Mappers.getMapper( ConfigMerger.class );
-	
-	public ImmutableExecutionConfiguration.Builder mergeConfiguration(
+	 
+	public ImmutableExecutionConfiguration mergeConfiguration(
 			ExecutionConfiguration target,
 			PartialExecutionConfiguration source
 	) {
@@ -33,16 +34,43 @@ public abstract class ConfigMerger {
 				ImmutableExecutionConfiguration.builder().from(target),
 				source)
 				.setAvailableTests(target.getAvailableTests().combine(source.getAvailableTests()))
+				.build()
 				;
 	};
 	
-	public ImmutableWattsStrogatzConfiguration.Builder mergeConfiguration(
+	public SetupConfiguration mergeConfiguration(
+			SetupConfiguration config,
+			Abstraction.Modification modification
+	) {
+		if (config instanceof WattsStrogatzConfiguration & 
+				modification instanceof PartialWattsStrogatzConfiguration)
+					return mergeConfiguration((WattsStrogatzConfiguration) config, 
+							(PartialWattsStrogatzConfiguration) modification);
+		
+		if (config instanceof AgeStratifiedNetworkConfiguration & 
+				modification instanceof PartialAgeStratifiedNetworkConfiguration)
+					return mergeConfiguration((AgeStratifiedNetworkConfiguration) config, 
+							(PartialAgeStratifiedNetworkConfiguration) modification);
+		
+		else throw new RuntimeException("invalid combination.");
+	}
+	
+	public ImmutableWattsStrogatzConfiguration mergeConfiguration(
 			WattsStrogatzConfiguration target,
 			PartialWattsStrogatzConfiguration source
 	) {
 		return updateConfiguration(
 				ImmutableWattsStrogatzConfiguration.builder().from(target),
-				source);
+				source).build();
+	};
+	
+	public ImmutableAgeStratifiedNetworkConfiguration mergeConfiguration(
+			AgeStratifiedNetworkConfiguration target,
+			PartialAgeStratifiedNetworkConfiguration source
+	) {
+		return updateConfiguration(
+				ImmutableAgeStratifiedNetworkConfiguration.builder().from(target),
+				source).build();
 	};
 	
 	@Mapping(target = "availableTests", ignore = true)
@@ -50,11 +78,13 @@ public abstract class ConfigMerger {
 			@MappingTarget ImmutableExecutionConfiguration.Builder target,
 			PartialExecutionConfiguration source); 
 	
-	
-	
 	abstract protected ImmutableWattsStrogatzConfiguration.Builder updateConfiguration(
 			@MappingTarget ImmutableWattsStrogatzConfiguration.Builder target,
 			PartialWattsStrogatzConfiguration source);
+	
+	abstract protected ImmutableAgeStratifiedNetworkConfiguration.Builder updateConfiguration(
+			@MappingTarget ImmutableAgeStratifiedNetworkConfiguration.Builder target,
+			PartialAgeStratifiedNetworkConfiguration source);
 	
 	abstract protected ImmutableStochasticModel mapper(StochasticModel source);
 	abstract protected ImmutablePhenomenologicalModel mapper(PhenomenologicalModel source);
@@ -62,6 +92,12 @@ public abstract class ConfigMerger {
 	protected InHostConfiguration mapper(InHostConfiguration source) {
 		if (source instanceof PhenomenologicalModel) return mapper((PhenomenologicalModel) source);
 		if (source instanceof StochasticModel) return mapper((StochasticModel) source);
+		throw new RuntimeException("Unknown type: "+source.getClass());
+	};
+	
+	protected SetupConfiguration mapper(SetupConfiguration source) {
+		if (source instanceof WattsStrogatzConfiguration) return mapper((WattsStrogatzConfiguration) source);
+		if (source instanceof AgeStratifiedNetworkConfiguration) return mapper((AgeStratifiedNetworkConfiguration) source);
 		throw new RuntimeException("Unknown type: "+source.getClass());
 	};
 	

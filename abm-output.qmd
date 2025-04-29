@@ -99,6 +99,39 @@ estimate %>% ggoutbreak::plot_rt(mapping = aes(colour=experimentName,group=inter
 
 
 ```{r}
-rt = readr::read_csv("~/tmp/rt-final.csv")
+demog = readr::read_csv("~/tmp/demog.csv")
+ggplot(demog,aes(x=age))+geom_density()
+
+ggplot(demog,aes(x=age,y=mobilityBaseline))+geom_point(alpha=0.1)
+```
+
+```{r}
+contacts = readr::read_csv("~/tmp/contact.csv")
+contacts %>% glimpse()
+
+expected = demog %>% mutate(age = floor(age)) %>% group_by(age) %>%
+  summarise(
+    count = n()
+  ) %>% 
+  mutate(
+    density = count/sum(count)
+  )
+
+expected = expected %>% cross_join(expected %>% rename_with(.fn = ~ paste0("contact",stringr::str_to_title(.x)))) %>%
+  mutate(expected = density*contactDensity*nrow(contacts))
+
+contact_matrix = contacts %>% 
+  filter(experimentName == "strategy:ignore") %>%
+  select(id,contactId) %>% 
+  inner_join(demog %>% filter(experimentName == "strategy:ignore") %>% select(age,id), by="id") %>%
+  inner_join(demog %>% filter(experimentName == "strategy:ignore") %>% select(contactAge = age,contactId=id), by="contactId") %>%
+  mutate(age = floor(age), contactAge=floor(contactAge)) %>%
+  group_by(age,contactAge) %>%
+  count()
+
+tmp = contact_matrix %>% inner_join(expected %>% select(age,contactAge,expected), by = join_by(age, contactAge)) %>%
+  mutate(contactRR = n/expected)
+
+ggplot(tmp, aes(x=age,y=contactAge,fill=contactRR))+geom_tile()+scale_fill_viridis_c(limits=c(0.5, 2), oob=scales::squish)
 
 ```

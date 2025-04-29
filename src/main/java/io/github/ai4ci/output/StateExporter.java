@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.output.StateExporter.ExportSelector;
 
 public class StateExporter implements Closeable {
 
@@ -26,7 +27,7 @@ public class StateExporter implements Closeable {
 		 return StateExporter.of(
 				SystemUtils.getUserHome().toPath().resolve(path),
 				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState()), "summary.csv"),
-				ExportSelector.ofMany(ImmutablePersonCSV.class, o -> o.getPeople().stream().map(CSVMapper.INSTANCE::toCSV), "linelist.csv")
+				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv")
 		);
 	}
 	
@@ -78,6 +79,8 @@ public class StateExporter implements Closeable {
 			ExportSelector<X> sel2 = (ExportSelector<X>) sel; 
 			if (sel2.writer != null)
 				sel2.writer.export(
+						// this should execute in the forkjoinpool
+						// it include the CSV mapper
 						sel2.selector.apply(outbreak).parallel()
 				);
 		});

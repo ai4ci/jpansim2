@@ -9,7 +9,6 @@ import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
 @Value.Immutable
 public interface PersonBaseline extends Serializable {
 
-	//Integer getAge();
 	/** 
 	 * A probability of contact of another person in the social network.
 	 * @return

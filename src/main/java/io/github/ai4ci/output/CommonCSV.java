@@ -7,6 +7,6 @@ public interface CommonCSV {
 	String getExperimentName();
 	int getExperimentReplica();
 	int getTime();
-	String getUrn();
+	// String getUrn();
 	
 }

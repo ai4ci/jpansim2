@@ -8,11 +8,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 
-@Value.Immutable(copy=false)
+@Value.Immutable
 @JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
 @JsonDeserialize(as = ImmutableWattsStrogatzConfiguration.class)
 public interface WattsStrogatzConfiguration extends SetupConfiguration {
 
+	public interface Builder extends SetupConfiguration.Builder {}
+	
 	WattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration.builder()
 			.setName("setup")
 			.setNetworkSize(10000)

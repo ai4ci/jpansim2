@@ -14,10 +14,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
-import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.SetupConfiguration;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ResampledDistribution;

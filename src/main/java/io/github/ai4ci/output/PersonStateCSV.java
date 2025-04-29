@@ -3,7 +3,7 @@ package io.github.ai4ci.output;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface PersonCSV extends CommonCSV {
+public interface PersonStateCSV extends CommonCSV {
 
 	int getPersonId();
 	String getBehaviour();

@@ -163,6 +163,7 @@ public class ModelOperation {
 			super(selector, consumer);
 		}}
 	
+	
 	public static class PersonStateUpdater extends UpdateStage<ImmutablePersonState.Builder, Person> {
 		PersonStateUpdater(Predicate<Person> selector, TriConsumer<ImmutablePersonState.Builder, Person, Sampler> consumer) {
 			super(selector, consumer);
@@ -179,6 +180,7 @@ public class ModelOperation {
 	
 	// Constructor methods ----
 	
+	@Deprecated
 	public static class OutbreakSetup extends UpdateStage<ModifiableOutbreak, SetupConfiguration> {
 		OutbreakSetup(Predicate<SetupConfiguration> selector, TriConsumer<ModifiableOutbreak,  SetupConfiguration, Sampler> consumer) {
 			super(selector, consumer);
@@ -193,6 +195,7 @@ public class ModelOperation {
 				consumer);
 	}
 	
+	@Deprecated
 	public static class PersonBaseliner extends UpdateStage<ImmutablePersonBaseline.Builder, Person> {
 		PersonBaseliner(Predicate<Person> selector, TriConsumer<ImmutablePersonBaseline.Builder, Person, Sampler> consumer) {
 			super(selector, consumer);
@@ -216,6 +219,7 @@ public class ModelOperation {
 				consumer); 
 	}
 	
+	@Deprecated
 	public static class OutbreakBaseliner extends UpdateStage<ImmutableOutbreakBaseline.Builder, Outbreak> {
 		OutbreakBaseliner(Predicate<Outbreak> selector, TriConsumer<ImmutableOutbreakBaseline.Builder, Outbreak, Sampler> consumer) {
 			super(selector, consumer);
@@ -238,6 +242,7 @@ public class ModelOperation {
 				consumer); 
 	}
 	
+	@Deprecated
 	public static class PersonInitialiser extends UpdateStage<ImmutablePersonState.Builder, Person> {
 		PersonInitialiser(Predicate<Person> selector, TriConsumer<ImmutablePersonState.Builder, Person, Sampler> consumer) {
 			super(selector, consumer);
@@ -264,6 +269,7 @@ public class ModelOperation {
 				consumer); 
 	}
 	
+	@Deprecated
 	public static class OutbreakInitialiser extends UpdateStage<ImmutableOutbreakState.Builder, Outbreak> {
 		OutbreakInitialiser(Predicate<Outbreak> selector, TriConsumer<ImmutableOutbreakState.Builder, Outbreak, Sampler> consumer) {
 			super(selector, consumer);

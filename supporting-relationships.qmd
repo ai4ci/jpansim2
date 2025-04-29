@@ -299,3 +299,105 @@ person %>% crossing(prevalence) %>%
   )
 
 ```
+
+# Contact matrices
+
+
+
+```{r}
+partic = readr::read_csv("https://zenodo.org/records/6542524/files/CoMix_uk_participant_common.csv?download=1")
+comix = readr::read_csv("https://zenodo.org/records/6542524/files/CoMix_uk_contact_common.csv?download=1")
+```
+
+```{r}
+partic = partic %>% mutate(
+  part_age_min = as.numeric(stringr::str_extract(part_age, "([0-9]+)-([0-9]+)", 1)),
+  part_age_max = as.numeric(stringr::str_extract(part_age, "([0-9]+)-([0-9]+)", 2))
+)
+
+agediff = comix %>% inner_join(partic, by="part_id") %>% mutate(
+  min_age_diff = pmin(part_age_min - cnt_age_est_max, part_age_max - cnt_age_est_min),
+  max_age_diff = pmax(part_age_min - cnt_age_est_max, part_age_max - cnt_age_est_min),
+  # mid_age_diff = ((part_age_min - cnt_age_est_max)+(part_age_max - cnt_age_est_min))/2
+  mid_age_diff = abs((part_age_min+part_age_max)/2 - (cnt_age_est_max+cnt_age_est_min)/2)
+) %>% glimpse()
+
+ggplot(agediff)+
+  geom_histogram(aes(x=abs(mid_age_diff)), colour="red",binwidth = 1)#+
+
+ggplot(agediff)+
+  geom_density(aes(x=abs(mid_age_diff)), colour="red")
+
+  # geom_histogram(aes(x=max_age_diff), colour="blue",binwidth = 5)+
+  # geom_histogram(aes(x=(min_age_diff+max_age_diff)/2), colour="magenta",binwidth = 5)
+```
+
+
+
+```{r}
+
+f_gen = function(a,b,c,d) {
+  tmp = function(x) (a+cos(2*pi*(x/c)^d)) / ((a+1)*(b*(x/c)^2+1))
+  total = integrate(tmp,0,100)$value
+  print(total)
+  return(function(x) return(tmp(x)/total))
+}
+
+ggplot(agediff)+
+  geom_density(aes(x=abs(mid_age_diff)), colour="red")+
+  geom_function(fun = f_gen(1.2,0.25,6.25,0.8))+xlim(0,80)
+
+
+sapply(0:100, function(x) integrate(f_gen(1.2,0.25,6.25,0.8),0,x)$value)
+
+f = f_gen(1.2,0.25,6.25,0.8)
+
+x = tibble(
+  agediff = 0:100,
+  p = f(0:100)
+) %>% mutate(
+  rr = p/mean(p)
+)
+
+mean(x$p)
+
+
+```
+
+Probability of 
+
+```{r}
+cum = sapply(1:100, function(x) sum(na.omit(agediff$mid_age_diff)<x))
+
+cdf = tibble(
+  diff=1:100,
+  cdf = cum/max(cum)
+)
+
+
+g_gen = function(a,b,c,d) {
+  return(function(x) 1-exp(-x/a)*(1+1/b*sin(2*pi*x^d/c)^2))
+}
+
+g = g_gen(20,10,13,0.9)
+g(1)
+
+ggplot(cdf,aes(x=diff,y=cdf))+
+  geom_line()+
+  geom_function(fun = g_gen(19,8,11,0.85), colour="red")+xlim(0,80)
+  
+
+```
+
+
+```{r}
+
+cdf_gen = function(a,b,c,d) {
+  return(function(x) a*tan((x+c*(1-x^2)*cos(b*pi/2*x^d))*atan(75/a)))
+}
+
+ggplot(cdf,aes(x=cdf,y=diff))+
+  geom_line()+
+  geom_function(fun = cdf_gen(18,23,0.03,3.5), colour="red")+xlim(0,1)
+
+```

@@ -8,7 +8,7 @@ import org.immutables.value.Value;
 
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.Group;
+import io.github.ai4ci.util.ShallowList;
 import io.github.ai4ci.util.Sampler;
 
 
@@ -46,8 +46,8 @@ public interface TestResult extends Serializable {
 		
 	}
 	
-	static Group<TestParameters> defaultTypes() {
-		Group<TestParameters> tmp = new Group<TestParameters>();
+	static ShallowList<TestParameters> defaultTypes() {
+		ShallowList<TestParameters> tmp = new ShallowList<TestParameters>();
 		Arrays.asList(Type.values()).stream().map(t -> t.params())
 			.forEach(tmp::add);
 		return tmp;		

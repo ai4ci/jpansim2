@@ -112,6 +112,7 @@ public interface PersonState extends PersonTemporalState {
 	/**
 	 * Probability of contact given a fully mobile partner. The joint probability
 	 * will define the likelihood of a contact. (Plus some randomness) 
+	 * A high mobility means a high probability of contact
 	 * @return
 	 */
 	default Double getAdjustedMobility() {
@@ -324,37 +325,17 @@ public interface PersonState extends PersonTemporalState {
 	}
 	
 	/** 
-	 * The log likelihood of disease given exposure to contacts, adjusted for 
-	 * the proximity of the contact.     
+	 * The log likelihood of disease given exposure to contacts, 
+	 * TODO: not adjusted for the proximity of the contact.     
 	 * @return
 	 */
 	default double logLikelihoodContacts() {
-//		Pair<Double,Double> out = 
-//			this.getContacts()
-//				.filter(c -> c.isDetected())
-//				.map(c -> c.getProximityDuration() *
-//						c.getParticipant(this.getEntity().getOutbreak())
-//							.getDirectLogLikelihood(
-//								this.getTime(), 
-//								limit()))
-//				.collect(Collectors.teeing(
-//						// Collectors.filtering(d -> d>0, Collectors.averagingDouble(d -> (double) d)),
-//						Collectors.filtering(d -> d>0, Collectors.summingDouble(d -> (double) d)),
-////						Collectors.filtering(d -> d>0,
-////								Collectors.collectingAndThen(
-////										Collectors.maxBy(Double::compareTo),
-////										o -> o.orElse(0D)
-////								)),
-//						Collectors.filtering(d -> d<0, Collectors.averagingDouble(d -> (double) d)), 
-//						Pair::of));
-//		if (out.getLeft() > 0) return out.getLeft();
-//		return out.getRight();
 		
 		return 
 				this.getContactHistory()
 					.filter(c -> c.isDetected())
 					.mapToDouble(c -> 
-							c.getProximityDuration() *
+							// c.getProximityDuration() *
 							c.getParticipant(this)
 								.getDirectLogLikelihood(
 									this.getTime(), 

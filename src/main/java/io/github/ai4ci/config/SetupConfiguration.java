@@ -3,14 +3,11 @@ package io.github.ai4ci.config;
 import java.io.Serializable;
 
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.mechanics.Abstraction;
 
@@ -29,6 +26,15 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 } )
 public interface SetupConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable {
 
+	public static interface Builder {
+		Builder setReplicate(Integer value);
+		Builder setName(String name);
+		SetupConfiguration build();
+	}
+	
+	SetupConfiguration withReplicate(Integer i);
+	SetupConfiguration withName(String name);
+	
 	// public static Logger log = LoggerFactory.getLogger(SetupConfiguration.class);
 	
 	// @Partial @Value.Immutable

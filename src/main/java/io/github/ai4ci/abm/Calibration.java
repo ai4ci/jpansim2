@@ -9,10 +9,6 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.Person.Relationship;
-import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
-import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 
 public class Calibration {
@@ -20,7 +16,7 @@ public class Calibration {
 	static Logger log = LoggerFactory.getLogger(Calibration.class);
 	
 	public static double getConnectedness(Outbreak outbreak) {
-		SimpleWeightedGraph<Person, Relationship> contacts = outbreak.getSocialNetwork();
+		SimpleWeightedGraph<Person, SocialRelationship> contacts = outbreak.getSocialNetwork();
 		return stream(contacts.iterables().vertices())
 				.mapToInt(
 						c -> contacts.degreeOf(c)
@@ -33,36 +29,54 @@ public class Calibration {
 			);
 	}
 	
-	public static double contactsPerDay(Outbreak outbreak) {
-		// SimpleWeightedGraph<Person, Person.Relationship> social = outbreak.getSocialNetwork();
-		ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
-		// Distribution jointMob = configuration.getContactProbability();
-				//.combine(
-				//configuration.getContactProbability(), (d1,d2) -> d1*d2);
-				//removed as we started to define baseline mobility as the sqrt 
-				// of contact probability
+	/**
+	 * What can we assume we know at this stage? This is used to baseline the 
+	 * outbreak. At this point the social network and demographics are set up.
+	 * We should also have the individuals baselined. This means we can look
+	 * at their individual mobility and hence the probability of contact
+	 * across the network. 
+	 * 
+	 * @param outbreak
+	 * @return
+	 */
+	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 		
-		Distribution jointMob = configuration.getContactProbability().combine(
-				configuration.getContactProbability(), (d1,d2) -> Math.sqrt(d1)*Math.sqrt(d2))
-				.getInterpolation();
-		double meanProbContact = jointMob.getCentral();
-		double socialContacts = getConnectedness(outbreak);
-		return meanProbContact * socialContacts; 
+//		// TODO: encapsulate elsewhere?
+//		if (outbreak instanceof ModifiableOutbreak) {
+//			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
+//			if (!(
+//				m.initialisedSocialNetwork() &
+//				m.initialisedPeople()
+//				)) {
+//					throw new RuntimeException("Outbreak not setup correctly");
+//				}
+//			ModifiablePerson mp = (ModifiablePerson) m.getPeople().get(0);
+//			if (!(mp.initialisedBaseline())) {
+//				throw new RuntimeException("People not baselined");
+//			}
+//		}
 		
-//		return stream(social.iterables().vertices())
-//			.mapToDouble( pers ->
-//				stream(social.iterables().edgesOf(pers))
-//				// This is a probability that this contact is made on a 
-//				// given time step based on expected mobility
-//				// at the stage this calibration is needed the individuals
-//				// haven't had their personal mobility assigned so we
-//				// have to assume it is based on the overall mobility distribution
-//				// which we can build into the definition of R0 - i.e. in a 
-//				// homogeneous population
-//				.mapToDouble(c -> 1-jointMob.pLessThan(c.getConnectednessQuantile()))
-//				.sum() 
-//			)
-//			.average().orElse(0);
+		SimpleWeightedGraph<Person, SocialRelationship> social = outbreak.getSocialNetwork();
+		double totalContactProbability = stream(social.iterables().edges())
+			.mapToDouble(r -> {
+				Person person1 = social.getEdgeSource(r);
+				Person person2 = social.getEdgeTarget(r);
+				return r.contactProbability(
+						person1.getBaseline().getMobilityBaseline(),
+						person2.getBaseline().getMobilityBaseline()
+				);
+			}).sum();
+		// Each contact involves 2 people so we have to count them twice
+		return totalContactProbability * 2 / outbreak.getPeople().size();
+		
+//		ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
+//		Distribution jointMob = configuration.getContactProbability().combine(
+//				configuration.getContactProbability(), (d1,d2) -> Math.sqrt(d1)*Math.sqrt(d2))
+//				.getInterpolation();
+//		double meanProbContact = jointMob.getCentral();
+//		double socialContacts = getConnectedness(outbreak);
+//		return meanProbContact * socialContacts; 
+		
 	}
 	
 //	private static double guesstimateR0(double transP, 
@@ -148,7 +162,7 @@ public class Calibration {
 	 * transmission probability per day. This is defined as a linear scale factor 
 	 * of the viral load per day. 
 	 * 
-	 * This tends to produce outbreaks with larger effective reproduction numbers 
+	 * TODO: This tends to produce outbreaks with larger effective reproduction numbers 
 	 * than R0 in the simulation because (I think) of the number of exposures
 	 * people have, means there is a difference between the R0 in a completely
 	 * random population at the R0 in a network where repeated exposure is the
@@ -160,7 +174,7 @@ public class Calibration {
 	 * @return
 	 */
 	public static double inferViralLoadTransmissionProbabilityFactor(Outbreak outbreak, double R0) {
-		double c = contactsPerDay(outbreak);
+		double c = contactsPerPersonPerDay(outbreak);
 		
 		DelayDistribution dd = outbreak.getExecutionConfiguration().getInfectivityProfile();
 		// The expected value here is what you would see in terms of

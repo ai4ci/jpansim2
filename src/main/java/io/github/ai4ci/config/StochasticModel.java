@@ -2,12 +2,17 @@ package io.github.ai4ci.config;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.github.ai4ci.abm.InHostStochasticState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.util.SimpleDistribution;
 
-@Value.Immutable(copy=false)
+@Value.Immutable
+@JsonSerialize(as = ImmutableStochasticModel.class)
+@JsonDeserialize(as = ImmutableStochasticModel.class)
 public interface StochasticModel extends InHostConfiguration {
 	
 	public static StochasticModel DEFAULT = ImmutableStochasticModel.builder()

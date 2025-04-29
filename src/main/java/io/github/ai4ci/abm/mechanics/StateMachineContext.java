@@ -28,7 +28,7 @@ public interface StateMachineContext extends Serializable {
 			out = this.getBaselineState();
 		}
 		if (out instanceof BehaviourState) return (BehaviourState) out;
-		throw new RuntimeException("Worng type of state");
+		throw new RuntimeException("Wrong type of state");
 	}
 	
 	public default PolicyState pullPolicy() {
@@ -41,7 +41,7 @@ public interface StateMachineContext extends Serializable {
 			out = this.getBaselineState();
 		}
 		if (out instanceof PolicyState) return (PolicyState) out;
-		throw new RuntimeException("Worng type of state");
+		throw new RuntimeException("Wrong type of state");
 	}
 	
 	public default boolean pullFlag() {

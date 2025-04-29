@@ -16,7 +16,7 @@ import io.github.ai4ci.abm.TestParameters;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.util.DelayDistribution;
-import io.github.ai4ci.util.Group;
+import io.github.ai4ci.util.ShallowList;
 // import io.reactivex.rxjava3.annotations.Nullable;
 import io.github.ai4ci.util.SimpleDistribution;
 
@@ -24,7 +24,7 @@ import io.github.ai4ci.util.SimpleDistribution;
 @Value.Immutable
 @JsonSerialize(as = ImmutableExecutionConfiguration.class)
 @JsonDeserialize(as = ImmutableExecutionConfiguration.class)
-public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable {
+public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable, WithExecutionConfiguration {
 
 	@Partial @Value.Immutable 
 	@JsonSerialize(as = PartialExecutionConfiguration.class)
@@ -106,8 +106,7 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	
 	InHostConfiguration getInHostConfiguration();
 	
-	
-	Group<TestParameters> getAvailableTests();
+	ShallowList<TestParameters> getAvailableTests();
 	
 	SimpleDistribution getSymptomSensitivity();
 	SimpleDistribution getSymptomSpecificity();

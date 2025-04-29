@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,15 +22,13 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
 import io.github.ai4ci.abm.PolicyModel.NoControl;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.config.ImmutableExperimentConfiguration;
+import io.github.ai4ci.config.ImmutableExperimentFacet;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.flow.ExperimentConfiguration;
-import io.github.ai4ci.flow.ExperimentConfiguration.AgeStratifiedExperimentConfiguration;
-import io.github.ai4ci.flow.ExperimentConfiguration.BasicExperimentConfiguration;
-import io.github.ai4ci.flow.ImmutableAgeStratifiedExperimentConfiguration;
-import io.github.ai4ci.flow.ImmutableBasicExperimentConfiguration;
-import io.github.ai4ci.flow.ImmutableExperimentFacet;
 import io.github.ai4ci.output.CSVMapper;
-import io.github.ai4ci.output.ImmutablePersonCSV;
+import io.github.ai4ci.output.ImmutablePersonStateCSV;
 
 class TestJackson {
 
@@ -40,15 +39,15 @@ class TestJackson {
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
 		
-		BasicExperimentConfiguration tmp0 = BasicExperimentConfiguration.DEFAULT;
+		ExperimentConfiguration tmp0 = ExperimentConfiguration.DEFAULT;
 		
 		String json0 = om.writeValueAsString(tmp0);
 		System.out.println(json0);
 		System.out.print("\n\n");
 		
-		AgeStratifiedExperimentConfiguration tmp = 
-				ImmutableAgeStratifiedExperimentConfiguration.copyOf(	
-					AgeStratifiedExperimentConfiguration.DEFAULT
+		ExperimentConfiguration tmp = 
+				ImmutableExperimentConfiguration.copyOf(	
+					ExperimentConfiguration.DEFAULT
 				)
 			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
 			.withFacets(
@@ -69,15 +68,18 @@ class TestJackson {
 		String json = om.writeValueAsString(tmp);
 		System.out.println(json);
 		
-		AgeStratifiedExperimentConfiguration rt = om.readerFor(AgeStratifiedExperimentConfiguration.class).readValue(json);
+		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json);
 		String json2 = om.writeValueAsString(rt);
 		assertEquals(json, json2);
+		
+		List<ExecutionConfiguration> ecfg = rt.getExecution(); 
+		ecfg.stream().map(e -> e.toString()).forEach(System.out::println);
 	}
 
 	@Test
 	void testJacksonCSV() throws IOException {
 		
-		ImmutablePersonCSV tmp = CSVMapper.INSTANCE.toCSV(
+		ImmutablePersonStateCSV tmp = CSVMapper.INSTANCE.toCSV(
 			TestUtils.mockPersonState()	
 		);
 		
@@ -85,7 +87,7 @@ class TestJackson {
 				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 				.build();
 		// cm.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-		CsvSchema sch = cm.schemaFor(ImmutablePersonCSV.class).withHeader();
+		CsvSchema sch = cm.schemaFor(ImmutablePersonStateCSV.class).withHeader();
 		try (StringWriter strW = new StringWriter()) {
 			  SequenceWriter seqW = cm.writer(sch)
 			    .writeValues(strW);
@@ -96,24 +98,6 @@ class TestJackson {
 		
 	}
 	
-//	void testSimpleCSV() throws IOException {
-//		
-//		ImmutablePersonHistory tmp = ImmutablePersonHistory.builder()
-//			.setPersonId(1)
-//			.setState(InfectionState.RECOVERED)
-//			.setTime(10)
-//			.build();
-//		
-//		CsvProcessor<ImmutablePersonHistory> csvProcessor = new CsvProcessor<ImmutablePersonHistory>(ImmutablePersonHistory.class);
-//		
-//		try (StringWriter strW = new StringWriter()) {
-//			BufferedWriter bw = new BufferedWriter(strW);
-//			csvProcessor.writeHeader(bw, true /* write header */);
-//			csvProcessor.writeRow(bw, tmp, true);
-//			csvProcessor.writeRow(bw, tmp, true);
-//			System.out.println(strW.toString());
-//		}
-//		
-//	}
+
 }
 

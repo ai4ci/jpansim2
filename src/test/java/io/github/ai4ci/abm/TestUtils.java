@@ -9,21 +9,21 @@ import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
 import io.github.ai4ci.config.WattsStrogatzConfiguration;
-import io.github.ai4ci.flow.ExperimentBuilder;
+import io.github.ai4ci.flow.ExecutionBuilder;
 
 @Value.Immutable
 public interface TestUtils {
 
 	@Value.Derived default Outbreak getOutbreak() {
-		return ExperimentBuilder.buildExperiment(
+		return ExecutionBuilder.buildExperiment(
 				ConfigMerger.INSTANCE.mergeConfiguration(
 						WattsStrogatzConfiguration.DEFAULT,
 						getSetupTweak()
-				).build(),
+				),
 				ConfigMerger.INSTANCE.mergeConfiguration(
 						ExecutionConfiguration.DEFAULT,
 						getExecutionTweak()
-				).build(),
+				),
 				"experiment");
 	};
 	

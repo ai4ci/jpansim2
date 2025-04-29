@@ -106,6 +106,7 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 	}
 	
 	@JsonIgnore
+	@Value.Redacted
 	@Value.Derived public default double[] getSamples() {
 		return IntStream.range(0,PRECISION)
 				.mapToDouble(i -> sample())

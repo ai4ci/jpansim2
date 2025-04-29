@@ -55,4 +55,18 @@ class TestDistribution {
 		
 		IntStream.range(0, 10000).mapToDouble(i -> dist.getInterpolation().sample()).average().ifPresent(System.out::println);
 	}
+	
+	@Test
+	void testInterp() {
+		ImmutableEmpiricalFunction fn = ImmutableEmpiricalFunction.builder()
+		.putDataPoint(0, 2)
+		.putDataPoint(10, 0.5)
+		.putDataPoint(25, 1.5)
+		.putDataPoint(40, 0.5)
+		.putDataPoint(60, 1.0)
+		.putDataPoint(70, 0.5)
+		.build();
+		IntStream.range(0, 80).mapToDouble(i -> fn.interpolate((double) i))
+			.forEach(System.out::println);
+	}
 }

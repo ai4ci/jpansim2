@@ -2,12 +2,17 @@ package io.github.ai4ci.config;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import io.github.ai4ci.abm.InHostPhenomenologicalState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.util.SimpleDistribution;
 
-@Value.Immutable(copy=false)
+@Value.Immutable
+@JsonSerialize(as = ImmutablePhenomenologicalModel.class)
+@JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
 public interface PhenomenologicalModel extends InHostConfiguration {
 	
 	public static PhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()

@@ -24,24 +24,36 @@ public interface Contact extends Serializable {
 	boolean isDetected();
 	int getParticipant1Id();
 	int getParticipant2Id();
-	double getProximityDuration();
+	
+//	/**
+//	 * The strength of the contact is at the moment defined as the probability 
+//	 * of the contact occuring.
+//	 * @return
+//	 */
+//	double getProximityDuration();
+	
+	default int getParticipant(int id) {
+		if (id == getParticipant1Id()) return getParticipant2Id(); 
+		if (id == getParticipant2Id()) return getParticipant1Id();
+		throw new RuntimeException("Not a participant");
+	}
 	
 	default PersonHistory getParticipant(PersonHistory one) {
-		int id = one.getEntity().getId() == getParticipant1Id() ? getParticipant1Id() : getParticipant2Id();
+		int id = getParticipant(one.getEntity().getId());
 		int time = one.getTime();
 		return one.getEntity().getOutbreak().getPersonHistoryByIdAndTime(id,time)
 				.get();
 	}
 	
 	default PersonHistory getParticipant(PersonState one) {
-		int id = one.getEntity().getId() == getParticipant1Id() ? getParticipant1Id() : getParticipant2Id();
+		int id = getParticipant(one.getEntity().getId());
 		return one.getEntity().getOutbreak().getPersonById(id).flatMap(p -> p.getCurrentHistory()).get();
 	}
 	
 	public static PersonStateContacts contactNetwork(Outbreak outbreak) {
 		//Do the contact network here? and pass it as a parameter to the
 		//person updateState
-		SimpleWeightedGraph<Person, Person.Relationship> network = outbreak.getSocialNetwork();
+		SimpleWeightedGraph<Person, SocialRelationship> network = outbreak.getSocialNetwork();
 		PersonStateContacts out = new PersonStateContacts(
 				network.vertexSet().size(),
 				network.vertexSet().stream()
@@ -53,24 +65,19 @@ public interface Contact extends Serializable {
 			Sampler sampler = Sampler.getSampler();
 			PersonState one = network.getEdgeSource(r).getCurrentState();
 			PersonState two = network.getEdgeTarget(r).getCurrentState();
-			// jointProb is a contact intensity. This can be used to 
-			// estimate contact observation probability
-			double jointMobility = 
-					// Conversions.scaleProbability(
-							// This will be the lowest common value 
-							one.getAdjustedMobility()*two.getAdjustedMobility(); //,
-							// This is just a way of introducing noise into
-							// the probability.
-							// sampler.gamma(1, 0.1)
-					// );
+			
 			// TODO: connectedness quantile is a proxy for the context of a contact
 			// If we wanted to control this a different set of fetaures of the 
 			// relationship could be used. At the moment this overloads mobility
 			// with type of contact, but in reality WORK contacts may be less
 			// Significant that home contacts. This is where we would implement
 			// something along these lines.
-			// TODO: No randomness in here at the moment
-			if (jointMobility > r.getConnectednessQuantile()) {
+			
+			double contactProbability = r.contactProbability(
+					one.getAdjustedMobility(),
+					two.getAdjustedMobility());
+			
+			if (sampler.bern(contactProbability)) {
 				// This is a contact. 
 				// Contact transmission probability depends on lowest transmissibility
 				
@@ -84,7 +91,8 @@ public interface Contact extends Serializable {
 					.setDetected(detected)
 					.setParticipant1Id(oneref)
 					.setParticipant2Id(tworef)
-					.setProximityDuration(jointMobility - r.getConnectednessQuantile())
+					// TODO: need to figure this out
+					// .setProximityDuration(contactProbability)
 					.build();
 				
 				out.write(oneref).put(contact);

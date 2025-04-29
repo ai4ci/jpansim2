@@ -6,13 +6,13 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.jupiter.api.Test;
 
-import io.github.ai4ci.util.PagedArray;
+import io.github.ai4ci.util.ThreadSafeArray;
 
 public class TestMultiThreadList {
 
 	@Test
 	void testMulti() {
-		PagedArray<Integer> test = new PagedArray<Integer>(Integer.class, 10000);
+		ThreadSafeArray<Integer> test = new ThreadSafeArray<Integer>(Integer.class, 10000);
 		IntStream.range(0, 10000).parallel().forEach(
 				i -> test.put(i)
 		);

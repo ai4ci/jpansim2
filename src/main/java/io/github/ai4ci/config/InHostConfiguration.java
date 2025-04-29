@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.InHostModelState;
 import io.github.ai4ci.abm.InHostPhenomenologicalState;
@@ -19,10 +18,11 @@ import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.Sampler;
 
-//@JsonTypeInfo(use = Id.SIMPLE_NAME, requireTypeIdForSubtypes = OptBoolean.TRUE)
 @JsonTypeInfo(use = Id.DEDUCTION)
-@JsonSubTypes( {@Type(ImmutableStochasticModel.class), @Type(ImmutablePhenomenologicalModel.class)})
-// @Value.Immutable(copy=false)
+@JsonSubTypes({
+	@Type(ImmutableStochasticModel.class), 
+	@Type(ImmutablePhenomenologicalModel.class)
+})
 public interface InHostConfiguration extends Serializable {
 
 	static Logger log = LoggerFactory.getLogger(InHostConfiguration.class);

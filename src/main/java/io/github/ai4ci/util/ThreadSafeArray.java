@@ -13,19 +13,19 @@ import java.util.stream.Stream;
  * assumes they happen in different phases.  
  * @param <X>
  */
-public class PagedArray<X> implements Serializable {
+public class ThreadSafeArray<X> implements Serializable {
 	
 	public static class OutOfSpaceException extends RuntimeException {};
 	
 	X[] pages = null;
 	AtomicInteger pointer;
 	
-	public static <Y> PagedArray<Y> empty(Class<Y> type) {
-		return new PagedArray<Y>(type,0);
+	public static <Y> ThreadSafeArray<Y> empty(Class<Y> type) {
+		return new ThreadSafeArray<Y>(type,0);
 	}
 	
 	@SuppressWarnings("unchecked")
-	public PagedArray(Class<X> type, int size) {
+	public ThreadSafeArray(Class<X> type, int size) {
 		this.pages = (X[]) Array.newInstance(type, size);
 		this.pointer = new AtomicInteger(0);
 	}
@@ -51,8 +51,17 @@ public class PagedArray<X> implements Serializable {
 		return IntStream.range(0, p).mapToObj(i -> get(i));
 	}
 	
+	public Stream<X> parallelStream() {
+		int p = this.pointer.get();
+		return IntStream.range(0, p).parallel().mapToObj(i -> get(i));
+	}
+	
 	public int size() {
 		return pointer.get();
+	}
+	
+	public boolean isEmpty() {
+		return size() == 0;
 	}
 	
 }

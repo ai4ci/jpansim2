@@ -13,13 +13,14 @@ import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 import io.github.ai4ci.util.Ephemeral;
+import io.github.ai4ci.util.ThreadSafeArray;
 
 @Value.Modifiable
 @Data.Mutable
 public abstract class Outbreak implements Entity, HistoricalStateProvider<OutbreakHistory> {
  
 	public abstract String getUrn();
-	public abstract List<Person> getPeople();
+	public abstract ThreadSafeArray<Person> getPeople();
 	public abstract SetupConfiguration getSetupConfiguration();
 	public abstract ExecutionConfiguration getExecutionConfiguration();
 	public abstract OutbreakBaseline getBaseline();
@@ -30,7 +31,7 @@ public abstract class Outbreak implements Entity, HistoricalStateProvider<Outbre
 	public abstract OutbreakState getCurrentState();
 	public abstract List<OutbreakHistory> getHistory();
 	
-	public abstract SimpleWeightedGraph<Person, Person.Relationship> getSocialNetwork();
+	public abstract SimpleWeightedGraph<Person, SocialRelationship> getSocialNetwork();
 	//public abstract NetworkBuilder<PersonHistory, PersonHistory.Infection> getInfections();
 	
 	Optional<Person> getPersonById(int id) {

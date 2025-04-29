@@ -8,14 +8,17 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.ModelBuild;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.output.StateExporter;
 
 /**
  * Configuration of simulations, setup and baselining. This runs as a 
@@ -23,6 +26,103 @@ import io.github.ai4ci.config.SetupConfiguration;
  */
 public class SimulationFactory extends Thread {
 
+	static int OOM_REPEAT = 10;
+	
+	public static void runExperiments(ExperimentConfiguration config, String urnBase, Updater updater, StateExporter exporter, int toStep, StateExporter finalState ) throws InterruptedException {
+		
+//		Scheduler configScheduler = Schedulers.single(); // For configuration
+//		Scheduler executionScheduler = Schedulers.single(); // For parallel execution
+//		
+//		Iterator<SetupConfiguration> cfgSetup = config.getSetup().iterator();
+//		
+//		Flowable
+//			.create(emitter -> {
+//				if (cfgSetup.hasNext()) {
+//					emitter.onNext(cfgSetup.next());
+//				} else {
+//					emitter.onComplete();
+//				}
+//			}, BackpressureStrategy.BUFFER)
+//			.map(cfg -> {
+//				ExperimentBuilder builder = new ExperimentBuilder();
+//				builder.setupOutbreak((SetupConfiguration) cfg, urnBase);
+//				return builder;
+//			})
+//			.flatMapStream(builder -> {
+//				return config.getExecution().stream().map(exCfg -> {
+//					ExperimentBuilder builder2 = builder.copy();
+//					builder2.baselineModel(exCfg);
+//					builder2.initialiseStatus(exCfg);
+//					return builder2;
+//				});	
+//			}, 2) //prefetch 2 items
+//			.onBackpressureBuffer(2)
+//			.subscribeOn(configScheduler)
+//			.observeOn(executionScheduler)
+//			.blockingSubscribe( builder2 -> {
+//				log.debug("Executing new simulation - memory free: "+freeMem());
+//				{
+//					// Limit scope of outbreak
+//					Outbreak outbreak = builder2.build();
+//					IntStream.range(0, toStep).forEach(i -> {
+//						updater.update(outbreak);
+//						exporter.export(outbreak);
+//					});
+//					finalState.export(outbreak);
+//				}
+//				log.debug("Finishing simulation - memory free: "+freeMem());
+//				System.gc();
+//				log.debug("Post clean up - memory free: "+freeMem());
+//			})
+//			;
+		
+		SimulationFactory factory = SimulationFactory.startFactory(config, urnBase);
+		
+		while (!factory.completed()) {
+			
+			
+			if (!factory.oom()) {
+			
+				if (!factory.ready()) log.debug("Execution thread waiting for simulation to be built");
+				while (!factory.ready()) {
+					Thread.sleep(10);
+				}
+				
+				log.debug("Executing new simulation - memory free: "+freeMem());
+				{
+					Outbreak outbreak = factory.deliver();
+					IntStream.range(0, toStep).forEach(i -> {
+						updater.update(outbreak);
+						exporter.export(outbreak);
+					});
+					finalState.export(outbreak);
+				}
+				log.debug("Finishing simulation - memory free: "+freeMem());
+				System.gc();
+				log.debug("Post clean up - memory free: "+freeMem());
+			
+			} else {
+				
+				log.debug("Execution thread waiting for simulation but factory is out of memory.");
+				for (int i = 0; i<OOM_REPEAT; i++) {
+					System.gc();
+					Thread.sleep(100);
+					if (factory.oom()) {
+						log.debug("Execution thread waiting for memory to be free... "+i+"/"+OOM_REPEAT);
+					} else {
+						break;
+					}
+				}
+				if (factory.oom()) {
+					log.error("Could not clear low memory issue. Aborting.");
+					throw new RuntimeException("Out of memory.");
+				}
+				
+			}
+		}
+		
+	}
+	
 	public static int CACHE_SIZE = 2;
 	
 	static Logger log = LoggerFactory.getLogger(SimulationFactory.class);
@@ -54,7 +154,7 @@ public class SimulationFactory extends Thread {
 	}
 	
 	public boolean completed() {
-		return this.complete;
+		return this.complete & queue.isEmpty();
 	}
 	
 	public static SimulationFactory startFactory(ExperimentConfiguration config, String urnBase) {
@@ -77,8 +177,6 @@ public class SimulationFactory extends Thread {
 		return tmp;
 	}
 	
-	
-	
 	public SimulationFactory(ExperimentConfiguration config, String urnBase, int from, int to) {
 		this.queue = new ConcurrentLinkedQueue<>();
 		halt = false;
@@ -96,7 +194,7 @@ public class SimulationFactory extends Thread {
 
 			List<SetupConfiguration> setups = config.getSetup();
 			List<ExecutionConfiguration> execs = config.getExecution();
-			ExperimentBuilder setupBuilder;
+			ExecutionBuilder setupBuilder;
 			int setup = from;
 			int exec = 0;
 			
@@ -112,17 +210,13 @@ public class SimulationFactory extends Thread {
 				
 				if (exec == 0) {
 					// Click back to new setup
-					setupBuilder = new ExperimentBuilder(
-							ModelBuild.getSetupForConfiguration(setups.get(setup)),
-							ModelBuild.OutbreakBaselinerFn.DEFAULT.fn(),
-							ModelBuild.PersonBaselinerFn.DEFAULT.fn(),
-							ModelBuild.OutbreakStateInitialiserFn.DEFAULT.fn(),
-							ModelBuild.PersonStateInitialiserFn.DEFAULT.fn()
+					setupBuilder = new ExecutionBuilder(
+							setups.get(setup)
 					);
-					setupBuilder.setupOutbreak(setups.get(setup), urnBase);
+					setupBuilder.setupOutbreak(urnBase);
 				}
 				
-				ExperimentBuilder builder2 = setupBuilder.copy();
+				ExecutionBuilder builder2 = setupBuilder.copy();
 				ExecutionConfiguration exCfg = execs.get(exec); 
 				builder2.baselineModel(exCfg);
 				builder2.initialiseStatus(exCfg);
