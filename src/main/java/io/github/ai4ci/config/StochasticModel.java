@@ -15,7 +15,7 @@ import io.github.ai4ci.util.SimpleDistribution;
 @JsonDeserialize(as = ImmutableStochasticModel.class)
 public interface StochasticModel extends InHostConfiguration {
 	
-	public static StochasticModel DEFAULT = ImmutableStochasticModel.builder()
+	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel.builder()
 			.setTargetCellCount(10000)
 			.setImmuneTargetRatio( SimpleDistribution.logNorm(1D, 0.1))
 			.setImmuneActivationRate( SimpleDistribution.logNorm(1D, 0.1))

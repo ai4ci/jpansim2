@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.immutables.value.Value;
 
@@ -16,8 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+
+import io.github.ai4ci.config.ExperimentFacet.ExecutionFacet;
+import io.github.ai4ci.config.ExperimentFacet.SetupFacet;
 
 
 @Value.Immutable
@@ -26,49 +27,55 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 public interface ExperimentConfiguration {
  
 	
-	ExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
-				.setSetupConfig(WattsStrogatzConfiguration.DEFAULT)
-				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+	ImmutableExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
+				.setSetupConfig(
+					List.of(
+						ImmutableWattsStrogatzFacet.builder().setDefault(WattsStrogatzConfiguration.DEFAULT).build(),
+						ImmutableAgeStratifiedNetworkFacet.builder().setDefault(AgeStratifiedNetworkConfiguration.DEFAULT).build()
+					)
+				)
+				.setExecutionConfig(
+						ImmutableExecutionFacet.builder().setDefault(ExecutionConfiguration.DEFAULT).build()
+				)
 				.setExecutionReplications(1)
 				.setSetupReplications(1)
 				.build();
 		
-	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
-		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
-		tweaks.accept(tmp);
+//	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
+//		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
+//		tweaks.accept(tmp);
+//		
+//		return ImmutableExperimentConfiguration.builder()
+//			.from(this)
+//			.setSetupConfig(
+//				tmp.build()
+//			).build();
+//	}
+//		
+//	default ImmutableExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
+//		ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
+//		tweaks.accept(tmp);
+//		
+//		return ImmutableExperimentConfiguration.builder()
+//			.from(this)
+//			.setExecutionConfig(
+//				tmp.build()
+//			).build();
+//	}
 		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setSetupConfig(
-				tmp.build()
-			).build();
-	}
-		
-	default ImmutableExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
-		ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
-		tweaks.accept(tmp);
-		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setExecutionConfig(
-				tmp.build()
-			).build();
-	}
-		
-	ExperimentConfiguration AGE_STRATIFIED = ImmutableExperimentConfiguration.builder()
-				.setSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
-				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
-				.setExecutionReplications(1)
-				.setSetupReplications(1)
-				.build();
+//	ExperimentConfiguration AGE_STRATIFIED = ImmutableExperimentConfiguration.builder()
+//				.setSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
+//				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+//				.setExecutionReplications(1)
+//				.setSetupReplications(1)
+//				.build();
 		
 	
 	
 	
 	
-	SetupConfiguration getSetupConfig();
-	ExecutionConfiguration getExecutionConfig();
-	List<ExperimentFacet> getFacets();
+	List<SetupFacet<?>> getSetupConfig();
+	ExecutionFacet getExecutionConfig();
 	int getSetupReplications();
 	int getExecutionReplications();
 	
@@ -79,136 +86,70 @@ public interface ExperimentConfiguration {
 	@JsonIgnore
 	default List<SetupConfiguration> getSetup() {
 		
-		SetupConfiguration base = getSetupConfig();
-		List<SetupConfiguration> out = new ArrayList<>();
-		out.add(base);
-		for (ExperimentFacet facet: getFacets()) {
-			//if (facet instanceof ExperimentFacet.SetupModification s) {
-				
-			String facetName = facet.getName();
-			List<SetupConfiguration> tmp = new ArrayList<>();
+		List<SetupConfiguration> tmp = new ArrayList<>();
+		List<SetupFacet<?>> setupCfg = getSetupConfig();
+		
+		for (SetupFacet<?> facet: setupCfg) {
 			
-			boolean changes = false;
+			SetupConfiguration base = facet.getDefault();
 			for (String name: facet.getModifications().keySet()) {
 				
-				if (facet.getModifications().get(name) instanceof SetupConfiguration) {
-//					PartialWattsStrogatzConfiguration modifier = (PartialWattsStrogatzConfiguration) facet.getModifications().get(name);
-					
-					for (SetupConfiguration b: out) {
+				SetupConfiguration modified = (SetupConfiguration) ConfigMerger.INSTANCE
+					.mergeConfiguration(
+						base, facet.getModifications().get(name)
+					)
+					.withName(
+						facet.getName()+":"+name
+					);
 						
-						
-						
-						SetupConfiguration modified = (SetupConfiguration) ConfigMerger.INSTANCE
-								.mergeConfiguration(
-										b, facet.getModifications().get(name)
-								)
-								.withName(
-									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-										+facetName+":"+name);
-						
-						tmp.add(modified);
-						
-//						if (b instanceof ImmutableWattsStrogatzConfiguration) {
-//							ImmutableWattsStrogatzConfiguration.Builder modified = ConfigMerger.INSTANCE
-//								.mergeConfiguration(
-//									(WattsStrogatzConfiguration) b, modifier
-//								).setName(
-//									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-//										+facetName+":"+name);
-//							tmp.add(modified.build());
-//						}
-						
-						changes = true;
-					}
-				}
+				tmp.add(modified);
+			}
 				
-//				if (facet.getModifications().get(name) instanceof PartialAgeStratifiedNetworkConfiguration) {
-//					
-//					PartialAgeStratifiedNetworkConfiguration modifier = (PartialAgeStratifiedNetworkConfiguration) facet.getModifications().get(name);
-//					
-//					for (SetupConfiguration b: out) {
-//						if (b instanceof ImmutableAgeStratifiedNetworkConfiguration) {
-//							ImmutableAgeStratifiedNetworkConfiguration.Builder modified = ConfigMerger.INSTANCE
-//								.mergeConfiguration(
-//									(AgeStratifiedNetworkConfiguration) b, modifier
-//								).setName(
-//									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-//										+facetName+":"+name);
-//							tmp.add(modified.build());
-//						}
-//						
-//						changes = true;
-//					}
-//					
-//				}
-//			}
-			
-			if (changes) out = tmp;
-			}
+			if (tmp.isEmpty()) tmp.add(base);
 		}
 		
-		List<SetupConfiguration> tmp = new ArrayList<>();
+		List<SetupConfiguration> tmp2 = new ArrayList<>();
 		for (int i =0; i<this.getSetupReplications(); i++) {
-			for (SetupConfiguration b: out) {
-				tmp.add((SetupConfiguration) b.withReplicate(i));
-//				if (b instanceof ImmutableWattsStrogatzConfiguration) {
-//					tmp.add(
-//						((ImmutableWattsStrogatzConfiguration) b).withReplicate(i));
-//				}
-//				
-//				if (b instanceof ImmutableAgeStratifiedNetworkConfiguration) {
-//					tmp.add(
-//						((ImmutableAgeStratifiedNetworkConfiguration) b).withReplicate(i));
-//				}
+			for (SetupConfiguration b: tmp) {
+				tmp2.add((SetupConfiguration) b.withReplicate(i));
 			}
 		}
 		
-		return tmp;
+		return tmp2;
 		
 	}
 	
 	@JsonIgnore
 	default List<ExecutionConfiguration> getExecution() {
 		
-		ExecutionConfiguration base = getExecutionConfig();
-		List<ExecutionConfiguration> out = new ArrayList<>();
-		out.add(base);
-		for (ExperimentFacet facet: getFacets()) {
-			//if (facet instanceof ExperimentFacet.SetupModification s) {
-				
-			String facetName = facet.getName();
-			List<ExecutionConfiguration> tmp = new ArrayList<>();
-			
-			for (String name: facet.getModifications().keySet()) {
-				
-				if (facet.getModifications().get(name) instanceof PartialExecutionConfiguration) {
-					PartialExecutionConfiguration modifier = (PartialExecutionConfiguration) facet.getModifications().get(name);
-					
-					out.forEach(b -> {
-						ImmutableExecutionConfiguration modified = ConfigMerger.INSTANCE
-							.mergeConfiguration(
-								b, modifier
-							)
-							.withName(
-								(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-									+facetName+":"+name);
-						tmp.add(modified);
-					});
-				}
-			}
-			
-			out = tmp;
-			//}
-		}
+		ExecutionFacet facet = getExecutionConfig();
+		ExecutionConfiguration base = facet.getDefault();
 		
 		List<ExecutionConfiguration> tmp = new ArrayList<>();
+			
+		for (String name: facet.getModifications().keySet()) {
+				
+			ImmutableExecutionConfiguration modified = ConfigMerger.INSTANCE
+				.mergeConfiguration(
+						base, facet.getModifications().get(name)
+				)
+				.withName(
+					facet.getName()+":"+name
+				);
+			
+			tmp.add(modified);
+		}
+		
+		if (tmp.isEmpty()) tmp.add(base);
+		
+		List<ExecutionConfiguration> tmp2 = new ArrayList<>();
 		for (int i =0; i<this.getExecutionReplications(); i++) {
-			for (ExecutionConfiguration b: out) {
-				tmp.add((ExecutionConfiguration) b.withReplicate(i));
+			for (ExecutionConfiguration b: tmp) {
+				tmp2.add((ExecutionConfiguration) b.withReplicate(i));
 			}
 		}
 		
-		return tmp;
+		return tmp2;
 		
 	}
 	
@@ -228,6 +169,31 @@ public interface ExperimentConfiguration {
 		om.setSerializationInclusion(Include.NON_NULL);
 		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(file.toFile());
 		return rt;
+	}
+	
+	default ImmutableExperimentConfiguration withSetupConfig(SetupConfiguration config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+			.setSetupConfig(List.of(SetupFacet.subtype(config)))
+			.build();
+	}
+	
+	default ImmutableExperimentConfiguration withExecutionConfig(ExecutionConfiguration config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+				.setExecutionConfig(
+					ImmutableExecutionFacet.builder().setDefault(config).build()
+				)
+				.build();
+	}
+	
+	default ImmutableExperimentConfiguration withFacet(String name, PartialExecutionConfiguration config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+				.setExecutionConfig(
+					ImmutableExecutionFacet.builder()
+						.from(getExecutionConfig())
+						.putModification(name, config)
+						.build()
+				)
+				.build();
 	}
 	
 }

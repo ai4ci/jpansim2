@@ -15,7 +15,7 @@ import io.github.ai4ci.util.SimpleDistribution;
 @JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
 public interface PhenomenologicalModel extends InHostConfiguration {
 	
-	public static PhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
+	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
 			
 			.setSymptomCutoff(0.5)
 			.setInfectiousnessCutoff(0.2)

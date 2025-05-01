@@ -32,9 +32,9 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	@Partial @Value.Immutable 
 	@JsonSerialize(as = PartialExecutionConfiguration.class)
 	@JsonDeserialize(as = PartialExecutionConfiguration.class)
-	public interface _PartialExecutionConfiguration extends ExecutionConfiguration, Abstraction.Modification {}
+	public interface _PartialExecutionConfiguration extends ExecutionConfiguration, Abstraction.Modification<ExecutionConfiguration>{}
 	
-	public static ExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
+	public static ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
 			.setName("execution")
 			.setRO(2.5)
 			

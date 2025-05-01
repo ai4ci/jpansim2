@@ -29,7 +29,7 @@ import io.github.ai4ci.util.DelayDistribution;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class CSVMapper {
-	
+	 
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
 	
 //	@Mapping(target= "personId", source="entity.id")

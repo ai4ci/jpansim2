@@ -1,7 +1,9 @@
 package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.immutables.value.Value;
@@ -13,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.OptBoolean;
 
+import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
@@ -25,16 +28,18 @@ import io.github.ai4ci.util.Sampler;
 
 public interface Abstraction {
 
-	@JsonTypeInfo(use = Id.SIMPLE_NAME,requireTypeIdForSubtypes = OptBoolean.TRUE)
+	@JsonTypeInfo(use = Id.DEDUCTION)
 	
 	@JsonSubTypes( {
 		@Type(PartialWattsStrogatzConfiguration.class), 
 		@Type(PartialExecutionConfiguration.class), 
 		@Type(PartialAgeStratifiedNetworkConfiguration.class)
 	})
-	public interface Modification {}
+	public interface Modification<X> {}
  
-
+	public class ModificationGroup<X> extends HashMap<String,Modification<X>> implements Serializable {
+		
+	}
 
 	public interface Entity extends Serializable {
 		@Value.NonAttribute String getUrn();

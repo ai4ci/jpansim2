@@ -9,10 +9,11 @@ import org.apache.logging.log4j.core.config.DefaultConfiguration;
 
 import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.ImmutableExperimentConfiguration;
-import io.github.ai4ci.config.ImmutableExperimentFacet;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.SimulationFactory;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutableContactCSV;
@@ -29,85 +30,75 @@ class TestDefaultSim {
 
 	static ExperimentConfiguration config1 =  
 			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
-				)
-			.adjustSetup(b -> b
-					.setNetworkSize(10000)
-					.setInitialImports(30)
+				ExperimentConfiguration.DEFAULT
 			)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setImportationProbability(0D)
+			.withExecutionConfig(
+				ExecutionConfiguration.DEFAULT
+					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+					.withImportationProbability(0D)
 					// .setInHostConfiguration(StochasticModel.DEFAULT)
 			)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"smart-agent",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-									"reactive-test",
-									PartialExecutionConfiguration.builder()
-										.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
-										.build()
-									)
-							.putModification(
-									"nothing",
-									PartialExecutionConfiguration.builder()
-										.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
-										.build()
-									)
-						.setName("strategy")
+			.withFacet(
+				"smart-agent",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+					.build()
+				)
+			.withFacet(
+				"reactive-test",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+					.build()
+				)
+			.withFacet(
+				"nothing",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
+					.build()
+				)
+			.withFacet(
+				"non-responder",
+					PartialExecutionConfiguration.builder()
+						.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
 						.build()
-				);
+					)
+			;
 	
 	static ExperimentConfiguration testR0 =  
 			ImmutableExperimentConfiguration.copyOf(	
 					ExperimentConfiguration.DEFAULT
-				)
-			.adjustSetup(b -> b
-					.setNetworkSize(10000)
-					.setNetworkConnectedness(100)
-					.setInitialImports(30)
-					.setNetworkRandomness(1D)
+			)
+			.withSetupConfig(
+				WattsStrogatzConfiguration.DEFAULT
 			)
 			.withSetupReplications(1)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
-					.setImportationProbability(0D) //.001D)
-					.setContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+			.withExecutionConfig(
+				ExecutionConfiguration.DEFAULT
+					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+					.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+					.withImportationProbability(0D) //.001D)
+					.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
+					// .withInHostConfiguration(StochasticModel.DEFAULT)
 			)
 			.withExecutionReplications(1)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"r0_1",
-								PartialExecutionConfiguration.builder()
-									.setRO(1D)
-									.build()
-								)
-							.putModification(
-									"r0_2",
-									PartialExecutionConfiguration.builder()
-										.setRO(2D)
-										.build()
-									)
-							.putModification(
-									"r0_3",
-									PartialExecutionConfiguration.builder()
-										.setRO(3D)
-										.build()
-									)
-						.setName("repro")
-						.build()
-				);
+			.withFacet(
+				"r0_1", 
+				PartialExecutionConfiguration.builder()
+					.setRO(1D)
+					.build()
+			)
+			.withFacet(
+				"r0_2", 
+				PartialExecutionConfiguration.builder()
+					.setRO(2D)
+					.build()
+			)
+			.withFacet(
+				"r0_3", 
+				PartialExecutionConfiguration.builder()
+					.setRO(3D)
+					.build()
+			);
 	
 	
 	static ExperimentConfiguration ageStrat =  
@@ -117,51 +108,45 @@ class TestDefaultSim {
 			.withSetupConfig(
 					AgeStratifiedNetworkConfiguration.DEFAULT
 			)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setImportationProbability(0D)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
-			)
 			.withSetupReplications(1)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"ignore",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"smart-agent",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"reactive-test",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"symptom-management",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
-									.build()
-								)
-						.setName("strategy")
+			.withExecutionConfig(
+					ExecutionConfiguration.DEFAULT
+						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+						.withImportationProbability(0D)
+						// .withInHostConfiguration(StochasticModel.DEFAULT)
+			)
+			.withExecutionReplications(1)
+			.withFacet(
+				"ignore", 
+				PartialExecutionConfiguration.builder()
+						.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
 						.build()
-				)
-			.withExecutionReplications(3);
-	
+			)
+			.withFacet(
+				"smart-agent",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+					.build()
+			)
+			.withFacet(
+				"reactive-test",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+					.build()
+			)
+			.withFacet(
+				"symptom-management",
+				PartialExecutionConfiguration.builder()
+					.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
+					.build()
+				);
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
 		Configurator.initialize(new DefaultConfiguration());
 		Configurator.setRootLevel(Level.DEBUG);
 		
-		ExperimentConfiguration tmp = ageStrat;
+		ExperimentConfiguration tmp = config1;
 		
 		tmp.writeConfig(SystemUtils.getUserHome().toPath().resolve("tmp"));
 		

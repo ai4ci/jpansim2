@@ -21,11 +21,11 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 	@Partial @Value.Immutable
 	@JsonSerialize(as = PartialAgeStratifiedNetworkConfiguration.class)
 	@JsonDeserialize(as = PartialAgeStratifiedNetworkConfiguration.class)
-	public interface _PartialAgeStratifiedNetworkConfiguration extends AgeStratifiedNetworkConfiguration, Abstraction.Modification {}
+	public interface _PartialAgeStratifiedNetworkConfiguration extends AgeStratifiedNetworkConfiguration, Abstraction.Modification<AgeStratifiedNetworkConfiguration> {}
 	
 	public interface Builder extends SetupConfiguration.Builder {}
 	
-	public static AgeStratifiedNetworkConfiguration DEFAULT = 
+	public static ImmutableAgeStratifiedNetworkConfiguration DEFAULT = 
 			ImmutableAgeStratifiedNetworkConfiguration.builder()
 				.setInitialImports(5)
 				.setName("age-stratified")
@@ -66,9 +66,9 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 				)
 				.build();
 	
-	EmpiricalDistribution getAgeDistribution();
-	int getNetworkConnectedness();
 	double getNetworkRandomness();
+	int getNetworkConnectedness();
+	EmpiricalDistribution getAgeDistribution();
 	EmpiricalFunction getOddsContactFromAgeDifference();
 	EmpiricalFunction getOddsMobilityFromAge();
 }
