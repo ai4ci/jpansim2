@@ -1,12 +1,10 @@
-package io.github.ai4ci.output;
+package io.github.ai4ci.flow;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
@@ -16,9 +14,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-import io.github.ai4ci.util.FastWriteOnlyOutputStream;
+import io.github.ai4ci.flow.CSVWriter.Writeable;
+import io.github.ai4ci.util.CSVUtil;
 
-public class CSVWriter<X> implements Closeable {
+public class JacksonCSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 	
 	File file;
 	CsvMapper cm;
@@ -26,7 +25,7 @@ public class CSVWriter<X> implements Closeable {
 	Class<X> type;
 	QueueWriter<X> queueWriter;
 	
-	public static class QueueWriter<X> extends Thread {
+	public static class QueueWriter<X extends CSVWriter.Writeable> extends Thread {
 		
 		ConcurrentLinkedQueue<X> queue;
 		SequenceWriter seqW;
@@ -52,11 +51,7 @@ public class CSVWriter<X> implements Closeable {
 					while (!this.queue.isEmpty()) {
 						seqW.write(queue.poll());
 					}
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException e) {
-						stop = true;
-					}
+					Thread.yield();
 				}
 				
 				while (!this.queue.isEmpty()) {
@@ -75,11 +70,11 @@ public class CSVWriter<X> implements Closeable {
 		supply.forEach(this::export);
 	}
 	
-	public static <X> CSVWriter<X> of(Class<X> type, File file) throws IOException {
-		return new CSVWriter<X>(type, file);
+	public static <X extends Writeable> JacksonCSVWriter<X> of(Class<X> type, File file) throws IOException {
+		return new JacksonCSVWriter<X>(type, file);
 	}
 	
-	private CSVWriter(Class<X> type, File file) throws IOException {
+	private JacksonCSVWriter(Class<X> type, File file) throws IOException {
 		this.type = type;
 		
 		cm = CsvMapper.builder()

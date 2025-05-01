@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
 
 @Value.Immutable
@@ -211,17 +212,19 @@ public interface ExperimentConfiguration {
 		
 	}
 	
-	default void writeToYaml(Path directory) throws StreamWriteException, DatabindException, IOException {
-		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+	default void writeConfig(Path directory) throws StreamWriteException, DatabindException, IOException {
+		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
-		Path file = directory.resolve("config.yml");
+		Path file = directory.resolve("config.json");
 		om.writeValue(file.toFile(), this);
 	}
 	
-	static ExperimentConfiguration readFromYaml(Path file) throws StreamWriteException, DatabindException, IOException {
-		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+	static ExperimentConfiguration readConfig(Path file) throws StreamWriteException, DatabindException, IOException {
+		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
 		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(file.toFile());
 		return rt;

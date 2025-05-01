@@ -23,7 +23,7 @@ import io.github.ai4ci.util.ImmutableDelayDistribution;
 		
 )
 public abstract class ConfigMerger {
-	
+	 
 	public static ConfigMerger INSTANCE = Mappers.getMapper( ConfigMerger.class );
 	 
 	public ImmutableExecutionConfiguration mergeConfiguration(

@@ -17,7 +17,7 @@ public class ThreadSafeArray<X> implements Serializable {
 	
 	public static class OutOfSpaceException extends RuntimeException {};
 	
-	X[] pages = null;
+	X[] data = null;
 	AtomicInteger pointer;
 	
 	public static <Y> ThreadSafeArray<Y> empty(Class<Y> type) {
@@ -26,24 +26,24 @@ public class ThreadSafeArray<X> implements Serializable {
 	
 	@SuppressWarnings("unchecked")
 	public ThreadSafeArray(Class<X> type, int size) {
-		this.pages = (X[]) Array.newInstance(type, size);
+		this.data = (X[]) Array.newInstance(type, size);
 		this.pointer = new AtomicInteger(0);
 	}
 	
 	public int put(X value) {
 		int p = pointer.getAndIncrement();
-		this.pages[p] = value;
+		this.data[p] = value;
 		return p;
 	}
 	
 	public X[] finish() {
 		int p = this.pointer.get();
-		return Arrays.copyOfRange(pages, 0, p);
+		return Arrays.copyOfRange(data, 0, p);
 	}
 	
 	public X get(int p) {
 		if (p > pointer.get()) throw new ArrayIndexOutOfBoundsException();
-		return this.pages[p];
+		return this.data[p];
 	}
 	
 	public Stream<X> stream() {

@@ -2,6 +2,8 @@ package io.github.ai4ci.util;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.immutables.value.Value;
@@ -17,16 +19,29 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @JsonDeserialize(as = ImmutableEmpiricalDistribution.class)
 public interface EmpiricalDistribution extends Abstraction.Distribution, Serializable {
 
+	public static interface Builder {
+		public ImmutableEmpiricalDistribution.Builder addCumulative(double[] data);
+		public default ImmutableEmpiricalDistribution.Builder putCumulative(double... data) {
+			return this.addCumulative(data);
+		};
+	}
+	
 	double getMinimum();
 	double getMaximum();
-	Map<Double,Double> getCumulative();
+	List<double[]> getCumulative();
+	
+	private Map<Double,Double> getCumulativeData() {
+		Map<Double,Double> tmp = new HashMap<>();
+		getCumulative().stream().forEach(c -> tmp.put(c[0], c[1]));
+		return tmp;
+	};
 	
 	@JsonIgnore
 	default double[] getX() {
-		int count = getCumulative().size();
+		int count = getCumulativeData().size();
 		double[] x = new double[count+2];
 		x[0] = getMinimum();
-		Double[] ix = getCumulative().keySet().toArray(new Double[count]);
+		Double[] ix = getCumulativeData().keySet().toArray(new Double[count]);
 		Arrays.sort(ix);
 		for (int i = 0;i<count;i++) {
 				x[i+1] = ix[i];
@@ -37,13 +52,13 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	
 	@JsonIgnore
 	default double[] getY() {
-		int count = getCumulative().size();
+		int count = getCumulativeData().size();
 		double[] y = new double[count+2];
 		y[0] = 0;
-		Double[] ix = getCumulative().keySet().toArray(new Double[count]);
+		Double[] ix = getCumulativeData().keySet().toArray(new Double[count]);
 		Arrays.sort(ix);
 		for (int i = 0;i<count;i++) {
-			y[i+1] += getCumulative().get(ix[i]);
+			y[i+1] += getCumulativeData().get(ix[i]);
 		}
 		if (y[count] > 1) throw new RuntimeException("Cumulative density exceeds 1");
 		y[count+1]=1;

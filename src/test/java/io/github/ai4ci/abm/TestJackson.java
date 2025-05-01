@@ -34,8 +34,9 @@ class TestJackson {
 
 	@Test
 	void testJson() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+		om.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
 		

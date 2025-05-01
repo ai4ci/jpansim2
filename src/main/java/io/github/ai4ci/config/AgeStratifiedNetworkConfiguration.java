@@ -9,6 +9,7 @@ import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.EmpiricalFunction;
+import io.github.ai4ci.util.EmpiricalFunction.Link;
 import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
 
@@ -49,6 +50,7 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 						.putDataPoint(40, 0.5)
 						.putDataPoint(60, 1.0)
 						.putDataPoint(70, 0.5)
+						.setLink(Link.LOG)
 						.build()
 				)
 				.setOddsMobilityFromAge(
@@ -59,6 +61,7 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 						.putDataPoint(25, 1.25)
 						.putDataPoint(45, 0.8)
 						.putDataPoint(75, 1.2)
+						.setLink(Link.LOG)
 						.build()
 				)
 				.build();

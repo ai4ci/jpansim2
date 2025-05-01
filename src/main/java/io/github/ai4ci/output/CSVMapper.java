@@ -1,6 +1,7 @@
 package io.github.ai4ci.output;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -97,4 +98,6 @@ public abstract class CSVMapper {
 						.map(c -> toCSV(ph,c))
 				);
 	}
+	
+	protected abstract HashMap<String,Object> toMap(ImmutableContactCSV csv);
 }

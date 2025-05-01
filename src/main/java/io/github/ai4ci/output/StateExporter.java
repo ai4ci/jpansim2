@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.output.StateExporter.ExportSelector;
+import io.github.ai4ci.flow.CSVWriter;
 
 public class StateExporter implements Closeable {
 
@@ -27,7 +27,7 @@ public class StateExporter implements Closeable {
 		 return StateExporter.of(
 				SystemUtils.getUserHome().toPath().resolve(path),
 				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState()), "summary.csv"),
-				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv")
+				ExportSelector.ofVeryMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv")
 		);
 	}
 	
@@ -43,38 +43,47 @@ public class StateExporter implements Closeable {
 	
 	//TODO: make this a runnable thread pool with a buffer 
 	
-	public static class ExportSelector<X> {
+	public static class ExportSelector<X extends CSVWriter.Writeable> {
 		Class<X> type;
 		Function<Outbreak,Stream<X>> selector;
 		String filename;
+		int size;
 		CSVWriter<X> writer;
 		private ExportSelector(
 				Class<X> type,
 				Function<Outbreak,Stream<X>> selector,
-				String file) {
-			this.type = type; this.selector = selector; this.filename = file;
+				String file,
+				int size) {
+			this.type = type; this.selector = selector; this.filename = file; this.size = size;
 		}
 		private void finishSetup(Path directory) {
 			try {
 				this.writer = CSVWriter
-						.of(type, directory.resolve(filename).toFile());
+						.of(type, directory.resolve(filename).toFile(), size);
 			} catch (IOException e) {
 				throw new RuntimeException("Couldn't setup exporter: "+directory.resolve(filename));
 			}
 		}
-		public static <X> ExportSelector<X> ofMany(Class<X> type, Function<Outbreak,Stream<X>> selector, String file) {
-			return new  ExportSelector<X>(type,selector,file);
+		
+		public static <X extends CSVWriter.Writeable> ExportSelector<X> ofVeryMany(Class<X> type, Function<Outbreak,Stream<X>> selector, String file) {
+			return new  ExportSelector<X>(type,selector,file,64*64);
 		}
-		public static <X> ExportSelector<X> ofOne(Class<X> type, Function<Outbreak,X> selector, String file) {
-			return new  ExportSelector<X>(type,o -> Stream.of(selector.apply(o)),file);
+		public static <X extends CSVWriter.Writeable> ExportSelector<X> ofMany(Class<X> type, Function<Outbreak,Stream<X>> selector, String file) {
+			return new  ExportSelector<X>(type,selector,file,64);
+		}
+		public static <X extends CSVWriter.Writeable> ExportSelector<X> ofOne(Class<X> type, Function<Outbreak,X> selector, String file) {
+			return new  ExportSelector<X>(type,o -> Stream.of(selector.apply(o)),file,16);
 		}
 		public void close() {
 			writer.close();
 		}
+		public void flush() {
+			writer.flush();
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <X> Outbreak export(Outbreak outbreak) {
+	public <X extends CSVWriter.Writeable> Outbreak export(Outbreak outbreak) {
 		writers.forEach(sel -> {
 			ExportSelector<X> sel2 = (ExportSelector<X>) sel; 
 			if (sel2.writer != null)
@@ -89,6 +98,10 @@ public class StateExporter implements Closeable {
 
 	public void close() {
 		this.writers.forEach(e -> e.close());
+	}
+
+	public void flushAll() {
+		writers.forEach(w -> w.flush());
 	}
 	
 	

@@ -132,28 +132,28 @@ class TestDefaultSim {
 									.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
 									.build()
 								)
-//							.putModification(
-//								"smart-agent",
-//								PartialExecutionConfiguration.builder()
-//									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
-//									.build()
-//								)
-//							.putModification(
-//								"reactive-test",
-//								PartialExecutionConfiguration.builder()
-//									.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
-//									.build()
-//								)
-//							.putModification(
-//								"symptom-management",
-//								PartialExecutionConfiguration.builder()
-//									.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
-//									.build()
-//								)
+							.putModification(
+								"smart-agent",
+								PartialExecutionConfiguration.builder()
+									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+									.build()
+								)
+							.putModification(
+								"reactive-test",
+								PartialExecutionConfiguration.builder()
+									.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+									.build()
+								)
+							.putModification(
+								"symptom-management",
+								PartialExecutionConfiguration.builder()
+									.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
+									.build()
+								)
 						.setName("strategy")
 						.build()
 				)
-			.withExecutionReplications(1);
+			.withExecutionReplications(3);
 	
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
@@ -163,16 +163,16 @@ class TestDefaultSim {
 		
 		ExperimentConfiguration tmp = ageStrat;
 		
-		tmp.writeToYaml(SystemUtils.getUserHome().toPath().resolve("tmp"));
+		tmp.writeConfig(SystemUtils.getUserHome().toPath().resolve("tmp"));
 		
 		Updater updater = new Updater();
 		
 		StateExporter exporter = StateExporter.of(
 				SystemUtils.getUserHome().toPath().resolve("tmp"),
 				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState()), "summary.csv"),
-				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv"),
+				ExportSelector.ofVeryMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv"),
 				ExportSelector.ofMany(ImmutableOutbreakHistoryCSV.class, o -> o.getHistory().stream().map(CSVMapper.INSTANCE::toCSV), "test-positivity.csv"),
-				ExportSelector.ofMany(ImmutableContactCSV.class, o -> o.getPeople().stream().flatMap(CSVMapper.INSTANCE::toContacts), "contact.csv")
+				ExportSelector.ofVeryMany(ImmutableContactCSV.class, o -> o.getPeople().stream().flatMap(CSVMapper.INSTANCE::toContacts), "contact.csv")
 		);
 		
 		StateExporter finalState = StateExporter.of(

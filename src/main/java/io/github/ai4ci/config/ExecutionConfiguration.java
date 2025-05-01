@@ -24,8 +24,11 @@ import io.github.ai4ci.util.SimpleDistribution;
 @Value.Immutable
 @JsonSerialize(as = ImmutableExecutionConfiguration.class)
 @JsonDeserialize(as = ImmutableExecutionConfiguration.class)
-public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable, WithExecutionConfiguration {
+public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.Replica, Serializable {
 
+	ExecutionConfiguration withReplicate(Integer i);
+	ExecutionConfiguration withName(String name);
+	
 	@Partial @Value.Immutable 
 	@JsonSerialize(as = PartialExecutionConfiguration.class)
 	@JsonDeserialize(as = PartialExecutionConfiguration.class)

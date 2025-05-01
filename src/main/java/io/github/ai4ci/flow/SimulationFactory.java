@@ -85,7 +85,7 @@ public class SimulationFactory extends Thread {
 			
 				if (!factory.ready()) log.debug("Execution thread waiting for simulation to be built");
 				while (!factory.ready()) {
-					Thread.sleep(10);
+					Thread.yield();
 				}
 				
 				log.debug("Executing new simulation - memory free: "+freeMem());
@@ -96,6 +96,8 @@ public class SimulationFactory extends Thread {
 						exporter.export(outbreak);
 					});
 					finalState.export(outbreak);
+					exporter.flushAll();
+					finalState.flushAll();
 				}
 				log.debug("Finishing simulation - memory free: "+freeMem());
 				System.gc();
@@ -130,6 +132,8 @@ public class SimulationFactory extends Thread {
 	volatile Queue<Outbreak> queue; 
 	volatile boolean halt;
 	volatile boolean complete;
+	volatile boolean waiting = false;
+	Object semaphore = new Object();
 	ExperimentConfiguration config;
 	String urnBase;
 	int from; 
@@ -145,7 +149,9 @@ public class SimulationFactory extends Thread {
 	}
 	
 	Outbreak deliver() {
-		return queue.poll();
+		Outbreak out = queue.poll();
+		if (waiting) synchronized(semaphore) { semaphore.notifyAll(); }
+		return out;
 	}
 	
 	public void halt() {
@@ -251,13 +257,17 @@ public class SimulationFactory extends Thread {
 			
 			halt = halt | !build.hasNext();
 			
-			if (!halt) {
+			while (!halt & queue.size() >= CACHE_SIZE) {
 				try {
-					Thread.sleep(10);
+					synchronized(semaphore) {
+						waiting = true;
+						semaphore.wait();
+					}
 				} catch (InterruptedException e) {
-					halt = true;
+					halt=true;
 				}
 			}
+			waiting = false;
 			
 		} while (!halt);
 		
