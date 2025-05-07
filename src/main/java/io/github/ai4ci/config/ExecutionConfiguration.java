@@ -32,17 +32,20 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	@Partial @Value.Immutable 
 	@JsonSerialize(as = PartialExecutionConfiguration.class)
 	@JsonDeserialize(as = PartialExecutionConfiguration.class)
-	public interface _PartialExecutionConfiguration extends ExecutionConfiguration, Abstraction.Modification {}
+	public interface _PartialExecutionConfiguration extends ExecutionConfiguration, Abstraction.Modification<ExecutionConfiguration>{
+		default _PartialExecutionConfiguration self() {return this;}
+	}
 	
-	public static ExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
+	public static ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
 			.setName("execution")
 			.setRO(2.5)
 			
 			.setContactProbability( SimpleDistribution.unimodalBeta(0.5, 0.05))
-			
-			.setContactDetectedProbability( SimpleDistribution.unimodalBeta(0.9, 0.1))
-			.setComplianceProbability( SimpleDistribution.unimodalBeta(0.99, 0.001))
 			.setAppUseProbability( SimpleDistribution.unimodalBeta(0.97, 0.01))
+			.setContactDetectedProbability( 0.9 )
+			
+			.setComplianceProbability( SimpleDistribution.unimodalBeta(0.99, 0.001))
+			
 			
 //			.setRiskTrigger( Distribution.point(0.05) )
 //			.setRiskTriggerRatio(1.1)
@@ -85,10 +88,10 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	 * in a fully mobile population. The mobility baseline is determined from
 	 * the square root of this value, as the contact is the product of 2 peoples
 	 * mobility.
-	 * {@link AgentBaseline#contactRate}
+	 * {@link io.github.ai4ci.abm.PersonBaseline#getMobilityBaseline()}
 	 */
 	SimpleDistribution getContactProbability();
-	SimpleDistribution getContactDetectedProbability();
+	double getContactDetectedProbability();
 	SimpleDistribution getComplianceProbability();
 	SimpleDistribution getAppUseProbability();
 	

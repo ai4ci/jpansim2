@@ -57,30 +57,12 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 		return Conversions.rateRatio( getViralLoad(), this.getConfig().getSymptomCutoff() );
 	};
 
+	// TODO: need to work out how to make some of these personal to the age
+	// of the individual. We can't just have the configuration as a parameter
+	// here as that is generic for everyone. Everything here apart from 
+	// infectiousness cutoff could be parameterised depending on age.
 	
-	static InHostPhenomenologicalState initialise(PhenomenologicalModel config, Sampler rng, int time) {
-		double incubation = config.getIncubationPeriod().sample(rng);
-		return ImmutableInHostPhenomenologicalState.builder()
-				.setTime(time)
-				.setConfig(config)
-				.setViralLoadModel(
-						BiPhasicLogistic.calibrateViralLoad(
-								incubation, //onsetTime
-								config.getIncubationToPeakViralLoadDelay().sample(rng), // peakTime, 
-								config.getPeakToRecoveryDelay().sample(rng), // double duration, 
-								config.getInfectiousnessCutoff(),// double thresholdLevel, 
-								config.getApproxPeakViralLoad().sample(rng)// double peakLevel
-						)
-				)
-				.setImmunityModel(
-						BiPhasicLogistic.calibrateImmuneActivity(
-								config.getPeakImmuneResponseDelay().sample(rng), // peakTime, 
-								config.getApproxPeakImmuneResponse().sample(rng),// peakLevel, 
-								config.getImmuneWaningHalfLife().sample(rng) // halfLife
-						)
-				)
-				.build();
-	}
+	
 	
 	default InHostPhenomenologicalState update(Sampler sampler, double virionDose, double immunisationDose) { //, double immuneModifier) {
 		// Overall modifiers are a number around 1:

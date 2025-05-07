@@ -11,19 +11,6 @@ import io.github.ai4ci.util.Sampler;
 
 public interface AgeStratifiedPersonBaseliner {
 	
-	/**
-	 * An odds ratio making age dependence baked into a mobility baseline 
-	 * @return
-	 */
-	private static double ageDependentMobility(PersonDemographic p, EmpiricalFunction mobilityFromAge) {
-//		if (p.getAge() < 5) return 1;
-//		if (p.getAge() < 15) return 1.5;
-//		if (p.getAge() < 25) return 1.25;
-//		if (p.getAge() < 75) return 0.8;
-		return mobilityFromAge.interpolate(p.getAge());
-	}
-	
-	
 	default void baselinePerson(ImmutablePersonBaseline.Builder builder, Person person, Sampler rng) {
 		ExecutionConfiguration configuration = person.getOutbreak().getExecutionConfiguration();
 		AgeStratifiedNetworkConfiguration config2 = (AgeStratifiedNetworkConfiguration) person.getOutbreak().getSetupConfiguration();
@@ -35,19 +22,31 @@ public interface AgeStratifiedPersonBaseliner {
 		
 		builder
 			.setMobilityBaseline(	
-				Conversions.scaleProbabilityByOR(
+				config2.adjustedMobilityBaseline(
 					Math.sqrt( configuration.getContactProbability().sample(rng) ),
-					ageDependentMobility(person.getDemographic(), config2.getOddsMobilityFromAge())
+					person
 				)
 			)
-			.setTransmissibilityModifier(	rng.gamma(1, 0.1) )
-			.setComplianceBaseline( configuration.getComplianceProbability().sample(rng))
-			.setAppUseProbability( configuration.getAppUseProbability().sample(rng))
+			.setTransmissibilityModifier( 
+					config2.adjustedTransmissionFromAge(
+							rng.gamma(1, 0.1), person )
+			)
+			.setComplianceBaseline( 
+					config2.adjustedComplianceFromAge(
+							configuration.getComplianceProbability().sample(rng), person)
+			)
+			.setAppUseProbability( 
+					config2.adjustedAppUseFromAge(
+					configuration.getAppUseProbability().sample(rng), person)
+			)
 			.setDefaultBehaviourState( configuration.getDefaultBehaviourModel() )
 			
 			.setSymptomSensitivity( configuration.getSymptomSensitivity().sample(rng))
 			.setSymptomSpecificity( configuration.getSymptomSpecificity().sample(rng))
-			.setSelfIsolationDepth( configuration.getMaximumSocialContactReduction().sample(rng) )
+			.setSelfIsolationDepth( 
+					config2.adjustedMaximumSocialContactReductionFromAge(
+					configuration.getMaximumSocialContactReduction().sample(rng),person )
+			)
 		;
 		
 	}

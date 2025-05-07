@@ -5,8 +5,10 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.abm.ImmutableInHostPhenomenologicalState;
 import io.github.ai4ci.abm.InHostPhenomenologicalState;
 import io.github.ai4ci.abm.Person;
+import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.util.SimpleDistribution;
 
@@ -15,7 +17,7 @@ import io.github.ai4ci.util.SimpleDistribution;
 @JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
 public interface PhenomenologicalModel extends InHostConfiguration {
 	
-	public static PhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
+	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
 			
 			.setSymptomCutoff(0.5)
 			.setInfectiousnessCutoff(0.2)
@@ -42,11 +44,5 @@ public interface PhenomenologicalModel extends InHostConfiguration {
 	SimpleDistribution getApproxPeakImmuneResponse();
 	SimpleDistribution getPeakImmuneResponseDelay();
 	SimpleDistribution getImmuneWaningHalfLife();
-	
-	public default InHostPhenomenologicalState initialise(Person person, Sampler rng) {
-		InHostConfiguration config = person.getOutbreak().getExecutionConfiguration().getInHostConfiguration();
-		int time = person.getOutbreak().getCurrentState().getTime();
-		return InHostPhenomenologicalState.initialise((PhenomenologicalModel) config, rng, time);
-	}
 	
 }

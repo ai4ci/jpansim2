@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
 import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
@@ -25,10 +24,10 @@ import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.ImmutableExperimentConfiguration;
-import io.github.ai4ci.config.ImmutableExperimentFacet;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutablePersonStateCSV;
+import io.github.ai4ci.util.CSVUtil;
 
 class TestJackson {
 
@@ -36,9 +35,9 @@ class TestJackson {
 	void testJson() throws JsonProcessingException {
 		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
-		om.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
+		om.setSerializationInclusion(Include.NON_EMPTY);
 		
 		ExperimentConfiguration tmp0 = ExperimentConfiguration.DEFAULT;
 		
@@ -51,20 +50,14 @@ class TestJackson {
 					ExperimentConfiguration.DEFAULT
 				)
 			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
-			.withFacets(
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"smart-agent",
-								PartialExecutionConfiguration.builder()
-									.setDefaultPolicyModelName(NoControl.class.getSimpleName())
-									.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
-									.build()
-								)
-						.setName("test")
-						.build()
-				)
-				;
-		
+			.withFacet(
+				"behaviour",
+				PartialExecutionConfiguration.builder()
+					.setName("smart-agent")
+					.setDefaultPolicyModelName(NoControl.class.getSimpleName())
+					.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
+					.build()
+			);
 		
 		String json = om.writeValueAsString(tmp);
 		System.out.println(json);
@@ -84,19 +77,21 @@ class TestJackson {
 			TestUtils.mockPersonState()	
 		);
 		
-		CsvMapper cm = CsvMapper.builder()
-				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
-				.build();
-		// cm.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-		CsvSchema sch = cm.schemaFor(ImmutablePersonStateCSV.class).withHeader();
-		try (StringWriter strW = new StringWriter()) {
-			  SequenceWriter seqW = cm.writer(sch)
-			    .writeValues(strW);
-			  seqW.write(tmp);
-			  seqW.write(tmp);
-			  System.out.println(strW.toString());
-		}
+//		CsvMapper cm = CsvMapper.builder()
+//				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+//				.build();
+//		// cm.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+//		CsvSchema sch = cm.schemaFor(ImmutablePersonStateCSV.class).withHeader();
+//		try (StringWriter strW = new StringWriter()) {
+//			  SequenceWriter seqW = cm.writer(sch)
+//			    .writeValues(strW);
+//			  seqW.write(tmp);
+//			  seqW.write(tmp);
+//			  System.out.println(strW.toString());
+//		}
 		
+		System.out.println(CSVUtil.headers(tmp.getClass()));
+		System.out.println(CSVUtil.row(tmp));
 	}
 	
 

@@ -1,5 +1,6 @@
 package io.github.ai4ci.abm;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.SerializationUtils;
@@ -26,9 +27,9 @@ public class TestViralLoadModel {
 	@Test
 	void testViralLoad() {
 		Sampler rng = Sampler.getSampler();
-		InHostStochasticState state2 = InHostStochasticState.initialise(
+		InHostStochasticState state2 = (InHostStochasticState) InHostModelState.test(
 			(StochasticModel) config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
-			rng, 0);
+			rng);
 		// TODO: this test does not work as outside of simulation there is no 
 		// viral exposure history.
 		
@@ -44,10 +45,17 @@ public class TestViralLoadModel {
 	
 	@Test
 	void testInfectivityProfile() {
+		
 		DelayDistribution dd = InHostConfiguration.getInfectivityProfile(
 				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
 				100, 100);
-		System.out.print(dd);
+		System.out.println(dd);
+		
+		double[] vl = InHostConfiguration.getViralLoadProfile(
+				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
+				100, 100);
+		System.out.println(Arrays.toString(vl));
+		
 	}
 	
 	@Test

@@ -9,11 +9,12 @@ import org.apache.logging.log4j.core.config.DefaultConfiguration;
 
 import io.github.ai4ci.abm.mechanics.Updater;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.ImmutableExperimentConfiguration;
-import io.github.ai4ci.config.ImmutableExperimentFacet;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.flow.SimulationFactory;
+import io.github.ai4ci.config.WattsStrogatzConfiguration;
+import io.github.ai4ci.flow.BatchRunner;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutableContactCSV;
 import io.github.ai4ci.output.ImmutableInfectivityProfileCSV;
@@ -29,85 +30,66 @@ class TestDefaultSim {
 
 	static ExperimentConfiguration config1 =  
 			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
-				)
-			.adjustSetup(b -> b
-					.setNetworkSize(10000)
-					.setInitialImports(30)
+				ExperimentConfiguration.DEFAULT
 			)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setImportationProbability(0D)
+			.withExecutionConfig(
+				ExecutionConfiguration.DEFAULT
+					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+					.withImportationProbability(0D)
 					// .setInHostConfiguration(StochasticModel.DEFAULT)
 			)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"smart-agent",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-									"reactive-test",
-									PartialExecutionConfiguration.builder()
-										.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
-										.build()
-									)
-							.putModification(
-									"nothing",
-									PartialExecutionConfiguration.builder()
-										.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
-										.build()
-									)
-						.setName("strategy")
+			.withFacet(
+					"behaviour", 
+					PartialExecutionConfiguration.builder()
+						.setName("ignore")
+						.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("smart-agent")
+						.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("reactive-test")
+						.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("symptom-management")
+						.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
 						.build()
-				);
+					);
 	
 	static ExperimentConfiguration testR0 =  
 			ImmutableExperimentConfiguration.copyOf(	
 					ExperimentConfiguration.DEFAULT
-				)
-			.adjustSetup(b -> b
-					.setNetworkSize(10000)
-					.setNetworkConnectedness(100)
-					.setInitialImports(30)
-					.setNetworkRandomness(1D)
+			)
+			.withSetupConfig(
+				WattsStrogatzConfiguration.DEFAULT
 			)
 			.withSetupReplications(1)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
-					.setImportationProbability(0D) //.001D)
-					.setContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+			.withExecutionConfig(
+				ExecutionConfiguration.DEFAULT
+					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+					.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+					.withImportationProbability(0D) //.001D)
+					.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
+					// .withInHostConfiguration(StochasticModel.DEFAULT)
 			)
 			.withExecutionReplications(1)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"r0_1",
-								PartialExecutionConfiguration.builder()
-									.setRO(1D)
-									.build()
-								)
-							.putModification(
-									"r0_2",
-									PartialExecutionConfiguration.builder()
-										.setRO(2D)
-										.build()
-									)
-							.putModification(
-									"r0_3",
-									PartialExecutionConfiguration.builder()
-										.setRO(3D)
-										.build()
-									)
-						.setName("repro")
-						.build()
-				);
+			.withFacet(
+				"R",
+				PartialExecutionConfiguration.builder()
+					.setName("1.0")
+					.setRO(1D)
+					.build(),
+				PartialExecutionConfiguration.builder()
+					.setName("2.0")
+					.setRO(2D)
+					.build(),
+				PartialExecutionConfiguration.builder()
+					.setName("3.0")
+					.setRO(3D)
+					.build()
+			);
 	
 	
 	static ExperimentConfiguration ageStrat =  
@@ -117,75 +99,42 @@ class TestDefaultSim {
 			.withSetupConfig(
 					AgeStratifiedNetworkConfiguration.DEFAULT
 			)
-			.adjustExecution(e -> e
-					.setDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.setImportationProbability(0D)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
-			)
 			.withSetupReplications(1)
-			.withFacets(
-						
-						ImmutableExperimentFacet.builder()
-							.putModification(
-								"ignore",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"smart-agent",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"reactive-test",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
-									.build()
-								)
-							.putModification(
-								"symptom-management",
-								PartialExecutionConfiguration.builder()
-									.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
-									.build()
-								)
-						.setName("strategy")
-						.build()
-				)
-			.withExecutionReplications(3);
-	
+			.withExecutionConfig(
+					ExecutionConfiguration.DEFAULT
+						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+						.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.withImportationProbability(0D)
+						// .withInHostConfiguration(StochasticModel.DEFAULT)
+			)
+			.withExecutionReplications(1);
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
 		Configurator.initialize(new DefaultConfiguration());
 		Configurator.setRootLevel(Level.DEBUG);
 		
-		ExperimentConfiguration tmp = ageStrat;
-		
-		tmp.writeConfig(SystemUtils.getUserHome().toPath().resolve("tmp"));
+		ExperimentConfiguration tmp = ageStrat; // testR0;
 		
 		Updater updater = new Updater();
 		
 		StateExporter exporter = StateExporter.of(
 				SystemUtils.getUserHome().toPath().resolve("tmp"),
-				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState()), "summary.csv"),
-				ExportSelector.ofVeryMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV), "linelist.csv"),
-				ExportSelector.ofMany(ImmutableOutbreakHistoryCSV.class, o -> o.getHistory().stream().map(CSVMapper.INSTANCE::toCSV), "test-positivity.csv"),
-				ExportSelector.ofVeryMany(ImmutableContactCSV.class, o -> o.getPeople().stream().flatMap(CSVMapper.INSTANCE::toContacts), "contact.csv")
+				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState())),
+				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV)),
+				ExportSelector.ofMany(ImmutableOutbreakHistoryCSV.class, o -> o.getHistory().stream().map(CSVMapper.INSTANCE::toCSV)),
+				ExportSelector.ofMany(ImmutableContactCSV.class, o -> o.getPeople().stream().flatMap(CSVMapper.INSTANCE::toContacts)),
+				// ExportSelector.ofMany(ImmutableOutbreakFinalStateCSV.class, o -> CSVMapper.INSTANCE.finalCSV(o.getCurrentState())),
+				ExportSelector.ofMany(ImmutableInfectivityProfileCSV.class, o -> CSVMapper.INSTANCE.infectivityProfile(o)),
+				ExportSelector.ofMany(ImmutablePersonDemographicsCSV.class, o -> o.getPeople().stream().map(CSVMapper.INSTANCE::toDemog))
 		);
 		
-		StateExporter finalState = StateExporter.of(
-				SystemUtils.getUserHome().toPath().resolve("tmp"),
-				// ExportSelector.ofMany(ImmutableOutbreakFinalStateCSV.class, o -> CSVMapper.INSTANCE.finalCSV(o.getCurrentState()), "rt-final.csv"),
-				ExportSelector.ofMany(ImmutableInfectivityProfileCSV.class, o -> CSVMapper.INSTANCE.infectivityProfile(o.getExecutionConfiguration()), "ip.csv"),
-				ExportSelector.ofMany(ImmutablePersonDemographicsCSV.class, o -> o.getPeople().stream().map(CSVMapper.INSTANCE::toDemog), "demog.csv")
-		);
+		exporter.writeInputConfiguration(tmp);
 		
-		SimulationFactory.runExperiments(tmp, "test", updater, exporter, 100, finalState);
+		BatchRunner.runExperiments(tmp, "test", updater, exporter, 100);
 		
 		exporter.close();
-		finalState.close();
+		
 		
 		System.out.println("finished");
 	} 

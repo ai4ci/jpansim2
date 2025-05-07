@@ -15,7 +15,6 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import io.github.ai4ci.flow.CSVWriter.Writeable;
-import io.github.ai4ci.util.CSVUtil;
 
 public class JacksonCSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 	

@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * A write once read many times list like data structure. This allows
  * multi-threaded writing to the array and multi-threaded reading and 
  * assumes they happen in different phases.  
- * @param <X>
+ * @param <X> the array type
  */
 public class ThreadSafeArray<X> implements Serializable {
 	

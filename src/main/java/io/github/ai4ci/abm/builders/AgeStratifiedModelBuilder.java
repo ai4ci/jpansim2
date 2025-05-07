@@ -13,7 +13,7 @@ import io.github.ai4ci.util.Sampler;
 
 public class AgeStratifiedModelBuilder extends AbstractModelBuilder implements
 	AgeStratifiedNetworkSetup, DefaultOutbreakBaseliner, DefaultOutbreakInitialiser,
-	AgeStratifiedPersonBaseliner, DefaultPersonInitialiser 
+	AgeStratifiedPersonBaseliner, AgeStratifiedPersonInitialiser 
 {
 
 	@Override
@@ -34,7 +34,7 @@ public class AgeStratifiedModelBuilder extends AbstractModelBuilder implements
 
 	@Override
 	public void initialisePerson(ImmutablePersonState.Builder builder, Person person, Sampler rng) {
-		DefaultPersonInitialiser.super.initialisePerson(builder, person, rng);
+		AgeStratifiedPersonInitialiser.super.initialisePerson(builder, person, rng);
 	}
 
 	@Override

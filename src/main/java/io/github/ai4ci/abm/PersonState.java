@@ -28,11 +28,12 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Default default Double getComplianceModifier() {return 1.0D;}
 	@Value.Default default Double getImmuneModifier() {return 1.0D;}
 	@Value.Default default Double getSusceptibilityModifier() {return 1.0D;}
+	@Value.Default default Double getAppUseModifier() {return 1.0D;}
 	
 	@Value.Default default Double getImportationExposure() {return 0D;}
 	@Value.Default default Double getImmunisationDose() {return 0D;}
 	
-	Double getContactDetectedProbability();
+	
 	
 	//Double getScreeningInterval();
 	
@@ -120,6 +121,21 @@ public interface PersonState extends PersonTemporalState {
 			Conversions.scaleProbabilityByOR(
 				this.getEntity().getBaseline().getMobilityBaseline(),
 				this.getMobilityModifier()
+			);
+		return tmp;
+	};
+	
+	/**
+	 * Probability of contact given a fully mobile partner. The joint probability
+	 * will define the likelihood of a contact. (Plus some randomness) 
+	 * A high mobility means a high probability of contact
+	 * @return
+	 */
+	default Double getAdjustedAppUseProbability() {
+		double tmp = 
+			Conversions.scaleProbabilityByOR(
+				this.getEntity().getBaseline().getAppUseProbability(),
+				this.getAppUseModifier()
 			);
 		return tmp;
 	};
@@ -386,8 +402,6 @@ public interface PersonState extends PersonTemporalState {
 	/**
 	 * The collection of test results for an individual that generate a result
 	 * today. 
-	 * @param time
-	 * @return
 	 */
 	@Value.Lazy default List<TestResult> getResults() {
 		return this.getRecentTests()

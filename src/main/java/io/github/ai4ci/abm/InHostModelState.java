@@ -2,6 +2,7 @@ package io.github.ai4ci.abm;
 
 import java.io.Serializable;
 
+import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
 import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.util.Sampler;
 
@@ -30,5 +31,8 @@ public interface InHostModelState<CFG extends InHostConfiguration> extends Seria
 		
 	}
 	
+	public static <CFG extends InHostConfiguration> InHostModelState<CFG> test(CFG config, Sampler rng) {
+		return (new DefaultPersonInitialiser() {}).initialiseInHostModel(config, null, rng);
+	}
 	
 }

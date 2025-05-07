@@ -28,8 +28,9 @@ public abstract class ConfigMerger {
 	 
 	public ImmutableExecutionConfiguration mergeConfiguration(
 			ExecutionConfiguration target,
-			PartialExecutionConfiguration source
+			Abstraction.Modification<ExecutionConfiguration> modification
 	) {
+		PartialExecutionConfiguration source = (PartialExecutionConfiguration) modification; 
 		return updateConfiguration(
 				ImmutableExecutionConfiguration.builder().from(target),
 				source)
@@ -38,19 +39,18 @@ public abstract class ConfigMerger {
 				;
 	};
 	
+	
 	public SetupConfiguration mergeConfiguration(
 			SetupConfiguration config,
-			Abstraction.Modification modification
+			Abstraction.Modification<? extends SetupConfiguration> modification
 	) {
-		if (config instanceof WattsStrogatzConfiguration & 
-				modification instanceof PartialWattsStrogatzConfiguration)
-					return mergeConfiguration((WattsStrogatzConfiguration) config, 
-							(PartialWattsStrogatzConfiguration) modification);
+		if (config instanceof WattsStrogatzConfiguration)
+			return mergeConfiguration((WattsStrogatzConfiguration) config, 
+					(PartialWattsStrogatzConfiguration) modification);
 		
-		if (config instanceof AgeStratifiedNetworkConfiguration & 
-				modification instanceof PartialAgeStratifiedNetworkConfiguration)
-					return mergeConfiguration((AgeStratifiedNetworkConfiguration) config, 
-							(PartialAgeStratifiedNetworkConfiguration) modification);
+		if (config instanceof AgeStratifiedNetworkConfiguration)
+			return mergeConfiguration((AgeStratifiedNetworkConfiguration) config, 
+					(PartialAgeStratifiedNetworkConfiguration) modification);
 		
 		else throw new RuntimeException("invalid combination.");
 	}

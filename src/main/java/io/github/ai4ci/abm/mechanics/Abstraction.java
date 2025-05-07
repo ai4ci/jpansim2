@@ -11,13 +11,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
+import io.github.ai4ci.config.ImmutableFixedValueFunction;
 import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.util.ImmutableEmpiricalFunction;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ResampledDistribution;
@@ -25,19 +25,40 @@ import io.github.ai4ci.util.Sampler;
 
 public interface Abstraction {
 
-	@JsonTypeInfo(use = Id.SIMPLE_NAME,requireTypeIdForSubtypes = OptBoolean.TRUE)
+	@JsonTypeInfo(use = Id.DEDUCTION)
 	
 	@JsonSubTypes( {
 		@Type(PartialWattsStrogatzConfiguration.class), 
 		@Type(PartialExecutionConfiguration.class), 
 		@Type(PartialAgeStratifiedNetworkConfiguration.class)
 	})
-	public interface Modification {}
+	public interface Modification<X extends Abstraction.Named> {
+		@Value.NonAttribute X self();
+	}
  
-
+	@JsonTypeInfo(use = Id.DEDUCTION)
+	@JsonSubTypes( {
+		@Type(ImmutableEmpiricalFunction.class), 
+		@Type(ImmutableFixedValueFunction.class)
+	})
+	public interface Interpolator {
+		double interpolate(double y);
+	}
 
 	public interface Entity extends Serializable {
 		@Value.NonAttribute String getUrn();
+		default String getModelName() {
+			return ModelNav.modelSetup(this).getName();
+		}
+		default Integer getModelReplica() {
+			return ModelNav.modelSetup(this).getReplicate();
+		}
+		default String getExperimentName() {
+			return ModelNav.modelParam(this).getName();
+		}
+		default Integer getExperimentReplica() {
+			return ModelNav.modelParam(this).getReplicate();
+		}
 	}
 	
 	public interface Distribution {
@@ -65,7 +86,6 @@ public interface Abstraction {
 
 	}
 	
-	
 	public interface TemporalState<E extends Entity> extends Serializable {
 		
 		E getEntity();
@@ -76,19 +96,19 @@ public interface Abstraction {
 		}
 		
 		default String getModelName() {
-			return ModelNav.modelSetup(this).getName();
+			return getEntity().getModelName();
 		}
 		
 		default Integer getModelReplica() {
-			return ModelNav.modelSetup(this).getReplicate();
+			return getEntity().getModelReplica();
 		}
 		
 		default String getExperimentName() {
-			return ModelNav.modelParam(this).getName();
+			return getEntity().getExperimentName();
 		}
 		
 		default Integer getExperimentReplica() {
-			return ModelNav.modelParam(this).getReplicate();
+			return getEntity().getExperimentReplica();
 		}
 	}
 	

@@ -4,6 +4,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class CSVUtil {
 	
 	
@@ -32,14 +34,14 @@ public class CSVUtil {
 	
 	public static <X> String headers(Class<X> clazz) {
 		return Arrays.stream(clazz.getMethods())
-			.filter(c -> c.getName().startsWith("get") | c.getName().startsWith("is"))
-			.map(c -> uncapitalize(c.getName()))
+			.filter(c -> c.isAnnotationPresent(JsonProperty.class))
+			.map(c -> c.getAnnotation(JsonProperty.class).value())
 			.collect(Collectors.joining(","));
 	}
 	
 	public static <X> String row(X value) {
 		return Arrays.stream(value.getClass().getMethods())
-			.filter(c -> c.getName().startsWith("get") | c.getName().startsWith("is"))
+			.filter(c -> c.isAnnotationPresent(JsonProperty.class))
 			.map(m -> {
 				try {
 					return valueOf(m.invoke(value));
@@ -50,9 +52,9 @@ public class CSVUtil {
 			.collect(Collectors.joining(","));
 	}
 	
-	private static String uncapitalize(String s) {
-		if (s.startsWith("is")) s = s.substring(2);
-		if (s.startsWith("get")) s = s.substring(3);
-        return s.substring(0, 1).toLowerCase() + s.substring(1);
-    }
+//	private static String uncapitalize(String s) {
+//		if (s.startsWith("is")) s = s.substring(2);
+//		if (s.startsWith("get")) s = s.substring(3);
+//        return s.substring(0, 1).toLowerCase() + s.substring(1);
+//    }
 }

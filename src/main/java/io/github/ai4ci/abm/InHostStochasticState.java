@@ -82,31 +82,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		return getImmune() - getImmunePriming() - getImmuneActive();
 	}
 
-	static InHostStochasticState initialise(StochasticModel configuration, Sampler rng, int time) {
-		return ImmutableInHostStochasticState.builder()
-				.setTime(time)
-				.setConfig(configuration)
-				.setTargets(configuration.getTargetCellCount())
-				.setTargetSusceptible(configuration.getTargetCellCount())
-				.setTargetExposed(0)
-				.setTargetInfected(0)
-				.setVirions(0)
-				.setVirionsProduced(0)
-				.setImmunePriming(0)
-				.setImmuneActive(0)
-				.setImmuneTargetRatio(configuration.getImmuneTargetRatio().sample(rng))
-				.setImmuneActivationRate(configuration.getImmuneActivationRate().sample(rng))
-				.setImmuneWaningRate(configuration.getImmuneWaningRate().sample(rng))
-				.setTargetRecoveryRate(configuration.getTargetRecoveryRate().sample(rng))
-				.setInfectionCarrierProbability(configuration.getInfectionCarrierProbability().sample(rng))
-				.build();
-	}
-
-	
-
-	
-
-	/**
+		/**
 	 * Update the viral load for a person. 
 	 * This depends on the PersonHistory being up to date which it should be based
 	 * on the fact this is updated during the next update phase.

@@ -7,60 +7,59 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.DoubleUnaryOperator;
 
+import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.abm.mechanics.Abstraction;
+
 @Value.Immutable
 @JsonSerialize(as = ImmutableEmpiricalFunction.class)
 @JsonDeserialize(as = ImmutableEmpiricalFunction.class)
-public interface EmpiricalFunction extends Serializable {
+public interface EmpiricalFunction extends Serializable, Abstraction.Interpolator {
  
-	public static interface Builder {
-		public ImmutableEmpiricalFunction.Builder addData(double[] data);
-		public default ImmutableEmpiricalFunction.Builder putDataPoint(double... data) {
-			return this.addData(data);
-		};
-	}
-	
 	public static enum Link {
-		NONE, LOG, LOGIT
+		NONE (d->d, d->d), 
+		LOG (d -> Math.log(d), d -> Math.exp(d)), 
+		LOGIT (d -> Conversions.logit(d), d -> Conversions.expit(d));
+		
+		public DoubleUnaryOperator fn; public DoubleUnaryOperator invFn;
+		Link( DoubleUnaryOperator fn, DoubleUnaryOperator invFn) {
+			this.fn = fn;
+			this.invFn = invFn;
+		}
+		
 	}
 	
-	List<double[]> getData();
+	double[] getX();
+	double[] getY();
 	@Value.Default default Link getLink() {return Link.NONE;}
 	
 	private Map<Double,Double> getDataPoints() {
 		Map<Double,Double> tmp = new HashMap<>();
-		getData().stream().forEach(c -> tmp.put(c[0], c[1]));
+		if (getX().length != getY().length) throw new RuntimeException("Mismatched inputs"); 
+		for (int i = 0; i < getX().length; i++) {
+			tmp.put(getX()[i], getY()[i]);
+		}
 		return tmp;
 	}
 	
 	@JsonIgnore
 	@Value.Derived default double getMin() {
 		return getDataPoints().keySet().stream().mapToDouble(d -> d).min()
-				.orElse(invLinkFn().applyAsDouble(0D));
+				.orElse(getLink().invFn.applyAsDouble(0D));
 	}
 	
-	private DoubleUnaryOperator linkFn() {
-		if (getLink().equals(Link.LOG)) return d -> Math.log(d);
-		if (getLink().equals(Link.LOGIT)) return d -> Conversions.logit(d);
-		return d -> d;
-	}
 	
-	private DoubleUnaryOperator invLinkFn() {
-		if (getLink().equals(Link.LOG)) return d -> Math.exp(d);
-		if (getLink().equals(Link.LOGIT)) return d -> Conversions.expit(d);
-		return d -> d;
-	}
 	
 	@JsonIgnore
 	@Value.Derived default double getMax() {
 		return getDataPoints().keySet().stream().mapToDouble(d->d)
 			.max()
-			.orElse(invLinkFn().applyAsDouble(0D));
+			.orElse(getLink().invFn.applyAsDouble(0D));
 	}
 	
 	@JsonIgnore
@@ -69,14 +68,28 @@ public interface EmpiricalFunction extends Serializable {
 		double[] x = getDataPoints().keySet().stream().mapToDouble(d->d).toArray();
 		Arrays.sort(x);
 		double[] y = Arrays.stream(x).map(x1 -> getDataPoints().get(x1))
-				.map(linkFn())
+				.map(getLink().fn)
 				.toArray();
 		return SplineInterpolator.createMonotoneCubicSpline(x, y);
 	}
 	
+	
 	default double interpolate(double x) {
 		if (x<getMin()) return getDataPoints().get(getMin());
 		if (x>getMax()) return getDataPoints().get(getMax());
-		return invLinkFn().applyAsDouble(getInterpolator().interpolate(x));
+		return getLink().invFn.applyAsDouble(getInterpolator().interpolate(x));
+	}
+	
+	default EmpiricalFunction normalise(EmpiricalDistribution input) {
+		RombergIntegrator tmp = new RombergIntegrator(0.0001, 0.0001, RombergIntegrator.DEFAULT_MIN_ITERATIONS_COUNT  ,RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT);
+		double total = tmp.integrate(100000, 
+				x -> this.interpolate(x) * input.getDensity(x), 
+				input.getMinimum(), input.getMaximum());
+		
+		return ImmutableEmpiricalFunction.builder()
+				.setLink(getLink())
+				.setX(getX())
+				.setY(Arrays.stream(getY()).map(y -> y/total).toArray())
+				.build();
 	}
 }

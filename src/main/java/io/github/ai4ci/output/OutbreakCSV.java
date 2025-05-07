@@ -1,11 +1,13 @@
 package io.github.ai4ci.output;
 
-import static io.github.ai4ci.util.CSVUtil.csvFrom;
-
 import org.immutables.value.Value;
 
+import io.github.ai4ci.Export;
+import io.github.ai4ci.Export.Stage;
+
 @Value.Immutable
-public interface OutbreakCSV extends CommonCSV {
+@Export(stage = Stage.UPDATE, value = "summary.csv", size = 64)
+public interface OutbreakCSV extends CommonCSV.State {
 
 	long getIncidence();
 	long getCumulativeInfections(); 
@@ -20,24 +22,24 @@ public interface OutbreakCSV extends CommonCSV {
 	double getRtEffective();
 	String getPolicy();
 	
-	default String header() {
-		return CommonCSV.super.header()+",incidence,cumulativeInfections,infectedCount,"+
-			"symptomaticCount,averageMobility,averageViralLoad,averageCompliance,testPositives,testNegatives,presumedTestPositivePrevalence,rtEffective,policy";
-	}
-	
-	default String row() {
-		return CommonCSV.super.row()+","+csvFrom(
-			this.getIncidence(),
-			this.getCumulativeInfections(),
-			this.getInfectedCount(),
-			this.getSymptomaticCount(),
-			this.getAverageMobility(),
-			this.getAverageViralLoad(),
-			this.getTestPositives(),
-			this.getTestNegatives(),
-			this.getPresumedTestPositivePrevalence(),
-			this.getRtEffective(),
-			this.getPolicy()
-		);
-	}
+//	default String header() {
+//		return CommonCSV.super.header()+",incidence,cumulativeInfections,infectedCount,"+
+//			"symptomaticCount,averageMobility,averageViralLoad,averageCompliance,testPositives,testNegatives,presumedTestPositivePrevalence,rtEffective,policy";
+//	}
+//	
+//	default String row() {
+//		return CommonCSV.super.row()+","+csvFrom(
+//			this.getIncidence(),
+//			this.getCumulativeInfections(),
+//			this.getInfectedCount(),
+//			this.getSymptomaticCount(),
+//			this.getAverageMobility(),
+//			this.getAverageViralLoad(),
+//			this.getTestPositives(),
+//			this.getTestNegatives(),
+//			this.getPresumedTestPositivePrevalence(),
+//			this.getRtEffective(),
+//			this.getPolicy()
+//		);
+//	}
 }

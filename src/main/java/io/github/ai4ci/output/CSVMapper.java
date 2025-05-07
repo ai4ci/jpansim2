@@ -13,6 +13,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
 import io.github.ai4ci.abm.Contact;
+import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.Person;
@@ -29,7 +30,7 @@ import io.github.ai4ci.util.DelayDistribution;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class CSVMapper {
-	
+	 
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
 	
 //	@Mapping(target= "personId", source="entity.id")
@@ -60,13 +61,14 @@ public abstract class CSVMapper {
 //			);
 //	};
 	
-	public Stream<ImmutableInfectivityProfileCSV> infectivityProfile(ExecutionConfiguration outbreak) {
-		DelayDistribution dd = outbreak.getInfectivityProfile();
+	public Stream<ImmutableInfectivityProfileCSV> infectivityProfile(Outbreak outbreak) {
+		DelayDistribution dd = outbreak.getExecutionConfiguration().getInfectivityProfile();
 		return IntStream
 			.range(0,  (int) dd.size())
 			.mapToObj(i -> 
 			ImmutableInfectivityProfileCSV.builder()
-					.setExperiment(outbreak.getName())
+					.setExperimentName(outbreak.getExperimentName())
+					.setModelName(outbreak.getModelName())
 					.setTau(i)
 					.setProbability(dd.density(i))
 				.build()
@@ -74,11 +76,6 @@ public abstract class CSVMapper {
 	};
 	
 	//@Mapping(target= "id", source="person.entity.id")
-	@Mapping(target="experimentName",source = "person.currentState.experimentName")
-	@Mapping(target="experimentReplica",source = "person.currentState.experimentReplica")
-	@Mapping(target="modelName",source = "person.currentState.modelName")
-	@Mapping(target="modelReplica",source = "person.currentState.modelReplica")
-	@Mapping(target="time",source = "person.currentState.time")
 	protected abstract ImmutablePersonDemographicsCSV toCSV(Person person, PersonDemographic demog, PersonBaseline baseline);
 	 
 	public ImmutablePersonDemographicsCSV toDemog(Person person) {
@@ -100,4 +97,6 @@ public abstract class CSVMapper {
 	}
 	
 	protected abstract HashMap<String,Object> toMap(ImmutableContactCSV csv);
+	
+	protected abstract ImmutableOutbreakConfigurationJson toJson(Outbreak outbreak);
 }

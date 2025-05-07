@@ -52,8 +52,6 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	
 	/**
 	 * The number of tests reported as positive on the given day 
-	 * @param time
-	 * @return
 	 */
 	@Value.Lazy default List<Integer> getTestPositivesBySampleDate() {
 		return 
@@ -81,8 +79,6 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	
 	/**
 	 * The number of tests reported as positive on the given day 
-	 * @param time
-	 * @return
 	 */
 	@Value.Lazy default List<Integer> getTestNegativesBySampleDate() {
 		return 

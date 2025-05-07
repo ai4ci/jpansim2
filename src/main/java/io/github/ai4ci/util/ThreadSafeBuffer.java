@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,8 +15,7 @@ import org.apache.commons.lang3.NotImplementedException;
 /**
  * A circular buffer that can be written to by many threads and read from
  * primarily by one thread. Will block putting thread if the buffer is full. 
- *  
- * @param <X>
+ * @param <X> the buffer type
  */
 public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 	
@@ -145,6 +143,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 			if (next.get() - tail.get() < capacity) {
 				int p = next.getAndIncrement();
 				this.data[p % capacity] = e;
+				next.notify(); // notify one
 				return true;
 			}
 			return false;
@@ -176,7 +175,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return offer(e, System.currentTimeMillis()+unit.toMillis(timeout) );
 	}
 		
-	public boolean offer(X e, long before) throws InterruptedException {
+	private boolean offer(X e, long before) throws InterruptedException {
 		if (System.currentTimeMillis() > before) return false;
 		if (offer(e)) return true;
 		Thread.sleep(1);
@@ -191,6 +190,11 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 
 	@Override
 	public X poll(long timeout, TimeUnit unit) throws InterruptedException {
+		return poll(System.currentTimeMillis()+unit.toMillis(timeout));
+	}
+	
+	private X poll(long before) throws InterruptedException {
+		while (this.isEmpty() && System.currentTimeMillis() < before) Thread.onSpinWait();
 		return poll();
 	}
 

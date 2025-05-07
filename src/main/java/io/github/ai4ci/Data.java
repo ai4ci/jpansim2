@@ -32,6 +32,7 @@ public @interface Data {
 	    // strictModifiable = false,
 	    passAnnotations = {
 	    		// CsvColumn.class
+	    		Export.class
 	    },
 	    isSet = "initialised*",
 	    depluralize = true, // enable feature

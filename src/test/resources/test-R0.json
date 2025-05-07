@@ -1,0 +1,126 @@
+{
+  "setupConfig" : [ {
+    "@type" : "watts-strogatz",
+    "modifications" : [ ],
+    "name" : "setup",
+    "default" : {
+      "@type" : "watts-strogatz",
+      "name" : "setup",
+      "initialImports" : 5,
+      "networkSize" : 10000,
+      "networkRandomness" : 0.15,
+      "networkConnectedness" : 100
+    }
+  } ],
+  "setupReplications" : 1,
+  "executionConfig" : {
+    "name" : "execution",
+    "contactProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.1,
+      "dispersion" : 0.1
+    },
+    "contactDetectedProbability" : 0.9,
+    "complianceProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.99,
+      "dispersion" : 0.001
+    },
+    "appUseProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.97,
+      "dispersion" : 0.01
+    },
+    "inHostConfiguration" : {
+      "symptomCutoff" : 0.5,
+      "infectiousnessCutoff" : 0.2,
+      "incubationPeriod" : {
+        "type" : "LOG_NORM",
+        "central" : 5.0,
+        "dispersion" : 2.0
+      },
+      "approxPeakViralLoad" : {
+        "type" : "UNIMODAL_BETA",
+        "central" : 0.5,
+        "dispersion" : 0.1
+      },
+      "incubationToPeakViralLoadDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 2.0,
+        "dispersion" : 1.0
+      },
+      "peakToRecoveryDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 8.0,
+        "dispersion" : 3.0
+      },
+      "approxPeakImmuneResponse" : {
+        "type" : "UNIMODAL_BETA",
+        "central" : 0.5,
+        "dispersion" : 0.1
+      },
+      "peakImmuneResponseDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 20.0,
+        "dispersion" : 4.0
+      },
+      "immuneWaningHalfLife" : {
+        "type" : "LOG_NORM",
+        "central" : 300.0,
+        "dispersion" : 10.0
+      }
+    },
+    "availableTests" : [ {
+      "testName" : "LFT",
+      "sensitivity" : 0.9,
+      "specificity" : 0.98,
+      "meanTestDelay" : 0.0,
+      "sdTestDelay" : 0.0
+    }, {
+      "testName" : "PCR",
+      "sensitivity" : 0.8,
+      "specificity" : 0.995,
+      "meanTestDelay" : 3.0,
+      "sdTestDelay" : 1.0
+    } ],
+    "symptomSensitivity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.5,
+      "dispersion" : 0.01
+    },
+    "symptomSpecificity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.95,
+      "dispersion" : 0.01
+    },
+    "initialEstimateInfectionDuration" : 10.0,
+    "initialEstimateSymptomSensitivity" : 0.5,
+    "initialEstimateSymptomSpecificity" : 0.95,
+    "maximumSocialContactReduction" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.2,
+      "dispersion" : 0.01
+    },
+    "defaultBehaviourModelName" : "Test",
+    "defaultPolicyModelName" : "NoControl",
+    "importationProbability" : 0.0,
+    "rO" : 2.5
+  },
+  "facets" : [ {
+    "name" : "R",
+    "modifications" : [ {
+      "name" : "1.0",
+      "contactDetectedProbability" : 0.0,
+      "rO" : 1.0
+    }, {
+      "name" : "2.0",
+      "contactDetectedProbability" : 0.0,
+      "rO" : 2.0
+    }, {
+      "name" : "3.0",
+      "contactDetectedProbability" : 0.0,
+      "rO" : 3.0
+    } ]
+  } ],
+  "executionReplications" : 1
+}

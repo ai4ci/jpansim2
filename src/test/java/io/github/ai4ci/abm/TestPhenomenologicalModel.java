@@ -4,6 +4,7 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
 import io.github.ai4ci.config.ExposureModel;
 import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
 import io.github.ai4ci.util.Sampler;
@@ -44,11 +45,8 @@ class TestPhenomenologicalModel {
 	@Test
 	void testViralLoad() {
 		Sampler rng = Sampler.getSampler();
-		InHostPhenomenologicalState state2 = InHostPhenomenologicalState.initialise(
-				(PhenomenologicalModel) config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
-				rng, 0);
-		// TODO: this test does not work as outside of simulation there is no 
-		// viral exposure history.
+		PhenomenologicalModel tmp = (PhenomenologicalModel) config.getOutbreak().getExecutionConfiguration().getInHostConfiguration();
+		InHostPhenomenologicalState state2 = (InHostPhenomenologicalState) InHostModelState.test(tmp, rng);
 		
 		for (int i =0; i<=10; i++ ) {
 			System.out.println(state2.toString());

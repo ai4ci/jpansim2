@@ -5,6 +5,7 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.abm.ImmutableInHostStochasticState;
 import io.github.ai4ci.abm.InHostStochasticState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.util.Sampler;
@@ -15,7 +16,7 @@ import io.github.ai4ci.util.SimpleDistribution;
 @JsonDeserialize(as = ImmutableStochasticModel.class)
 public interface StochasticModel extends InHostConfiguration {
 	
-	public static StochasticModel DEFAULT = ImmutableStochasticModel.builder()
+	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel.builder()
 			.setTargetCellCount(10000)
 			.setImmuneTargetRatio( SimpleDistribution.logNorm(1D, 0.1))
 			.setImmuneActivationRate( SimpleDistribution.logNorm(1D, 0.1))
@@ -55,10 +56,6 @@ public interface StochasticModel extends InHostConfiguration {
 	 */
 	Double getTargetSymptomsCutoff();
 	
-	public default InHostStochasticState initialise(Person person, Sampler rng) {
-		InHostConfiguration config = person.getOutbreak().getExecutionConfiguration().getInHostConfiguration();
-		int time = person.getOutbreak().getCurrentState().getTime();
-		return InHostStochasticState.initialise((StochasticModel) config, rng, time);
-	}
+	
 	
 }

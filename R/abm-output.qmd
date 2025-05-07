@@ -32,19 +32,19 @@ ggplot(tmp,aes(x=contactCount, y=n/sum(n),colour=experimentName)) + geom_line() 
 
 ```{r}
 ggplot(linelist,aes(x=time,y=normalisedViralLoad,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName)
-ggplot(linelist %>% group_by(time,experimentName) %>% summarise(virionExposure=mean(virionExposure)),aes(x=time,y=virionExposure,colour = experimentName))+geom_line()
+ggplot(linelist %>% group_by(time,experimentName) %>% summarise(contactExposure=mean(contactExposure)),aes(x=time,y=contactExposure,colour = experimentName))+geom_line()
 
-ggplot(linelist,aes(x=time,y=probabilityInfectiousToday))+geom_point(alpha=0.1)+facet_wrap(~experimentName)
+# ggplot(linelist,aes(x=time,y=probabilityInfectiousToday))+geom_point(alpha=0.1)+facet_wrap(~experimentName)
 # ggplot(linelist,aes(x=probabilityInfectiousToday,y=normalisedViralLoad))+geom_point(alpha=0.1)
 
-ggplot(linelist,aes(x=probabilityInfectiousToday,fill=infectious))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
-ggplot(linelist,aes(x=probabilityInfectiousToday,fill=symptomatic))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
+# ggplot(linelist,aes(x=probabilityInfectiousToday,fill=infectious))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
+# ggplot(linelist,aes(x=probabilityInfectiousToday,fill=symptomatic))+geom_density(alpha=0.4)+facet_wrap(~experimentName,scales = "free_y")
 
 ggplot(linelist %>% group_by(time,experimentName) %>% summarise(presumedLocalPrevalence=mean(presumedLocalPrevalence)),aes(x=time,y=presumedLocalPrevalence,colour = experimentName))+geom_line()
 
 ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(alpha=0.01)+facet_wrap(~experimentName)
 
-ggplot(linelist %>% filter(virionExposure > 0))+geom_density(aes(x=virionExposure, colour=experimentName))
+ggplot(linelist %>% filter(contactExposure > 0))+geom_density(aes(x=contactExposure, colour=experimentName))
 ggplot(linelist %>% filter(normalisedSeverity > 0) %>% group_by(personId,experimentName) %>% summarise(normalisedSeverity = max(normalisedSeverity)))+geom_density(aes(x=normalisedSeverity, colour=experimentName))
 
 ggplot(linelist,aes(x=time,fill=as.factor(behaviour),colour=as.factor(behaviour)))+geom_bar()+facet_wrap(~experimentName,scales = "free_y")
@@ -77,7 +77,7 @@ summary %>% group_by(policy) %>% count()
 
 # ip = ggoutbreak::make_gamma_ip(median_of_mean = 7, median_of_sd = 4)
 ip = readr::read_csv("~/tmp/ip.csv")
-ip = ip %>% mutate(boot = as.integer(as.factor(experiment))) %>% group_by(boot,tau) %>%
+ip = ip %>% mutate(boot = as.integer(as.factor(experimentName))) %>% group_by(boot,tau) %>%
   summarise(probability = mean(probability))
 
 summary2 = summary %>% mutate(
@@ -133,5 +133,12 @@ tmp = contact_matrix %>% inner_join(expected %>% select(age,contactAge,expected)
   mutate(contactRR = n/expected)
 
 ggplot(tmp, aes(x=age,y=contactAge,fill=contactRR))+geom_tile()+scale_fill_viridis_c(limits=c(0.5, 2), oob=scales::squish)
+
+```
+
+
+```{r}
+settings = jsonlite::fromJSON("~/tmp/result-settings.json")
+
 
 ```

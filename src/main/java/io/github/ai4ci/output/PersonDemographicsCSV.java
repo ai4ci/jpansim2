@@ -4,8 +4,12 @@ import static io.github.ai4ci.util.CSVUtil.csvFrom;
 
 import org.immutables.value.Value;
 
+import io.github.ai4ci.Export;
+import io.github.ai4ci.Export.Stage;
+
 @Value.Immutable
-public interface PersonDemographicsCSV extends CommonCSV {
+@Export(stage = Stage.START,value = "demog.csv",size = 16)
+public interface PersonDemographicsCSV extends CommonCSV.Execution {
 	
 	int getId();
 	double getAge();
@@ -13,18 +17,18 @@ public interface PersonDemographicsCSV extends CommonCSV {
 	Double getAppUseProbability();
 	Double getComplianceBaseline();
 	
-	default String header() {
-		return CommonCSV.super.header()+"id,age,mobilityBaseline,appUseProbability,complianceBaseline";
-	}
-	
-	default String row() {
-		return CommonCSV.super.row()+","+csvFrom(
-			this.getId(),
-			this.getAge(),
-			this.getMobilityBaseline(),
-			this.getComplianceBaseline(),
-			this.getAppUseProbability(),
-			this.getComplianceBaseline()
-		);
-	}
+//	default String header() {
+//		return CommonCSV.super.header()+"id,age,mobilityBaseline,appUseProbability,complianceBaseline";
+//	}
+//	
+//	default String row() {
+//		return CommonCSV.super.row()+","+csvFrom(
+//			this.getId(),
+//			this.getAge(),
+//			this.getMobilityBaseline(),
+//			this.getComplianceBaseline(),
+//			this.getAppUseProbability(),
+//			this.getComplianceBaseline()
+//		);
+//	}
 }

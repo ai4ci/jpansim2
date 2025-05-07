@@ -2,6 +2,7 @@ package io.github.ai4ci.util;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import org.immutables.value.Value;
 
@@ -12,7 +13,8 @@ import io.github.ai4ci.util.ImmutableEmpiricalDistribution.Builder;
 @Value.Immutable
 public interface ResampledDistribution extends Abstraction.Distribution,Serializable {
 	
-	int PRECISION = 1000;
+	int PRECISION = 10000;
+	int KNOTS = 50;
 	
 	Abstraction.Distribution getFirst();
 	Abstraction.Distribution getSecond();
@@ -55,9 +57,15 @@ public interface ResampledDistribution extends Abstraction.Distribution,Serializ
 		Builder out = ImmutableEmpiricalDistribution.builder();
 		out.setMinimum(tmp[0]);
 		out.setMaximum(tmp[tmp.length-1]);
-		for (int i=1;i<tmp.length-1;i++) {
-			out.putCumulative(tmp[i], (double) i/tmp.length);
+		int step = tmp.length / KNOTS;
+		double[] x = new double[KNOTS-1];
+		double[] y = new double[KNOTS-1];
+		for (int i = 1; i<=KNOTS-1; i++) {
+			x[i-1] = tmp[i*step];
+			y[i-1] = ((double) i*step)/tmp.length;
 		}
+		out.setX(x);
+		out.setCumulativeProbability(y);
 		return out.build();
 	}
 	

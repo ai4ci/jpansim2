@@ -34,26 +34,6 @@ public interface AgeStratifiedNetworkSetup {
 		return tmp;
 	}
 	
-	/**
-	 * Compared to an average relationship strength of 1 how close is the 
-	 * relationship between two people, expressed as an odds ratio. I.e.
-	 * an OR of 2 means that the odds of the contact is doubled. The underlying
-	 * probability of the contact is still random but this will change the 
-	 * distribution depending on the contact individual.    
-	 * @param one
-	 * @param two
-	 * @return
-	 */
-	private static double getRelativeSimilarity(Person one, Person two, EmpiricalFunction oddsContactFromAgeDifference) {
-		double age1 = one.getDemographic().getAge();
-		double age2 = two.getDemographic().getAge();
-		double diff = Math.abs(age1-age2);
-		return oddsContactFromAgeDifference.interpolate(diff);
-//		if (diff < 5) return 1.5;
-//		if (diff % 25 < 5) return 1.2;
-//		return 0.75;
-	}
-	
 	default void setupOutbreak(ModifiableOutbreak outbreak, AgeStratifiedNetworkConfiguration config, Sampler sampler) {
 		
 		// For starters lets keep this simple.
@@ -89,9 +69,9 @@ public interface AgeStratifiedNetworkSetup {
 			Person two = socialNetwork.getEdgeTarget(r);
 			socialNetwork.setEdgeWeight(r,
 				// heavier weight means more likely to be selected regardless of mobility.
-				Conversions.scaleProbabilityByOR(
+				config.adjustedProbabilityContact(
 					sampler.uniform(),
-					getRelativeSimilarity(one,two, config.getOddsContactFromAgeDifference())
+					one, two
 				)
 			);
 		});

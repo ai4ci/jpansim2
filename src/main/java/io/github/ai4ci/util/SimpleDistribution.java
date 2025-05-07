@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+import javax.annotation.Nullable;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,7 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.abm.mechanics.ModelOperation.TriFunction;
-import io.reactivex.rxjava3.annotations.Nullable;
+
 
 
 @Value.Immutable

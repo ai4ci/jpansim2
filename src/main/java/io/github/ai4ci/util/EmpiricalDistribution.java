@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -19,25 +20,22 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @JsonDeserialize(as = ImmutableEmpiricalDistribution.class)
 public interface EmpiricalDistribution extends Abstraction.Distribution, Serializable {
 
-	public static interface Builder {
-		public ImmutableEmpiricalDistribution.Builder addCumulative(double[] data);
-		public default ImmutableEmpiricalDistribution.Builder putCumulative(double... data) {
-			return this.addCumulative(data);
-		};
-	}
-	
 	double getMinimum();
 	double getMaximum();
-	List<double[]> getCumulative();
+	double[] getX();
+	double[] getCumulativeProbability();
 	
 	private Map<Double,Double> getCumulativeData() {
 		Map<Double,Double> tmp = new HashMap<>();
-		getCumulative().stream().forEach(c -> tmp.put(c[0], c[1]));
+		if (getX().length != getCumulativeProbability().length) throw new RuntimeException("Mismatched inputs"); 
+		for (int i = 0; i < getX().length; i++) {
+			tmp.put(getX()[i], getCumulativeProbability()[i]);
+		}
 		return tmp;
 	};
 	
 	@JsonIgnore
-	default double[] getX() {
+	default double[] getSortedX() {
 		int count = getCumulativeData().size();
 		double[] x = new double[count+2];
 		x[0] = getMinimum();
@@ -67,12 +65,12 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	
 	@JsonIgnore
 	default SplineInterpolator getCDF() {
-		return SplineInterpolator.createMonotoneCubicSpline(this.getX(), this.getY());
+		return SplineInterpolator.createMonotoneCubicSpline(this.getSortedX(), this.getY());
 	}
 	
 	@JsonIgnore
 	@Value.Derived default SplineInterpolator getQuantile() {
-		return SplineInterpolator.createMonotoneCubicSpline(this.getY(), this.getX());
+		return SplineInterpolator.createMonotoneCubicSpline(this.getY(), this.getSortedX());
 	}
 	
 	@JsonIgnore
@@ -87,15 +85,18 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	}
 	
 	@JsonIgnore
+	@Value.Lazy
 	default double getCentral() {
-		double x[] = getX();
-		double p[] = getY();
-		double mass = 0;
-		for (int i=1; i<x.length; i++) {
-			double dp = p[i] - p[i-1];
-			mass += (x[i-1]+x[i])/2 * dp;
-		}
-		return mass;
+		RombergIntegrator tmp = new RombergIntegrator(0.001, 0.001, RombergIntegrator.DEFAULT_MIN_ITERATIONS_COUNT  ,RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT);
+		return tmp.integrate(100000, x -> x*this.getDensity(x), getMinimum(), getMaximum());
+//		double x[] = getSortedX();
+//		double p[] = getY();
+//		double mass = 0;
+//		for (int i=1; i<x.length; i++) {
+//			double dp = p[i] - p[i-1];
+//			mass += (x[i-1]+x[i])/2 * dp;
+//		}
+//		return mass;
 	};
 	
 	@JsonIgnore
@@ -106,5 +107,13 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	@JsonIgnore
 	default double getMedian() {
 		return getQuantile().interpolate(0.5);
+	}
+	@JsonIgnore
+	default double getDensity(double x) {
+		return getCDF().interpolateDifferential(x);
+	};
+	@JsonIgnore
+	default double getCumulative(double x) {
+		return getCDF().interpolate(x);
 	};
 }

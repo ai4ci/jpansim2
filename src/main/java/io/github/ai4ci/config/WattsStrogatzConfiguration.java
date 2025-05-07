@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.config.ExecutionConfiguration._PartialExecutionConfiguration;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
@@ -15,7 +16,7 @@ public interface WattsStrogatzConfiguration extends SetupConfiguration {
 
 	public interface Builder extends SetupConfiguration.Builder {}
 	
-	WattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration.builder()
+	ImmutableWattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration.builder()
 			.setName("setup")
 			.setNetworkSize(10000)
 			.setNetworkConnectedness(100)
@@ -26,7 +27,9 @@ public interface WattsStrogatzConfiguration extends SetupConfiguration {
 	@Partial @Value.Immutable
 	@JsonSerialize(as = PartialWattsStrogatzConfiguration.class)
 	@JsonDeserialize(as = PartialWattsStrogatzConfiguration.class)
-	public interface _PartialWattsStrogatzConfiguration extends WattsStrogatzConfiguration, Abstraction.Modification {}
+	public interface _PartialWattsStrogatzConfiguration extends WattsStrogatzConfiguration, Abstraction.Modification<WattsStrogatzConfiguration> {
+		default _PartialWattsStrogatzConfiguration self() {return this;}
+	}
 	
 	/**
 	 * A measure of the randomness of the small world social network. This is 

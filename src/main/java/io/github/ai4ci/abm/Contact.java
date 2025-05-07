@@ -84,7 +84,21 @@ public interface Contact extends Serializable {
 				Integer oneref = one.getEntity().getId();
 				Integer tworef = two.getEntity().getId();
 				
-				double jointDetect = one.getContactDetectedProbability()*two.getContactDetectedProbability();
+				//TODO: Confusion here. The contact detection probability
+				// and app use probability are used inconsistently.
+				// It feels like the contact detected probability is a
+				// system wide parameter (not here as a individual level parameter)
+				// and should describe how technically effective the app is
+				// and then there is individual probability of app use, which 
+				// covers phone actually switched on, app installed, and working.
+				// Then there is a third parameter probability compliance, but this
+				// describes compliance to self isolation more than use of an app...
+				
+				double jointDetect = 
+						one.getAdjustedAppUseProbability()*
+						two.getAdjustedAppUseProbability()*
+						outbreak.getCurrentState().getContactDetectedProbability();
+				
 				boolean detected = sampler.bern(jointDetect);
 				
 				Contact contact = ImmutableContact.builder()

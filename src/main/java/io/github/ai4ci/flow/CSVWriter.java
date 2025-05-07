@@ -11,13 +11,12 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
 import io.github.ai4ci.util.CSVUtil;
 import io.github.ai4ci.util.QueueWriter;
-import io.github.ai4ci.util.SimpleAsyncFileWriter;
 
 public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 	
 	public static interface Writeable {
-		String header();
-		String row();
+//		String header();
+//		String row();
 	}
 	
 	File file;

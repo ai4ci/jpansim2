@@ -15,6 +15,7 @@ import io.github.ai4ci.abm.InHostModelState;
 import io.github.ai4ci.abm.InHostPhenomenologicalState;
 import io.github.ai4ci.abm.InHostStochasticState;
 import io.github.ai4ci.abm.Person;
+import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.Sampler;
 
@@ -27,25 +28,7 @@ public interface InHostConfiguration extends Serializable {
 
 	static Logger log = LoggerFactory.getLogger(InHostConfiguration.class);
 	
-	static final double LIMIT = 0.99;
-	
-	public default InHostModelState<?> initialise(Person person, Sampler rng) {
-		throw new RuntimeException("Should be using the subtype implementations");
-	};
-
-	public static InHostModelState<?> initialise(InHostConfiguration config, Sampler rng, int time) {
-		InHostModelState<?> state;
-		if (config instanceof StochasticModel) {
-			StochasticModel s = (StochasticModel) config;
-			state = InHostStochasticState.initialise(s, rng, 0);
-		} else if (config instanceof PhenomenologicalModel) {
-			PhenomenologicalModel s = (PhenomenologicalModel) config;
-			state = InHostPhenomenologicalState.initialise(s, rng, 0);
-		} else {
-			throw new RuntimeException("Undefined model");
-		}
-		return state;
-	}
+	static final double LIMIT = 0.999;
 	
 	/**
 	 *  Infectivity profile assumes a contact has occurred and it is the
@@ -73,7 +56,7 @@ public interface InHostConfiguration extends Serializable {
 		double[] infectivity = new double[duration];
 		for (int n=0; n<= samples; n++) {
 			 
-			InHostModelState<?> state = InHostConfiguration.initialise(config, rng, 0);
+			InHostModelState<?> state = InHostModelState.test(config, rng);
 			for (int i=0; i<duration; i++ ) {
 				state = state.update( rng, i == 0 ? 1D : 0D, // viralExposure
 								0);
@@ -116,24 +99,28 @@ public interface InHostConfiguration extends Serializable {
 	public static double[] getViralLoadProfile(InHostConfiguration config, int samples, int duration) {
 		Sampler rng = Sampler.getSampler();
 		double[] load = new double[duration];
+		int lastNonZero = 0;
 		for (int n=0; n<= samples; n++) {
 			 
-			InHostModelState<?> state = InHostConfiguration.initialise(config, rng, 0);
+			InHostModelState<?> state = InHostModelState.test(config, rng);
 			for (int i =0; i<duration; i++ ) {
 				state = state.update( rng, i == 1 ? 1D : 0D, // viralExposure
 								0);
 				load[i] = load[i]+state.getNormalisedViralLoad();
+				if (state.getNormalisedViralLoad() > 0) lastNonZero = i;
 			}
 		}
-		for (int i =0; i<duration; i++ ) {
-			load[i] = load[i]/samples;
+		double[] out = new double[lastNonZero+1];
+		for (int i =0; i<=lastNonZero; i++ ) {
+			out[i] = load[i]/samples;
 		}
-		return load;
+		return out;
 	}
 	
-//	public static InHostConfiguration copyOf(InHostConfiguration source) {
-//		return ConfigMerger.INSTANCE.mapper(source);
-//	}
+	// TODO: severity profile using distributions for each day.
+	// This is needed to calibrate the cutoffs for hospitalisation and death,
+	// for known IFR. Actually I only need to look at distribution of maximum
+	// values of severity and calibrate to those.
 	
 	
 	

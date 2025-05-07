@@ -3,6 +3,7 @@ package io.github.ai4ci.util;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
@@ -12,8 +13,10 @@ import io.github.ai4ci.abm.PersonBaseline;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.PersonTemporalState;
+import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
 import io.github.ai4ci.abm.mechanics.Abstraction.TemporalState;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.SetupConfiguration;
 
 public class ModelNav {
@@ -132,6 +135,17 @@ public class ModelNav {
 		return personHistory.getEntity().getOutbreak().getHistoryEntry(time).get();
 	}
 
+	public static SetupConfiguration modelSetup(Entity entity) {
+		if (entity instanceof Outbreak) return ((Outbreak) entity).getSetupConfiguration();
+		if (entity instanceof Person) return ((Person) entity).getOutbreak().getSetupConfiguration();
+		throw new RuntimeException();
+	}
+
+	public static ExecutionConfiguration modelParam(Entity entity) {
+		if (entity instanceof Outbreak) return ((Outbreak) entity).getExecutionConfiguration();
+		if (entity instanceof Person) return ((Person) entity).getOutbreak().getExecutionConfiguration();
+		throw new RuntimeException();
+	}
 	
 	
 

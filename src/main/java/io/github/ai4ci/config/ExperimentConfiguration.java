@@ -3,8 +3,8 @@ package io.github.ai4ci.config;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.immutables.value.Value;
 
@@ -16,8 +16,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.google.common.io.Files;
+
+import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
+import io.github.ai4ci.config.ExperimentFacet.ExecutionFacet;
+import io.github.ai4ci.config.ExperimentFacet.SetupFacet;
 
 
 @Value.Immutable
@@ -26,144 +30,94 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 public interface ExperimentConfiguration {
  
 	
-	ExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
-				.setSetupConfig(WattsStrogatzConfiguration.DEFAULT)
-				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+	ImmutableExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
+				.setSetupConfig(
+					List.of(
+						ImmutableWattsStrogatzFacet.builder().setDefault(WattsStrogatzConfiguration.DEFAULT).build(),
+						ImmutableAgeStratifiedNetworkFacet.builder().setDefault(AgeStratifiedNetworkConfiguration.DEFAULT).build()
+					)
+				)
+				.setExecutionConfig(
+						ExecutionConfiguration.DEFAULT
+				)
 				.setExecutionReplications(1)
 				.setSetupReplications(1)
 				.build();
 		
-	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
-		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
-		tweaks.accept(tmp);
+//	default ImmutableExperimentConfiguration adjustSetup(Consumer<ImmutableWattsStrogatzConfiguration.Builder> tweaks) {
+//		ImmutableWattsStrogatzConfiguration.Builder tmp = ImmutableWattsStrogatzConfiguration.builder().from(this.getSetupConfig());
+//		tweaks.accept(tmp);
+//		
+//		return ImmutableExperimentConfiguration.builder()
+//			.from(this)
+//			.setSetupConfig(
+//				tmp.build()
+//			).build();
+//	}
+//		
+//	default ImmutableExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
+//		ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
+//		tweaks.accept(tmp);
+//		
+//		return ImmutableExperimentConfiguration.builder()
+//			.from(this)
+//			.setExecutionConfig(
+//				tmp.build()
+//			).build();
+//	}
 		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setSetupConfig(
-				tmp.build()
-			).build();
-	}
-		
-	default ImmutableExperimentConfiguration adjustExecution(Consumer<ImmutableExecutionConfiguration.Builder> tweaks) {
-		ImmutableExecutionConfiguration.Builder tmp = ImmutableExecutionConfiguration.builder().from(this.getExecutionConfig());
-		tweaks.accept(tmp);
-		
-		return ImmutableExperimentConfiguration.builder()
-			.from(this)
-			.setExecutionConfig(
-				tmp.build()
-			).build();
-	}
-		
-	ExperimentConfiguration AGE_STRATIFIED = ImmutableExperimentConfiguration.builder()
-				.setSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
-				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
-				.setExecutionReplications(1)
-				.setSetupReplications(1)
-				.build();
+//	ExperimentConfiguration AGE_STRATIFIED = ImmutableExperimentConfiguration.builder()
+//				.setSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
+//				.setExecutionConfig(ExecutionConfiguration.DEFAULT)
+//				.setExecutionReplications(1)
+//				.setSetupReplications(1)
+//				.build();
 		
 	
 	
 	
 	
-	SetupConfiguration getSetupConfig();
-	ExecutionConfiguration getExecutionConfig();
-	List<ExperimentFacet> getFacets();
+	List<SetupFacet<?>> getSetupConfig();
 	int getSetupReplications();
+	ImmutableExecutionConfiguration getExecutionConfig();
+	List<ExecutionFacet> getFacets();
 	int getExecutionReplications();
-	
-	
-	
-	
 	
 	@JsonIgnore
 	default List<SetupConfiguration> getSetup() {
 		
-		SetupConfiguration base = getSetupConfig();
-		List<SetupConfiguration> out = new ArrayList<>();
-		out.add(base);
-		for (ExperimentFacet facet: getFacets()) {
-			//if (facet instanceof ExperimentFacet.SetupModification s) {
-				
-			String facetName = facet.getName();
-			List<SetupConfiguration> tmp = new ArrayList<>();
-			
-			boolean changes = false;
-			for (String name: facet.getModifications().keySet()) {
-				
-				if (facet.getModifications().get(name) instanceof SetupConfiguration) {
-//					PartialWattsStrogatzConfiguration modifier = (PartialWattsStrogatzConfiguration) facet.getModifications().get(name);
-					
-					for (SetupConfiguration b: out) {
-						
-						
-						
-						SetupConfiguration modified = (SetupConfiguration) ConfigMerger.INSTANCE
-								.mergeConfiguration(
-										b, facet.getModifications().get(name)
-								)
-								.withName(
-									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-										+facetName+":"+name);
-						
-						tmp.add(modified);
-						
-//						if (b instanceof ImmutableWattsStrogatzConfiguration) {
-//							ImmutableWattsStrogatzConfiguration.Builder modified = ConfigMerger.INSTANCE
-//								.mergeConfiguration(
-//									(WattsStrogatzConfiguration) b, modifier
-//								).setName(
-//									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-//										+facetName+":"+name);
-//							tmp.add(modified.build());
-//						}
-						
-						changes = true;
-					}
-				}
-				
-//				if (facet.getModifications().get(name) instanceof PartialAgeStratifiedNetworkConfiguration) {
-//					
-//					PartialAgeStratifiedNetworkConfiguration modifier = (PartialAgeStratifiedNetworkConfiguration) facet.getModifications().get(name);
-//					
-//					for (SetupConfiguration b: out) {
-//						if (b instanceof ImmutableAgeStratifiedNetworkConfiguration) {
-//							ImmutableAgeStratifiedNetworkConfiguration.Builder modified = ConfigMerger.INSTANCE
-//								.mergeConfiguration(
-//									(AgeStratifiedNetworkConfiguration) b, modifier
-//								).setName(
-//									(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-//										+facetName+":"+name);
-//							tmp.add(modified.build());
-//						}
-//						
-//						changes = true;
-//					}
-//					
-//				}
-//			}
-			
-			if (changes) out = tmp;
-			}
-		}
-		
 		List<SetupConfiguration> tmp = new ArrayList<>();
+		List<SetupFacet<?>> setupCfg = getSetupConfig();
+		
+		for (SetupFacet<?> facet: setupCfg) {
+			
+			SetupConfiguration base = facet.getDefault();
+			for (Modification<? extends SetupConfiguration> mod: facet.getModifications()) {
+				
+				if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
+				
+				SetupConfiguration modified = (SetupConfiguration) ConfigMerger.INSTANCE
+					.mergeConfiguration(
+						base, mod
+					)
+					.withName(
+						facet.getName()+":"+mod.self().getName()
+					);
+						
+				tmp.add(modified);
+			}
+				
+			if (tmp.isEmpty()) tmp.add(base);
+		}
+		
+		List<SetupConfiguration> tmp2 = new ArrayList<>();
 		for (int i =0; i<this.getSetupReplications(); i++) {
-			for (SetupConfiguration b: out) {
-				tmp.add((SetupConfiguration) b.withReplicate(i));
-//				if (b instanceof ImmutableWattsStrogatzConfiguration) {
-//					tmp.add(
-//						((ImmutableWattsStrogatzConfiguration) b).withReplicate(i));
-//				}
-//				
-//				if (b instanceof ImmutableAgeStratifiedNetworkConfiguration) {
-//					tmp.add(
-//						((ImmutableAgeStratifiedNetworkConfiguration) b).withReplicate(i));
-//				}
+			for (SetupConfiguration b: tmp) {
+				tmp2.add((SetupConfiguration) b.withReplicate(i));
 			}
 		}
 		
-		return tmp;
+		return tmp2;
 		
 	}
 	
@@ -173,25 +127,26 @@ public interface ExperimentConfiguration {
 		ExecutionConfiguration base = getExecutionConfig();
 		List<ExecutionConfiguration> out = new ArrayList<>();
 		out.add(base);
-		for (ExperimentFacet facet: getFacets()) {
+		for (ExecutionFacet facet: getFacets()) {
 			//if (facet instanceof ExperimentFacet.SetupModification s) {
 				
 			String facetName = facet.getName();
 			List<ExecutionConfiguration> tmp = new ArrayList<>();
 			
-			for (String name: facet.getModifications().keySet()) {
+			for (Modification<ExecutionConfiguration> mod: facet.getModifications()) {
 				
-				if (facet.getModifications().get(name) instanceof PartialExecutionConfiguration) {
-					PartialExecutionConfiguration modifier = (PartialExecutionConfiguration) facet.getModifications().get(name);
+				if (mod instanceof PartialExecutionConfiguration) {
+					
+					if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
 					
 					out.forEach(b -> {
 						ImmutableExecutionConfiguration modified = ConfigMerger.INSTANCE
 							.mergeConfiguration(
-								b, modifier
+								b, mod
 							)
 							.withName(
 								(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-									+facetName+":"+name);
+									+facetName+":"+mod.self().getName());
 						tmp.add(modified);
 					});
 				}
@@ -212,13 +167,16 @@ public interface ExperimentConfiguration {
 		
 	}
 	
-	default void writeConfig(Path directory) throws StreamWriteException, DatabindException, IOException {
+	default void writeConfig(Path directoryOrFile) throws StreamWriteException, DatabindException, IOException {
 		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
-		Path file = directory.resolve("config.json");
-		om.writeValue(file.toFile(), this);
+		if (!Files.getFileExtension(directoryOrFile.toString()).equals("json")) {
+			directoryOrFile = directoryOrFile.resolve("config.json");
+		}
+		Files.createParentDirs(directoryOrFile.toFile());
+		om.writeValue(directoryOrFile.toFile(), this);
 	}
 	
 	static ExperimentConfiguration readConfig(Path file) throws StreamWriteException, DatabindException, IOException {
@@ -228,6 +186,29 @@ public interface ExperimentConfiguration {
 		om.setSerializationInclusion(Include.NON_NULL);
 		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(file.toFile());
 		return rt;
+	}
+	
+	default ImmutableExperimentConfiguration withSetupConfig(SetupConfiguration config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+			.setSetupConfig(List.of(SetupFacet.subtype(config)))
+			.build();
+	}
+	
+	default ImmutableExperimentConfiguration withExecutionConfig(ImmutableExecutionConfiguration config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+				.setExecutionConfig(config)
+				.build();
+	}
+	
+	default ImmutableExperimentConfiguration withFacet(String name, PartialExecutionConfiguration... config) {
+		return ImmutableExperimentConfiguration.builder().from(this)
+				.addFacets(
+					ImmutableExecutionFacet.builder()
+						.setName(name)
+						.setModifications(Arrays.asList(config))
+						.build()
+				)
+				.build();
 	}
 	
 }

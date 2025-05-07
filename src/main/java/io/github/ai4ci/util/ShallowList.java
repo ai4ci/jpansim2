@@ -5,7 +5,7 @@ import java.util.ArrayList;
 /**
  * Used to prevent immutables deep cloning for lists. A shallow list will always
  * be copied in situ to a new immutable.  
- * @param <X>
+ * @param <X> the list type
  */
 public class ShallowList<X> extends ArrayList<X> {
 

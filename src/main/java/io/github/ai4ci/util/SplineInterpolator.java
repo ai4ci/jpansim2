@@ -89,6 +89,58 @@ public class SplineInterpolator implements Serializable {
 	 *            The X value.
 	 * @return The interpolated Y = f(X) value.
 	 */
+	public double interpolateDifferential(double x) {
+		// Handle the boundary cases.
+		final int n = mX.length;
+		if (Double.isNaN(x)) {
+			return x;
+		}
+		if (x <= mX[0]) {
+			return mM[0];
+		}
+		if (x >= mX[n - 1]) {
+			return mM[n - 1];
+		}
+
+		// Find the index 'i' of the last point with smaller X.
+		// We know this will be within the spline due to the boundary tests.
+		int i = 0;
+		while (x >= mX[i + 1]) {
+			i += 1;
+			if (x == mX[i]) {
+				return mM[i];
+			}
+		}
+
+		double p0 = mY[i];
+		double m0 = mM[i];
+		double p1 = mY[i+1];
+		double m1 = mM[i+1];
+		
+		// Perform cubic Hermite spline interpolation.
+		double scale = mX[i + 1] - mX[i];
+		double t = (x - mX[i]) / scale;
+		double t2 = t * t;
+		double h00 = 6 * t2 - 6 * t;
+		double h10 = 3 * t2 - 4 * t + 1;
+		double h01 = - 6 * t2 + 6 * t;
+		double h11 = 3 * t2 - 2 * t;
+		
+		// https://math.stackexchange.com/questions/2444650/cubic-hermite-spline-derivative
+		// and https://github.com/thibauts/cubic-hermite-spline/blob/master/index.js
+		// Correct scaling: https://github.com/liuyxpp/CubicHermiteSpline.jl/blob/master/src/univariate.jl
+		
+		return (h00 * p0 + h10 * m0 * scale +
+	    		h01 * p1 + h11 * m1 * scale) / scale;
+	}
+
+	/**
+	 * Interpolates the value of Y = f(X) for given X. Clamps X to the domain of the spline.
+	 * 
+	 * @param x
+	 *            The X value.
+	 * @return The interpolated Y = f(X) value.
+	 */
 	public double interpolate(double x) {
 		// Handle the boundary cases.
 		final int n = mX.length;
@@ -113,12 +165,32 @@ public class SplineInterpolator implements Serializable {
 		}
 
 		// Perform cubic Hermite spline interpolation.
-		double h = mX[i + 1] - mX[i];
-		double t = (x - mX[i]) / h;
-		return (mY[i] * (1 + 2 * t) + h * mM[i] * t) * (1 - t) * (1 - t)
-				+ (mY[i + 1] * (3 - 2 * t) + h * mM[i + 1] * (t - 1)) * t * t;
+		double p0 = mY[i];
+		double m0 = mM[i];
+		double p1 = mY[i+1];
+		double m1 = mM[i+1];
+		
+		double scale = mX[i + 1] - mX[i];
+		double t = (x - mX[i]) / scale;
+		
+		double t2 = t * t;
+	    double it = 1 - t;
+	    double it2 = it * it;
+	    double tt = 2 * t;
+	    double h00 = (1 + tt) * it2;
+	    double h10 = t * it2;
+	    double h01 = t2 * (3 - tt);
+	    double h11 = t2 * (t - 1);
+	    
+	    return h00 * p0 + h10 * m0 * scale +
+	    		h01 * p1 + h11 * m1 * scale;
+		
+//		return (p0 * (1 + 2 * t) + scale * m0 * t) * (1 - t) * (1 - t)
+//				+ (p1 * (3 - 2 * t) + scale * m1 * (t - 1)) * t * t;
+		
+		
 	}
-
+	
 	// For debugging.
 	@Override
 	public String toString() {

@@ -13,6 +13,7 @@ public interface DefaultOutbreakInitialiser {
 		ExecutionConfiguration config = outbreak.getExecutionConfiguration();
 		builder
 			.setTransmissibilityModifier( 1.0 )
+			.setContactDetectedProbability( config.getContactDetectedProbability() )
 			.setPresumedInfectiousPeriod( config.getInitialEstimateInfectionDuration().intValue() )
 			.setPresumedSymptomSensitivity( config.getInitialEstimateSymptomSensitivity() ) 
 			.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSensitivity() );

@@ -20,6 +20,12 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 * @return
 	 */
 	Double getTransmissibilityModifier();
+	/**
+	 * A probability that if two people are in contact and both using apps
+	 * How likely is it that the app will detect the contact?
+	 * @return
+	 */
+	Double getContactDetectedProbability();
 	
 	Integer getPresumedInfectiousPeriod();
 	Double getPresumedSymptomSpecificity();
