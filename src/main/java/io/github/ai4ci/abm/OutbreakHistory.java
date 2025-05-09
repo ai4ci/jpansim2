@@ -51,7 +51,8 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	}
 	
 	/**
-	 * The number of tests reported as positive on the given day 
+	 * The number of tests reported as positive on the day of testing is looking
+	 * forward through time to the TODO 
 	 */
 	@Value.Lazy default List<Integer> getTestPositivesBySampleDate() {
 		return 

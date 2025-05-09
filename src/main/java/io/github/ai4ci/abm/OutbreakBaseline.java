@@ -20,6 +20,29 @@ public interface OutbreakBaseline extends Serializable {
 	double getViralLoadTransmissibilityProbabilityFactor();
 
 	/**
+	 * Calibrated from the infection case ratio this gives a simulation
+	 * wide cutoff that the average person will experience symptoms. Obtained
+	 * from the running the in host model over a set of samples.
+	 * @return
+	 */
+	double getSeveritySymptomsCutoff();
+	
+	/**
+	 * Calibrated from the infection case ratio and the case hospitalisation 
+	 * rate this gives a simulation wide cutoff that the average person will 
+	 * experience symptoms bad enough to require hospitalisation.
+	 * @return
+	 */
+	double getSeverityHospitalisationCutoff();
+	
+	/**
+	 * Calibrated from the infection case ratio and the case fatality 
+	 * rate this gives a simulation wide cutoff that the average person will 
+	 * experience symptoms bad enough to die.
+	 */
+	double getSeverityDeathCutoff();
+	
+	/**
 	 * The baseline probability of transmission to someone else given an 
 	 * infectious contact is calibrated via R0, given a default contact rate. 
 	 * It is modified by exogenous

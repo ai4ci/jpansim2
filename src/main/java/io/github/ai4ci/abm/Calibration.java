@@ -9,7 +9,9 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.github.ai4ci.config.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.EmpiricalDistribution;
 
 public class Calibration {
 
@@ -204,5 +206,22 @@ public class Calibration {
 //						).sum() / peopleCount;
 //		return meanContactWeight;
 //	}
+	
+	/**
+	 * Calibrate severity cutoffs for events based on probability. Events might
+	 * be hospitalisation, death, and be relative to infection so always a 
+	 * number less than 1.
+	 * @param outbreak the outbreak
+	 * @param infectionEventRatio a ratio between infected and those infected and 
+	 * e.g. hospitalised.
+	 * @return a 
+	 */
+	public static double inferSeverityCutoff(Outbreak outbreak, double infectionEventRatio) {
+		
+		EmpiricalDistribution dist = InHostConfiguration.getPeakSeverity(outbreak.getExecutionConfiguration().getInHostConfiguration(), 1000, 50); 
+		//N.B. only interested in the in host peak hence we can use a shorter duration.
+		double tmp = dist.getQuantile().interpolate(infectionEventRatio);
+		return tmp;
+	}
 	
 }

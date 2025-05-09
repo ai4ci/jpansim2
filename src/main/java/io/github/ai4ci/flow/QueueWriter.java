@@ -1,4 +1,4 @@
-package io.github.ai4ci.util;
+package io.github.ai4ci.flow;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import io.github.ai4ci.flow.CSVWriter;
+import io.github.ai4ci.util.PauseableThread;
 
 public class QueueWriter extends Thread implements CSVWriter.Queue {
 		
@@ -32,6 +32,11 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 			this.setPriority(9);
 			this.setName(name);
 			this.setDaemon(true);
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				public void run() {
+					QueueWriter.this.halt();
+				}
+			});
 			this.start();
 			// this.queue = new ArrayBlockingQueue<String>(size*16);
 			// this.queue = new ThreadSafeBuffer<String>(String.class, size);
@@ -50,8 +55,9 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 			
 		}
 		
-		public void halt() throws InterruptedException {
+		public void halt() {
 			this.stop = true;
+			synchronized(semaphore) { semaphore.notifyAll(); };
 		}
 		
 		public void run() {
@@ -75,10 +81,12 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 						}
 					}
 					waiting = false;
-					while (!this.queue.isEmpty()) {
-						seqW.write(line(queue.poll()));
+					if (!stop) {
+						while (!this.queue.isEmpty()) {
+							seqW.write(line(queue.poll()));
+						}
+						this.seqW.flush();
 					}
-					this.seqW.flush();
 				}
 				
 				while (!this.queue.isEmpty()) {
@@ -91,6 +99,19 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 				throw new RuntimeException(e);
 			}
 		}
+		
+//		public void purge() {
+//			synchronized(queue) {
+//				try {
+//					while (!this.queue.isEmpty()) {
+//						seqW.write(line(queue.poll()));
+//					}
+//					this.seqW.flush();
+//				} catch (IOException e) {
+//					throw new RuntimeException(e);
+//				}
+//			}
+//		}
 
 		public void flush() {
 			synchronized(seqW) {
@@ -104,5 +125,9 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 		
 		private static byte[] line(String s) {
 			return (s+System.lineSeparator()).getBytes();
+		}
+		
+		public boolean isWaiting() {
+			return waiting;
 		}
 	}

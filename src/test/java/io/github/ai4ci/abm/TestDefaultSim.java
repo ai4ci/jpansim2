@@ -1,36 +1,29 @@
 package io.github.ai4ci.abm;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
 
-import io.github.ai4ci.abm.mechanics.Updater;
+import io.github.ai4ci.SlurmAwareLogger;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.BatchConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.config.ImmutableExperimentConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.WattsStrogatzConfiguration;
-import io.github.ai4ci.flow.BatchRunner;
-import io.github.ai4ci.output.CSVMapper;
-import io.github.ai4ci.output.ImmutableContactCSV;
-import io.github.ai4ci.output.ImmutableInfectivityProfileCSV;
-import io.github.ai4ci.output.ImmutableOutbreakCSV;
-import io.github.ai4ci.output.ImmutableOutbreakHistoryCSV;
-import io.github.ai4ci.output.ImmutablePersonDemographicsCSV;
-import io.github.ai4ci.output.ImmutablePersonStateCSV;
-import io.github.ai4ci.output.StateExporter;
-import io.github.ai4ci.output.StateExporter.ExportSelector;
+import io.github.ai4ci.flow.SimulationMonitor;
 import io.github.ai4ci.util.SimpleDistribution;
 
 class TestDefaultSim {
 
 	static ExperimentConfiguration config1 =  
-			ImmutableExperimentConfiguration.copyOf(	
-				ExperimentConfiguration.DEFAULT
+			ExperimentConfiguration.DEFAULT
+			.withBatchConfig(
+					BatchConfiguration.DEFAULT
+					.withSimulationDuration(200)
+					.withUrnBase("compare-behaviour")
 			)
 			.withExecutionConfig(
 				ExecutionConfiguration.DEFAULT
@@ -59,8 +52,11 @@ class TestDefaultSim {
 					);
 	
 	static ExperimentConfiguration testR0 =  
-			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
+			ExperimentConfiguration.DEFAULT
+			.withBatchConfig(
+					BatchConfiguration.DEFAULT
+					.withSimulationDuration(200)
+					.withUrnBase("r0-test")
 			)
 			.withSetupConfig(
 				WattsStrogatzConfiguration.DEFAULT
@@ -93,8 +89,11 @@ class TestDefaultSim {
 	
 	
 	static ExperimentConfiguration ageStrat =  
-			ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
+			ExperimentConfiguration.DEFAULT
+			.withBatchConfig(
+					BatchConfiguration.DEFAULT
+					.withSimulationDuration(200)
+					.withUrnBase("age-strat")
 			)
 			.withSetupConfig(
 					AgeStratifiedNetworkConfiguration.DEFAULT
@@ -111,30 +110,13 @@ class TestDefaultSim {
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
-		Configurator.initialize(new DefaultConfiguration());
-		Configurator.setRootLevel(Level.DEBUG);
+		// ExperimentConfiguration tmp = ageStrat; 
+		ExperimentConfiguration tmp = testR0;
+		Path dir = SystemUtils.getUserHome().toPath().resolve("tmp");
 		
-		ExperimentConfiguration tmp = ageStrat; // testR0;
-		
-		Updater updater = new Updater();
-		
-		StateExporter exporter = StateExporter.of(
-				SystemUtils.getUserHome().toPath().resolve("tmp"),
-				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState())),
-				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV)),
-				ExportSelector.ofMany(ImmutableOutbreakHistoryCSV.class, o -> o.getHistory().stream().map(CSVMapper.INSTANCE::toCSV)),
-				ExportSelector.ofMany(ImmutableContactCSV.class, o -> o.getPeople().stream().flatMap(CSVMapper.INSTANCE::toContacts)),
-				// ExportSelector.ofMany(ImmutableOutbreakFinalStateCSV.class, o -> CSVMapper.INSTANCE.finalCSV(o.getCurrentState())),
-				ExportSelector.ofMany(ImmutableInfectivityProfileCSV.class, o -> CSVMapper.INSTANCE.infectivityProfile(o)),
-				ExportSelector.ofMany(ImmutablePersonDemographicsCSV.class, o -> o.getPeople().stream().map(CSVMapper.INSTANCE::toDemog))
-		);
-		
-		exporter.writeInputConfiguration(tmp);
-		
-		BatchRunner.runExperiments(tmp, "test", updater, exporter, 100);
-		
-		exporter.close();
-		
+		SlurmAwareLogger.setupLogger(tmp, dir, Level.INFO, Level.DEBUG);
+		SimulationMonitor mon = new SimulationMonitor(tmp, dir);
+		mon.run();
 		
 		System.out.println("finished");
 	} 

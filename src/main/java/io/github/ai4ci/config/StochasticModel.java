@@ -26,7 +26,7 @@ public interface StochasticModel extends InHostConfiguration {
 			.setBaselineViralInfectionRate( 1D )
 			.setBaselineViralReplicationRate( 4D )
 			.setVirionsDiseaseCutoff( 1000 )
-			.setTargetSymptomsCutoff( 0.2 )
+			// .setTargetSymptomsCutoff( 0.2 )
 			.build();
 	
 	Integer getTargetCellCount();
@@ -54,7 +54,7 @@ public interface StochasticModel extends InHostConfiguration {
 	 * symptoms. 
 	 * @return a percentage cutoff, larger numbers means fewer symptoms.
 	 */
-	Double getTargetSymptomsCutoff();
+	// Double getTargetSymptomsCutoff(); removed for IFR etc.
 	
 	
 	

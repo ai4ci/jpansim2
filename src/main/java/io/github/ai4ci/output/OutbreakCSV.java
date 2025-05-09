@@ -11,6 +11,8 @@ public interface OutbreakCSV extends CommonCSV.State {
 
 	long getIncidence();
 	long getCumulativeInfections(); 
+	long getCumulativeDeaths();
+	long getHospitalisedCount(); 
 	long getInfectedCount();
 	long getSymptomaticCount();
 	double getAverageMobility();

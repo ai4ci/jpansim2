@@ -19,7 +19,7 @@ public interface PhenomenologicalModel extends InHostConfiguration {
 	
 	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
 			
-			.setSymptomCutoff(0.5)
+			//.setSymptomCutoff(0.5)
 			.setInfectiousnessCutoff(0.2)
 			
 			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
@@ -33,7 +33,7 @@ public interface PhenomenologicalModel extends InHostConfiguration {
 			
 			.build();
 	
-	double getSymptomCutoff();
+	// double getSymptomCutoff(); removing this to implement an IFR
 	double getInfectiousnessCutoff();
 	
 	SimpleDistribution getIncubationPeriod();

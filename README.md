@@ -26,7 +26,7 @@ The simulation requires a java 11 runtime environment. It is currently targetted
 at command line usage. It can be invoked with the following command:
 
 ```
-java -jar target/jpansim2-0.1.1-jar-with-dependencies.jar -o ~/tmp -d 100 -e ALL
+java -jar target/jpansim2-0.1.1-jar-with-dependencies.jar -o ~/tmp
 ```
 
 Where valid command line options are as follows:
@@ -35,26 +35,15 @@ Where valid command line options are as follows:
 JPanSim2 command line options.
  -c,--config <config>       The path to the configuration file. Defaults
                             to "config.json" in the output directory.
- -d,--duration <duration>   The duration of the simulations in this
-                            experiment, i.e. number of steps.
- -e,--export <export>       A list of exporters that are to be included.
-                            This should take the form of a comma separated
-                            list with valid values:
-                            SUMMARY,INTERNAL_STATE,HISTORICAL_TESTS,CONTAC
-                            T_NETWORK,INFECTIVITY_PROFILE,DEMOGRAPHICS
-                            or the special value 'ALL' which exports
-                            everything
  -o,--output <output>       The path to the output directory. Defaults to
                             the current working directory.
- -u,--urn <urn>             The URN for this experiment. This is optional
-                            and defaults to nothing.
-Slurm support: batch commands must be continuous and start at 1
+N.B. Slurm support: batch commands must be continuous and start at 1
 e.g. sbatch --array=1-32
 ```
 
 The simulation expects a json configuration file, with path supplied as a parameter or
 called `config.json` and located in the output directory (`~/tmp` in the
- example above). It also needs to know how long to run the simulation for in days.
+ example above). 
 
 The configuration files allow for multiple simulations to be configured, by 
 defining a base configuration and specifying "facets" containing a list
@@ -70,8 +59,18 @@ including the agents, their demographic features and their social network. One c
 file allows multiple environment "setup configuration"s, and each setup can be
 subject to modification using facets, furthermore each modified setup can be
 replicated to allow for the effect of randomness. This can result in many 
-environments in a given experiment. 
+environments in a given experiment. Each environment is constructed once and re-used
+for each simulation execution. The setup of environments can be parallelised 
+across SLURM nodes, in which case the outputs of each node will be in a numbered
+sub-directory in the output directory.
+
+Each environment then has a set of simulations executed on it. Each execution
+may have different outbreak parameters or population behaviour configured (as
+facets). Each simulation execution is run one after another on a single SLURM 
+node, but uses multi-threading to execute each simulation as quickly as possible
+in a multi-core node. As simulations tend to be memory bound there is no benefit 
+simultaneously performing multiple executions.
 
 Example configuration files are found in the `src/test/resources` directory
-and documentation of supported options is (will be) in the javadoc for the 
+along with a json schema. Documentation of supported options is in the javadoc for the 
 `io.github.ai4ci.config` package.

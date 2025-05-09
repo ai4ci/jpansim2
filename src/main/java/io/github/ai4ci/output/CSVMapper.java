@@ -98,5 +98,5 @@ public abstract class CSVMapper {
 	
 	protected abstract HashMap<String,Object> toMap(ImmutableContactCSV csv);
 	
-	protected abstract ImmutableOutbreakConfigurationJson toJson(Outbreak outbreak);
+	public abstract ImmutableOutbreakConfigurationJson toJson(Outbreak outbreak);
 }

@@ -2,6 +2,7 @@ package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
 
+import io.github.ai4ci.abm.BehaviourModel;
 import io.github.ai4ci.abm.ImmutableOutbreakHistory;
 import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
@@ -35,17 +36,21 @@ public class StateMachine implements Serializable {
 	}
 	
 	/** 
-	 * UPdate the state machine and store the new state
+	 * Update the state machine and store the new state
 	 * @param builder
 	 * @param person
 	 * @param rng
 	 */
 	public synchronized void performStateUpdate(ImmutablePersonState.Builder builder, PersonState person, Sampler rng) {
-		if (this.getState() instanceof BehaviourState) {
-			BehaviourState state = (BehaviourState) this.getState();
-			if (state.filter(person, context, rng)) {
-				BehaviourState next = state.nextState(builder, person, context, rng);
-				currentState = next;
+		if (person.isDead()) {
+			currentState = BehaviourModel.NonCompliant.DEAD.nextState(builder, person, context, rng);
+		} else {
+			if (this.getState() instanceof BehaviourState) {
+				BehaviourState state = (BehaviourState) this.getState();
+				if (state.filter(person, context, rng)) {
+					BehaviourState next = state.nextState(builder, person, context, rng);
+					currentState = next;
+				}
 			}
 		}
 	}

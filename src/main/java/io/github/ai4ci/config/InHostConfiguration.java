@@ -2,6 +2,7 @@ package io.github.ai4ci.config;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,9 @@ import io.github.ai4ci.abm.InHostStochasticState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
 import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.EmpiricalDistribution;
+import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
+import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.Sampler;
 
 @JsonTypeInfo(use = Id.DEDUCTION)
@@ -122,6 +126,27 @@ public interface InHostConfiguration extends Serializable {
 	// for known IFR. Actually I only need to look at distribution of maximum
 	// values of severity and calibrate to those.
 	
-	
+	/**
+	 * Determine the statistical distribution of maximum severity in a homogenous 
+	 * population, exposed with unit exposure.
+	 * @return an empirical distribution
+	 */
+	public static EmpiricalDistribution getPeakSeverity(InHostConfiguration config, int samples, int duration) {
+		Sampler rng = Sampler.getSampler();
+		double[] x = new double[samples];
+		for (int i = 0; i<samples; i++) {
+			
+			InHostModelState<?> state = InHostModelState.test(config, rng);
+			double max = 0;
+			for (int j = 0; j<duration; j++) {
+				state = state.update( rng, j == 1 ? 1D : 0D, // viralExposure
+						0);
+				if (state.getNormalisedSeverity() > max) max = state.getNormalisedSeverity();
+			}
+			x[i] = max;
+		}
+		
+		return EmpiricalDistribution.fromData(x);
+	}
 	
 }

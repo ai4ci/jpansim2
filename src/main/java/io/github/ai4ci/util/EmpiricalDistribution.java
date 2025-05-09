@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.util.ImmutableEmpiricalDistribution.Builder;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableEmpiricalDistribution.class)
@@ -116,4 +117,27 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	default double getCumulative(double x) {
 		return getCDF().interpolate(x);
 	};
+	
+	static int KNOTS = 30;
+	
+	public static ImmutableEmpiricalDistribution fromData(double... tmp) {
+		
+		Arrays.sort(tmp);
+		Builder out = ImmutableEmpiricalDistribution.builder();
+		out.setMinimum(tmp[0]);
+		out.setMaximum(tmp[tmp.length-1]);
+		
+		float step = tmp.length > KNOTS ? ((float) tmp.length) / KNOTS : 1;
+		int knots = tmp.length > KNOTS ? KNOTS : tmp.length;
+		double[] x = new double[knots-1];
+		double[] y = new double[knots-1];
+		for (int i = 1; i<=knots-1; i++) {
+			x[i-1] = tmp[Math.round(i*step)];
+			y[i-1] = ((double) i*step)/tmp.length;
+		}
+		out.setX(x);
+		out.setCumulativeProbability(y);
+		return out.build();
+		
+	}
 }

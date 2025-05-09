@@ -44,6 +44,20 @@ public interface BehaviourModel extends StateMachine.BehaviourState {
 				if (person.isCompliant()) return returnFromBranch(context);
 				return NonCompliant.DEFAULT;
 			}
+		},
+		
+		/**
+		 * 
+		 */
+		DEAD {
+			@Override
+			public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+					PersonState person, StateMachineContext context, Sampler rng) {
+				builder.setAppUseModifier(0D);
+				builder.setMobilityModifier(0D);
+				builder.setTransmissibilityModifier(0D);
+				return NonCompliant.DEAD;
+			}
 		};
 		
 		

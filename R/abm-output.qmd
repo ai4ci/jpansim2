@@ -46,6 +46,7 @@ ggplot(linelist,aes(x=time,y=presumedLocalPrevalence,group=personId))+geom_line(
 
 ggplot(linelist %>% filter(contactExposure > 0))+geom_density(aes(x=contactExposure, colour=experimentName))
 ggplot(linelist %>% filter(normalisedSeverity > 0) %>% group_by(personId,experimentName) %>% summarise(normalisedSeverity = max(normalisedSeverity)))+geom_density(aes(x=normalisedSeverity, colour=experimentName))
+ggplot(linelist %>% filter(normalisedViralLoad > 0) %>% group_by(personId,experimentName) %>% summarise(normalisedViralLoad = max(normalisedViralLoad)))+geom_density(aes(x=normalisedViralLoad, colour=experimentName))
 
 ggplot(linelist,aes(x=time,fill=as.factor(behaviour),colour=as.factor(behaviour)))+geom_bar()+facet_wrap(~experimentName,scales = "free_y")
 
@@ -57,6 +58,9 @@ linelist %>% group_by(behaviour) %>% count()
 summary = readr::read_csv("~/tmp/summary.csv")
 ggplot(summary,aes(x=time,y=incidence, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
 ggplot(summary,aes(x=time,y=cumulativeInfections, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=symptomaticCount, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=hospitalisedCount, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
+ggplot(summary,aes(x=time,y=cumulativeDeaths, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
 ggplot(summary,aes(x=time,y=infectedCount/10000, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()+ylab("actual prevalence")
 ggplot(summary,aes(x=time,y=averageMobility, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()
 ggplot(summary,aes(x=time,y=averageCompliance, colour=experimentName, group=interaction(experimentName,experimentReplica)))+geom_line()

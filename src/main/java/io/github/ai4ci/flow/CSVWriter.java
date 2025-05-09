@@ -6,11 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+
 
 import io.github.ai4ci.util.CSVUtil;
-import io.github.ai4ci.util.QueueWriter;
 
 public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 	
@@ -20,8 +18,6 @@ public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 	}
 	
 	File file;
-	CsvMapper cm;
-	CsvSchema sch;
 	Class<X> type;
 	Queue queueWriter;
 	
@@ -33,6 +29,9 @@ public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 		public void submit(String item) throws InterruptedException;
 		public void halt() throws InterruptedException;
 		public void flush() throws InterruptedException;
+		public boolean isWaiting();
+		//public void purge();
+		public void join() throws InterruptedException;
 	}
 	
 	public static <X extends Writeable> CSVWriter<X> of(Class<X> type, File file, int size) throws IOException {
@@ -75,5 +74,17 @@ public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 			
 		}
 	}
+
+	public boolean isWaiting() {
+		return queueWriter.isWaiting();
+	}
+
+	public void join() throws InterruptedException {
+		queueWriter.join();
+	}
+	
+//	public void purge() {
+//		queueWriter.purge();
+//	}
 	
 }

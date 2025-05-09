@@ -1,8 +1,13 @@
 {
+  "batchConfig" : {
+    "urnBase" : "default",
+    "simulationDuration" : 200,
+    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "INTERNAL_STATE" ]
+  },
   "setupConfig" : [ {
     "@type" : "watts-strogatz",
-    "modifications" : [ ],
     "name" : "setup",
+    "modifications" : [ ],
     "default" : {
       "@type" : "watts-strogatz",
       "name" : "setup",
@@ -13,13 +18,13 @@
     }
   }, {
     "@type" : "age-stratified",
-    "modifications" : [ ],
     "name" : "age-stratified",
+    "modifications" : [ ],
     "default" : {
       "@type" : "age-stratified",
       "name" : "age-stratified",
-      "initialImports" : 5,
       "networkSize" : 10000,
+      "initialImports" : 5,
       "ageDistribution" : {
         "minimum" : 0.0,
         "maximum" : 120.0,

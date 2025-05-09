@@ -107,6 +107,18 @@ public interface OutbreakState extends OutbreakTemporalState {
 				.filter(p -> p.isSymptomatic()).count();
 	}
 	
+	@Value.Lazy 
+	default Long getHospitalisedCount() {
+		return ModelNav.peopleState(this)
+				.filter(p -> p.isRequiringHospitalisation()).count();
+	}
+	
+	@Value.Lazy 
+	default Long getCumulativeDeaths() {
+		return ModelNav.peopleState(this)
+				.filter(p -> p.isDead()).count();
+	}
+	
 	@Value.Lazy default String getPolicy() {
 		return this.getEntity().getStateMachine().getState().getName();
 	}

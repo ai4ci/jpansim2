@@ -1,13 +1,18 @@
 {
+  "batchConfig" : {
+    "urnBase" : "age-stratification",
+    "simulationDuration" : 200,
+    "exporters" : [ "SUMMARY", "INTERNAL_STATE", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS" ]
+  },
   "setupConfig" : [ {
     "@type" : "age-stratified",
-    "modifications" : [ ],
     "name" : "age-stratified",
+    "modifications" : [ ],
     "default" : {
       "@type" : "age-stratified",
       "name" : "age-stratified",
-      "initialImports" : 5,
       "networkSize" : 10000,
+      "initialImports" : 5,
       "ageDistribution" : {
         "minimum" : 0.0,
         "maximum" : 120.0,

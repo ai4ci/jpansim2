@@ -35,6 +35,14 @@ class TestCalibration {
 		});
 	}
 
+	@Test
+	void testIFREtcetera() {
+		System.out.println(Calibration.inferSeverityCutoff(out,0.1));
+		System.out.println(Calibration.inferSeverityCutoff(out,0.5));
+		System.out.println(Calibration.inferSeverityCutoff(out,0.9));
+		System.out.println(Calibration.inferSeverityCutoff(out,0.99));
+		System.out.println(Calibration.inferSeverityCutoff(out,0.999));
+	}
 	
 	@Test
 	void testConversions() {

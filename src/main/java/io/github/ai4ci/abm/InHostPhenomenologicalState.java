@@ -54,7 +54,10 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	}
 	
 	default double getNormalisedSeverity() {
-		return Conversions.rateRatio( getViralLoad(), this.getConfig().getSymptomCutoff() );
+		// In this model the viral load is the severity. This is a limitation
+		// as there is little delay possible.
+		return getViralLoad();
+		//return Conversions.rateRatio( getViralLoad(), this.getConfig().getSymptomCutoff() );
 	};
 
 	// TODO: need to work out how to make some of these personal to the age

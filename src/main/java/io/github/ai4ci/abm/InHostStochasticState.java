@@ -61,11 +61,12 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	
 	@Value.Derived
 	default double getNormalisedSeverity() {
-		double baselinePercent = this.getConfig().getTargetSymptomsCutoff();
+		// The interpretation of this number depends on the calibration
+		// double baselinePercent = this.getConfig().getTargetSymptomsCutoff();
 		double currentPercent = 
 				((double) this.getTargets()-this.getTargetSusceptible()-this.getTargetExposed()) / 
 				(double) this.getTargets();
-		return Conversions.oddsRatio(currentPercent, baselinePercent);
+		return currentPercent; //Conversions.oddsRatio(currentPercent, baselinePercent);
 	}
 	
 	@Value.Derived

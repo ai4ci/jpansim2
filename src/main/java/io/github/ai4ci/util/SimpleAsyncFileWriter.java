@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 
 import io.github.ai4ci.flow.CSVWriter.Queue;
 
+@Deprecated
 public class SimpleAsyncFileWriter implements Queue {
     private final BlockingQueue<String> queue;
     private final Thread writerThread;
@@ -93,5 +94,27 @@ public class SimpleAsyncFileWriter implements Queue {
 			
 		}
 	}
+	
+	public boolean isWaiting() {
+		return queue.isEmpty() || queue.size() < size;
+	}
+
+	@Override
+	public void join() throws InterruptedException {
+		writerThread.join();
+	}
+	
+//	public void purge() {
+//		synchronized(queue) {
+//			List<String> batch = new ArrayList<>();
+//			queue.drainTo(batch, size);
+//            try {
+//				writeBatch(batch);
+//				flush();
+//			} catch (IOException | InterruptedException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
+//	}
 }
 

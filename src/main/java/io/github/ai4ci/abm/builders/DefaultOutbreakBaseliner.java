@@ -21,7 +21,22 @@ public interface DefaultOutbreakBaseliner {
 					Calibration.inferViralLoadTransmissionProbabilityFactor(outbreak,
 							configuration.getRO()
 					) 
-			);
+			)
+			.setSeveritySymptomsCutoff(
+					Calibration.inferSeverityCutoff(outbreak, configuration.getAsymptomaticFraction())
+			)
+			.setSeverityHospitalisationCutoff(
+					Calibration.inferSeverityCutoff(outbreak, 
+							1-(1-configuration.getAsymptomaticFraction())*configuration.getCaseHospitalisationRate())
+							// lets say 40% asymptomatic & case hosp rate of 10%. The IHR overall is 10% of the 60% symptomatic, so 6%
+							// The cutoff is the people that don;t get hospitalised so 94% quantile.
+					)
+			.setSeverityDeathCutoff(
+					Calibration.inferSeverityCutoff(outbreak, 
+							1-(1-configuration.getAsymptomaticFraction())*configuration.getCaseFatalityRate())
+					)		
+			
+			;
 		outbreak.getStateMachine().init( configuration.getDefaultPolicyModel() );
 	}
 	

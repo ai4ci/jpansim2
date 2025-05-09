@@ -2,6 +2,7 @@ package io.github.ai4ci.abm.mechanics;
 
 import static io.github.ai4ci.util.ModelNav.baseline;
 
+import io.github.ai4ci.abm.BehaviourModel;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
 import io.github.ai4ci.abm.ImmutablePersonState;
@@ -296,8 +297,11 @@ public class StateUtils {
 	 * @param behaviour
 	 */
 	public static void branchTo(OutbreakState current, BehaviourState behaviour) {
-		ModelNav.people(current).forEach( ps ->
-			ps.getStateMachine().forceTo(behaviour)
+		ModelNav.people(current).forEach( ps -> {
+			if (!ps.getCurrentState().isDead()) { //.getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD))
+				ps.getStateMachine().forceTo(behaviour);
+			}
+		}
 	);
 	}
 	

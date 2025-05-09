@@ -1,5 +1,6 @@
 package io.github.ai4ci.config;
 
+import io.github.ai4ci.flow.StateExporter.ExportSelector;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutableContactCSV;
 import io.github.ai4ci.output.ImmutableInfectivityProfileCSV;
@@ -7,7 +8,6 @@ import io.github.ai4ci.output.ImmutableOutbreakCSV;
 import io.github.ai4ci.output.ImmutableOutbreakHistoryCSV;
 import io.github.ai4ci.output.ImmutablePersonDemographicsCSV;
 import io.github.ai4ci.output.ImmutablePersonStateCSV;
-import io.github.ai4ci.output.StateExporter.ExportSelector;
 
 public enum Exporters {
 

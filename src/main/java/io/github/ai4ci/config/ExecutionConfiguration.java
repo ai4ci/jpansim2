@@ -39,6 +39,9 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	public static ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration.builder()
 			.setName("execution")
 			.setRO(2.5)
+			.setAsymptomaticFraction(0.5)
+			.setCaseHospitalisationRate(0.05)
+			.setCaseFatalityRate(0.01)
 			
 			.setContactProbability( SimpleDistribution.unimodalBeta(0.5, 0.05))
 			.setAppUseProbability( SimpleDistribution.unimodalBeta(0.97, 0.01))
@@ -82,7 +85,9 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	 
 	// must have no optionals.
 	Double getRO();
-	
+	Double getAsymptomaticFraction();
+	Double getCaseHospitalisationRate();
+	Double getCaseFatalityRate();
 	/**
 	 * The proportion of a persons social network that they see each day
 	 * in a fully mobile population. The mobility baseline is determined from

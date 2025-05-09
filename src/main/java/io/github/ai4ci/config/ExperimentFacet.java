@@ -15,24 +15,31 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
 
-public interface ExperimentFacet<X extends Abstraction.Named> extends Abstraction.Named {
+public interface ExperimentFacet {
 	
-	@Value.Default default List<Modification<X>> getModifications() { 
-		return Collections.emptyList(); 
-	}
+//	@Value.Default default List<? extends Modification<X>> getModifications() { 
+//		return Collections.emptyList(); 
+//	}
 	
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableExecutionFacet.class)
 	@JsonDeserialize(as = ImmutableExecutionFacet.class)
-	public static interface ExecutionFacet extends ExperimentFacet<ExecutionConfiguration> {}
+	public static interface ExecutionFacet extends Abstraction.Named {
+		@Value.Default default List<PartialExecutionConfiguration> getModifications() { 
+			return Collections.emptyList(); 
+		}
+	}
 	
 	@JsonTypeInfo(use = Id.SIMPLE_NAME)
 	@JsonSubTypes( {
 		@Type(value = ImmutableWattsStrogatzFacet.class, name = "watts-strogatz"), 
 		@Type(value = ImmutableAgeStratifiedNetworkFacet.class, name = "age-stratified") 
 	} )
-	public static interface SetupFacet<X extends SetupConfiguration> extends ExperimentFacet<X> {
+	public static interface SetupFacet<X extends SetupConfiguration> extends Abstraction.Named {
 		X getDefault();
+		@Value.Default default List<? extends Modification<X>> getModifications() { 
+			return Collections.emptyList(); 
+		}
 		@Value.Default default String getName() {return getDefault().getName();}
 
 		@SuppressWarnings("unchecked")
@@ -50,11 +57,19 @@ public interface ExperimentFacet<X extends Abstraction.Named> extends Abstractio
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableWattsStrogatzFacet.class)
 	@JsonDeserialize(as = ImmutableWattsStrogatzFacet.class)
-	public static interface WattsStrogatzFacet extends SetupFacet<ImmutableWattsStrogatzConfiguration> {}
+	public static interface WattsStrogatzFacet extends SetupFacet<WattsStrogatzConfiguration> {
+		@Value.Default default List<PartialWattsStrogatzConfiguration> getModifications() { 
+			return Collections.emptyList(); 
+		}
+	}
 	
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableAgeStratifiedNetworkFacet.class)
 	@JsonDeserialize(as = ImmutableAgeStratifiedNetworkFacet.class)
-	public static interface AgeStratifiedNetworkFacet extends SetupFacet<ImmutableAgeStratifiedNetworkConfiguration> {}
+	public static interface AgeStratifiedNetworkFacet extends SetupFacet<AgeStratifiedNetworkConfiguration> {
+		@Value.Default default List<PartialAgeStratifiedNetworkConfiguration> getModifications() { 
+			return Collections.emptyList(); 
+		}
+	}
 	
 }

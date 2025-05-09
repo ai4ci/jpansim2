@@ -52,21 +52,7 @@ public interface ResampledDistribution extends Abstraction.Distribution,Serializ
 	
 	@Value.Lazy
 	default EmpiricalDistribution getInterpolation() {
-		double[] tmp = getSamples();
-		Arrays.sort(tmp);
-		Builder out = ImmutableEmpiricalDistribution.builder();
-		out.setMinimum(tmp[0]);
-		out.setMaximum(tmp[tmp.length-1]);
-		int step = tmp.length / KNOTS;
-		double[] x = new double[KNOTS-1];
-		double[] y = new double[KNOTS-1];
-		for (int i = 1; i<=KNOTS-1; i++) {
-			x[i-1] = tmp[i*step];
-			y[i-1] = ((double) i*step)/tmp.length;
-		}
-		out.setX(x);
-		out.setCumulativeProbability(y);
-		return out.build();
+		return EmpiricalDistribution.fromData(getSamples());
 	}
 	
 }

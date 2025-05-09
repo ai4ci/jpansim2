@@ -168,6 +168,14 @@ public interface PersonHistory extends PersonTemporalState {
 			.sum();
 	}
 	
+	/**
+	 * The log-likelihood of an individual being infected at some point in the 
+	 * past.
+	 * @param day when are we interested in (i.e. usually the day of contact) 
+	 * @param limit how long prior to the day are we interested in? so a test a 
+	 * long time age is irrelevant
+	 * @return
+	 */
 	default double getDirectLogLikelihood(int day, int limit) {
 		return 
 				this.getSymptomLogLikelihood() +
@@ -183,6 +191,11 @@ public interface PersonHistory extends PersonTemporalState {
 		return tmp.stream().limit(lim).flatMap(l -> l.stream());
 	}
 	
+	/**
+	 * The maximum delay for test results for this individual is used when we
+	 * assemble
+	 * @return
+	 */
 	@Value.Derived default int getMaxDelay() {
 		return (int) this.getTodaysTests().stream().mapToLong(tr -> tr.getDelay()).max().orElse(0);
 	}

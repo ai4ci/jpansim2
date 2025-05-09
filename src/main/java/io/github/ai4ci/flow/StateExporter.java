@@ -1,4 +1,4 @@
-package io.github.ai4ci.output;
+package io.github.ai4ci.flow;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -23,7 +23,10 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.flow.CSVWriter;
+import io.github.ai4ci.output.CSVMapper;
+import io.github.ai4ci.output.ImmutableOutbreakCSV;
+import io.github.ai4ci.output.ImmutablePersonStateCSV;
+import io.github.ai4ci.output.OutbreakConfigurationJson;
 
 /**
  * This manages the various files that are being exported to so and their
@@ -38,14 +41,6 @@ public class StateExporter implements Closeable {
 	Path directory;
 	List<ExportSelector<?>> stepWriters = new ArrayList<>();
 	List<OutbreakConfigurationJson> outbreakCfg = new ArrayList<>();
-	
-	public static StateExporter defaultExporter(String path) {
-		 return StateExporter.of(
-				SystemUtils.getUserHome().toPath().resolve(path),
-				ExportSelector.ofOne(ImmutableOutbreakCSV.class, o -> CSVMapper.INSTANCE.toCSV(o.getCurrentState())),
-				ExportSelector.ofMany(ImmutablePersonStateCSV.class, o -> o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV))
-		);
-	}
 	
 	private StateExporter() {}
 	
@@ -102,6 +97,17 @@ public class StateExporter implements Closeable {
 		public void flush() {
 			writer.flush();
 		}
+//		public void purge() {
+//			writer.purge();
+//		}
+
+		public boolean isWaiting() {
+			return writer.isWaiting();
+		}
+
+		public void join() throws InterruptedException {
+			writer.join();
+		}
 	}
 	
 	public <X extends CSVWriter.Writeable> Outbreak export(Outbreak outbreak) {
@@ -132,7 +138,15 @@ public class StateExporter implements Closeable {
 			});
 		return outbreak;
 	}
+	
+	public boolean allWaiting() {
+		return this.stepWriters.stream().allMatch(es -> es.isWaiting());
+	}
 
+//	public void purgeAll() {
+//		this.stepWriters.forEach(e -> e.purge());
+//	}
+	
 	public void close() {
 		this.stepWriters.forEach(e -> e.close());
 		try {
@@ -160,6 +174,12 @@ public class StateExporter implements Closeable {
 			tmp.writeConfig(directory);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	public void joinAll() throws InterruptedException {
+		for (ExportSelector<?> sw : this.stepWriters) {
+			sw.join();
 		}
 	}
 	

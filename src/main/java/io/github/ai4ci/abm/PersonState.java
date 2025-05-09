@@ -17,6 +17,14 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 public interface PersonState extends PersonTemporalState {
 	
+	/**
+	 * This is the maximum exposure an individual can experience in a single day
+	 * in normalised units, where 1 is an average dose, and 0 is the minimum. If
+	 * this value is too high multiple exposures aggregate and dose dependent
+	 * effects become important
+	 */
+	double MAX_EXPOSURE = 2;
+
 	// Optional<Integer> getLastTestedTime(); 
 	// Optional<Integer> getLastInfectedTime();
 	// @Value.Default default Double getInfectionRisk() {return 0D;}
@@ -76,17 +84,39 @@ public interface PersonState extends PersonTemporalState {
 	}
 	
 	/**
-	 * Is the persons internal infected targets above the threshold for 
+	 * Is the persons in-host state above the calibrated threshold for 
 	 * exhibiting symptoms.
 	 */
 	@Value.Derived default boolean isSymptomatic() {
-		double adjSev = TestParameters.applyNoise(
-				getNormalisedSeverity(), 
+		Sampler rng = Sampler.getSampler();
+		double adjSev = getNormalisedSeverity() / ModelNav.modelBase(this).getSeveritySymptomsCutoff(); 
+		adjSev = TestParameters.applyNoise(
+				adjSev, 
 				this.getEntity().getBaseline().getSymptomSensitivity(),
 				this.getEntity().getBaseline().getSymptomSpecificity(),
-				Sampler.getSampler()
+				rng
 			);
 		return adjSev > 1;}
+	
+	/**
+	 * Is the persons in-host state above the threshold for 
+	 * requiring hospitalisation.
+	 */
+	@Value.Derived default boolean isRequiringHospitalisation() {
+		// Sampler rng = Sampler.getSampler(); 
+		return getNormalisedSeverity() > ModelNav.modelBase(this).getSeverityHospitalisationCutoff();
+	}
+	
+	/**
+	 * Is the persons in-host state above the threshold for death 
+	 * TODO: at the moment people can un-die and continue to participate in the
+	 * simulation whilst dead.
+	 */
+	@Value.Derived default boolean isDead() {
+		// Sampler rng = Sampler.getSampler(); 
+		if (this.getEntity().getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD)) return true;
+		return getNormalisedSeverity() > ModelNav.modelBase(this).getSeverityDeathCutoff();
+	}
 	
 	@Value.Derived default boolean isReportedSymptomatic() {
 		// assume user is too lazy to lie about symptoms
@@ -220,7 +250,7 @@ public interface PersonState extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default double getContactExposure() {
-		return Math.min(20, ModelNav.history(this).stream()
+		return Math.min(MAX_EXPOSURE, ModelNav.history(this).stream()
 				.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()))
 				.mapToDouble(p -> p.getExposure())
 				.sum());
@@ -359,6 +389,11 @@ public interface PersonState extends PersonTemporalState {
 					.max().orElse(0);
 	}
 	
+	/**
+	 * The total log likelihood of disease is assembled from test results
+	 * symptoms and inferred from the (direct) log-likelihood of contacts being 
+	 * @return
+	 */
 	@Value.Lazy default double getTotalLogLikelihood() {
 		double tests = getTestLogLikelihood();
 		double symptoms = getSymptomLogLikelihood();
@@ -366,6 +401,12 @@ public interface PersonState extends PersonTemporalState {
 		return tests + symptoms + contacts; 
 	}
 	
+	/**
+	 * The log likelihood of infection as inferred from features of this
+	 * individual only. Including at the moment test results and symptoms only.
+	 * This does not include any probability inferred from contacts.
+	 * @return
+	 */
 	@Value.Lazy default double getDirectLogLikelihood() {
 		double tests = getTestLogLikelihood();
 		double symptoms = getSymptomLogLikelihood();
@@ -383,7 +424,6 @@ public interface PersonState extends PersonTemporalState {
 	
 	/**
 	 * Most recent test whether or not there is a result
-	 * @return
 	 */
 	@Value.Lazy default Optional<TestResult> getLastTest() {
 		return getRecentTests().findFirst();
@@ -391,7 +431,6 @@ public interface PersonState extends PersonTemporalState {
 	
 	/**
 	 * Most recent test with a result
-	 * @return
 	 */
 	@Value.Lazy default Optional<TestResult> getLastResult() {
 		return getRecentTests()
@@ -401,7 +440,7 @@ public interface PersonState extends PersonTemporalState {
 	
 	/**
 	 * The collection of test results for an individual that generate a result
-	 * today. 
+	 * today, regardless of when they were taken.
 	 */
 	@Value.Lazy default List<TestResult> getResults() {
 		return this.getRecentTests()
@@ -413,10 +452,9 @@ public interface PersonState extends PersonTemporalState {
 	
 	
 	/**
-	 * Reassemble the weighted contacts from the PersonHistory
-	 * graph within the expected infectious period. This is the contact history
-	 * as the app might collect it.  
-	 * @return
+	 * Reassemble the weighted contacts from the PersonHistory contact
+	 * graph within the limit of the expected infectious period. This is the 
+	 * contact history as the app might collect it.  
 	 */
 	default Stream<Contact> getContactHistory() {
 		return ModelNav.history(this, limit())
@@ -424,16 +462,19 @@ public interface PersonState extends PersonTemporalState {
 	}
 	
 	/**
-	 * Reassemble the exposures from the PersonHistory
-	 * graph within the infectious period. This is the exposures history
-	 * as the app might collect it.  
-	 * @return
+	 * Reassemble the exposures from the PersonHistory exposure
+	 * graph within the infectious period. This is the true exposures history
+	 * as the app might see it but the app would not usually know that these 
+	 * are exposures and not non-infectious contacts.  
 	 */
 	default Stream<Exposure> getExposureHistory() {
 		return ModelNav.history(this, limit())
 			.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()));
 	}
 	
+	/**
+	 * A contact count for understanding the contact degree distribution
+	 */
 	default long getContactCount() {
 		return ModelNav.history(this)
 			.map(m -> m.getTodaysContacts().length)
