@@ -213,7 +213,7 @@ public class Updater {
 		ImmutableOutbreakState.Builder nextState = outbreak.getNextState().toOptional().get();
 		if (outbreak instanceof ModifiableOutbreak) {
 			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
-			// Update the state machine.
+			// Update the state machine (for the outbreak).
 			m.getStateMachine().performStateUpdate(nextState, m.getCurrentState(), sampler);
 			
 			// update nextState... pre-agent processing
@@ -226,11 +226,7 @@ public class Updater {
 			m.getPeople()
 				.parallelStream()
 				.forEach(p -> updateState(p));
-		
-			// update infection network...
-			// TODO: this does not look to be correct...
-			//NetworkBuilder<PersonHistory, Infection> infections = 
-			// Contact.updateInfectionNetwork(outbreak);
+			
 			
 		}
 	}
@@ -252,7 +248,7 @@ public class Updater {
 		if (person instanceof ModifiablePerson) {
 			ModifiablePerson m = (ModifiablePerson) person;
 			
-			// Update the state machine.
+			// Update the state machine (for the behaviour).
 			m.getStateMachine().performStateUpdate(nextState, person.getCurrentState(), sampler);
 			
 			nextState

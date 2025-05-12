@@ -13,16 +13,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
-import io.github.ai4ci.abm.BehaviourModel.SmartAgentTesting;
-import io.github.ai4ci.abm.PolicyModel.NoControl;
+import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
+import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.config.ImmutableExperimentConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.PhenomenologicalModel;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutablePersonStateCSV;
 import io.github.ai4ci.util.CSVUtil;
+import io.github.ai4ci.util.SimpleDistribution;
 
 class TestJackson {
 
@@ -41,9 +42,7 @@ class TestJackson {
 		System.out.print("\n\n");
 		
 		ExperimentConfiguration tmp = 
-				ImmutableExperimentConfiguration.copyOf(	
-					ExperimentConfiguration.DEFAULT
-				)
+			ExperimentConfiguration.DEFAULT
 			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
 			.withFacet(
 				"behaviour",
@@ -52,7 +51,18 @@ class TestJackson {
 					.setDefaultPolicyModelName(NoControl.class.getSimpleName())
 					.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
 					.build()
-			);
+			)
+			.withFacet(
+				"in-host",
+				PartialExecutionConfiguration.builder()
+					.setName("longer-incubation")
+					.setInHostConfiguration(
+							PhenomenologicalModel.DEFAULT
+								.withIncubationPeriod(
+										SimpleDistribution.logNorm(10D, 4D)
+								)
+					).build()
+				);
 		
 		String json = om.writeValueAsString(tmp);
 		System.out.println(json);

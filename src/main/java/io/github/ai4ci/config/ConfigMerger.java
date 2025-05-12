@@ -16,6 +16,7 @@ import io.github.ai4ci.util.ImmutableDelayDistribution;
 
 @Mapper(
 		builder = @Builder(buildMethod = "build"),
+		
 		nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
 		collectionMappingStrategy = CollectionMappingStrategy.ADDER_PREFERRED,
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
@@ -78,6 +79,11 @@ public abstract class ConfigMerger {
 			@MappingTarget ImmutableExecutionConfiguration.Builder target,
 			PartialExecutionConfiguration source); 
 	
+	@Mapping(target = "availableTests", ignore = true)
+	abstract protected ImmutableExecutionConfiguration updateConfiguration(
+			@MappingTarget ImmutableExecutionConfiguration target,
+			PartialExecutionConfiguration source); 
+	
 	abstract protected ImmutableWattsStrogatzConfiguration.Builder updateConfiguration(
 			@MappingTarget ImmutableWattsStrogatzConfiguration.Builder target,
 			PartialWattsStrogatzConfiguration source);
@@ -85,6 +91,14 @@ public abstract class ConfigMerger {
 	abstract protected ImmutableAgeStratifiedNetworkConfiguration.Builder updateConfiguration(
 			@MappingTarget ImmutableAgeStratifiedNetworkConfiguration.Builder target,
 			PartialAgeStratifiedNetworkConfiguration source);
+	
+//	abstract protected ImmutableStochasticModel.Builder updateConfiguration(
+//			@MappingTarget ImmutableStochasticModel.Builder target,
+//			PartialStochasticModel source);
+//	
+//	abstract protected ImmutablePhenomenologicalModel.Builder updateConfiguration(
+//			@MappingTarget ImmutablePhenomenologicalModel.Builder target,
+//			PartialPhenomenologicalModel source);
 	
 	abstract protected ImmutableStochasticModel mapper(StochasticModel source);
 	abstract protected ImmutablePhenomenologicalModel mapper(PhenomenologicalModel source);

@@ -7,10 +7,16 @@ import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.Level;
 
 import io.github.ai4ci.SlurmAwareLogger;
+import io.github.ai4ci.abm.behaviour.NonCompliant;
+import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
+import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
+import io.github.ai4ci.abm.behaviour.Test;
+import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.BatchConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.config.Exporters;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.SimulationMonitor;
@@ -27,7 +33,7 @@ class TestDefaultSim {
 			)
 			.withExecutionConfig(
 				ExecutionConfiguration.DEFAULT
-					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+					.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 					.withImportationProbability(0D)
 					// .setInHostConfiguration(StochasticModel.DEFAULT)
 			)
@@ -35,19 +41,19 @@ class TestDefaultSim {
 					"behaviour", 
 					PartialExecutionConfiguration.builder()
 						.setName("ignore")
-						.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.setDefaultBehaviourModelName(Test.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("smart-agent")
-						.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+						.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("reactive-test")
-						.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+						.setDefaultBehaviourModelName(ReactiveTestAndIsolate.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("symptom-management")
-						.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
+						.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
 						.build()
 					);
 	
@@ -64,8 +70,8 @@ class TestDefaultSim {
 			.withSetupReplications(1)
 			.withExecutionConfig(
 				ExecutionConfiguration.DEFAULT
-					.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-					.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+					.withDefaultPolicyModelName(NoControl.class.getSimpleName())
+					.withDefaultBehaviourModelName(Test.class.getSimpleName())
 					.withImportationProbability(0D) //.001D)
 					.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
 					// .withInHostConfiguration(StochasticModel.DEFAULT)
@@ -94,6 +100,7 @@ class TestDefaultSim {
 					BatchConfiguration.DEFAULT
 					.withSimulationDuration(200)
 					.withUrnBase("age-strat")
+					.withExporters(Exporters.values())
 			)
 			.withSetupConfig(
 					AgeStratifiedNetworkConfiguration.DEFAULT
@@ -101,8 +108,8 @@ class TestDefaultSim {
 			.withSetupReplications(1)
 			.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
-						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
+						.withDefaultBehaviourModelName(Test.class.getSimpleName())
 						.withImportationProbability(0D)
 						// .withInHostConfiguration(StochasticModel.DEFAULT)
 			)
@@ -110,8 +117,8 @@ class TestDefaultSim {
 	
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
-		// ExperimentConfiguration tmp = ageStrat; 
-		ExperimentConfiguration tmp = testR0;
+		ExperimentConfiguration tmp = ageStrat; 
+		//ExperimentConfiguration tmp = testR0;
 		Path dir = SystemUtils.getUserHome().toPath().resolve("tmp");
 		
 		SlurmAwareLogger.setupLogger(tmp, dir, Level.INFO, Level.DEBUG);

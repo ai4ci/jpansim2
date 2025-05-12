@@ -3,6 +3,8 @@ package io.github.ai4ci.abm;
 import java.util.List;
 import java.util.Optional;
 
+import org.davidmoten.hilbert.HilbertCurve;
+import org.davidmoten.hilbert.SmallHilbertCurve;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.Data;
@@ -49,6 +51,13 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	public abstract StateMachine getStateMachine();
 
 	public abstract List<PersonHistory> getHistory();
+	
+	public long[] getHilbertCoordinates() {
+		double size = (double) this.getOutbreak().getSetupConfiguration().getNetworkSize();
+		int bits = (int) Math.ceil(0.5*Math.log(size)/Math.log(2));
+		SmallHilbertCurve c = HilbertCurve.small().bits(bits).dimensions(2);
+		return c.point(this.getId());
+	}
 	
 	public Optional<PersonHistory> getCurrentHistory() {
 		if (getHistory().size() == 0) return Optional.empty();

@@ -25,8 +25,8 @@ import io.github.ai4ci.util.Sampler;
 
 @JsonTypeInfo(use = Id.DEDUCTION)
 @JsonSubTypes({
-	@Type(ImmutableStochasticModel.class), 
-	@Type(ImmutablePhenomenologicalModel.class)
+	@Type(value=ImmutableStochasticModel.class,name = "stochastic"), 
+	@Type(value=ImmutablePhenomenologicalModel.class, name="phenomenological")
 })
 public interface InHostConfiguration extends Serializable {
 

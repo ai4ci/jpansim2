@@ -16,6 +16,7 @@ import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.config.ImmutableFixedValueFunction;
 import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+
 import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
@@ -30,9 +31,10 @@ public interface Abstraction {
 	@JsonSubTypes( {
 		@Type(PartialWattsStrogatzConfiguration.class), 
 		@Type(PartialExecutionConfiguration.class), 
-		@Type(PartialAgeStratifiedNetworkConfiguration.class)
+		@Type(PartialAgeStratifiedNetworkConfiguration.class),
+//		@Type(PartialStochasticModel.class)
 	})
-	public interface Modification<X extends Abstraction.Named> {
+	public interface Modification<X> {
 		@Value.NonAttribute X self();
 	}
  

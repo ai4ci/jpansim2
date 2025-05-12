@@ -20,6 +20,9 @@
   "setupReplications" : 1,
   "executionConfig" : {
     "name" : "execution",
+    "asymptomaticFraction" : 0.5,
+    "caseHospitalisationRate" : 0.05,
+    "caseFatalityRate" : 0.01,
     "contactProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.1,
@@ -37,7 +40,6 @@
       "dispersion" : 0.01
     },
     "inHostConfiguration" : {
-      "symptomCutoff" : 0.5,
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
         "type" : "LOG_NORM",
@@ -115,15 +117,12 @@
     "name" : "R",
     "modifications" : [ {
       "name" : "1.0",
-      "contactDetectedProbability" : 0.0,
       "rO" : 1.0
     }, {
       "name" : "2.0",
-      "contactDetectedProbability" : 0.0,
       "rO" : 2.0
     }, {
       "name" : "3.0",
-      "contactDetectedProbability" : 0.0,
       "rO" : 3.0
     } ]
   } ],

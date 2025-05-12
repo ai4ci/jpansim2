@@ -10,6 +10,8 @@ import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.TestResult.Result;
 import io.github.ai4ci.abm.TestResult.Type;
+import io.github.ai4ci.abm.behaviour.NonCompliant;
+import io.github.ai4ci.config.TestParameters;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.Sampler;
@@ -23,7 +25,7 @@ public interface PersonState extends PersonTemporalState {
 	 * this value is too high multiple exposures aggregate and dose dependent
 	 * effects become important
 	 */
-	double MAX_EXPOSURE = 2;
+	double MAX_EXPOSURE = 1;
 
 	// Optional<Integer> getLastTestedTime(); 
 	// Optional<Integer> getLastInfectedTime();
@@ -114,7 +116,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Derived default boolean isDead() {
 		// Sampler rng = Sampler.getSampler(); 
-		if (this.getEntity().getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD)) return true;
+		if (this.getEntity().getStateMachine().getState().equals(NonCompliant.DEAD)) return true;
 		return getNormalisedSeverity() > ModelNav.modelBase(this).getSeverityDeathCutoff();
 	}
 	

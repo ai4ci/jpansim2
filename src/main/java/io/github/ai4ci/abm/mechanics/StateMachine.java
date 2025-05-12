@@ -2,22 +2,26 @@ package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
 
-import io.github.ai4ci.abm.BehaviourModel;
 import io.github.ai4ci.abm.ImmutableOutbreakHistory;
 import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.PersonState;
+import io.github.ai4ci.abm.behaviour.NonCompliant;
 import io.github.ai4ci.util.Sampler;
 
 public class StateMachine implements Serializable {
 
 	
 
-	public static interface BehaviourState extends State<ImmutablePersonState.Builder, ImmutablePersonHistory.Builder, PersonState, BehaviourState> {}
+	public static interface BehaviourState extends State<ImmutablePersonState.Builder, ImmutablePersonHistory.Builder, PersonState, BehaviourState> {
+		public default String name() {return "Behaviour";}
+	}
 	
-	public static interface PolicyState extends State<ImmutableOutbreakState.Builder, ImmutableOutbreakHistory.Builder, OutbreakState, PolicyState> {}
+	public static interface PolicyState extends State<ImmutableOutbreakState.Builder, ImmutableOutbreakHistory.Builder, OutbreakState, PolicyState> {
+		public default String name() {return "Policy";}
+	}
 	
 	public void performHistoryUpdate(ImmutablePersonHistory.Builder builder, PersonState person, Sampler rng) {
 		if (this.getState() instanceof BehaviourState) {
@@ -43,7 +47,7 @@ public class StateMachine implements Serializable {
 	 */
 	public synchronized void performStateUpdate(ImmutablePersonState.Builder builder, PersonState person, Sampler rng) {
 		if (person.isDead()) {
-			currentState = BehaviourModel.NonCompliant.DEAD.nextState(builder, person, context, rng);
+			currentState = NonCompliant.DEAD.nextState(builder, person, context, rng);
 		} else {
 			if (this.getState() instanceof BehaviourState) {
 				BehaviourState state = (BehaviourState) this.getState();
@@ -127,7 +131,7 @@ public class StateMachine implements Serializable {
 	public void forceTo(BehaviourState state) {
 		if (this.getState() instanceof BehaviourState) {
 			synchronized(this) {
-				branchToState(state);
+				rememberCurrentState(state);
 				currentState = state;
 			}
 		} else {
@@ -139,7 +143,7 @@ public class StateMachine implements Serializable {
 		if (this.getState() instanceof PolicyState) {
 			synchronized(this) {
 				// If switching to a different behaviour model
-				branchToState(state);
+				rememberCurrentState(state);
 				currentState = state;
 			}
 		} else {
@@ -147,9 +151,24 @@ public class StateMachine implements Serializable {
 		}
 	}
 	
-	public void branchToState(State<?,?,?,?> state) {
-		if (!state.getClass().equals(state.getClass()))
+	/**
+	 * Remembers the current state if the behaviour is switching from one type
+	 * to another (each behaviour model is an enum so the class of a group of
+	 * behaviour states is the same). This way we only remember state branches
+	 * if it directs people to a new state within a different model of behaviour.
+	 * @param state
+	 */
+	public void rememberCurrentState(State<?,?,?,?> state) {
+		if (!((Enum<?>) state).getDeclaringClass().equals(((Enum<?>) getState()).getDeclaringClass()))
 			context.pushState(currentState);
+	}
+	
+	public void returnFromBranch() {
+		if (this.getState() instanceof BehaviourState) 
+			currentState = context.pullBehaviour();
+		if (this.getState() instanceof PolicyState) {
+			currentState = context.pullPolicy();
+		}
 	}
 	
 	public String toString() {

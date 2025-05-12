@@ -30,7 +30,7 @@ import io.github.ai4ci.util.DelayDistribution;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class CSVMapper {
-	 
+	
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
 	
 //	@Mapping(target= "personId", source="entity.id")
@@ -77,7 +77,7 @@ public abstract class CSVMapper {
 	
 	//@Mapping(target= "id", source="person.entity.id")
 	protected abstract ImmutablePersonDemographicsCSV toCSV(Person person, PersonDemographic demog, PersonBaseline baseline);
-	 
+	
 	public ImmutablePersonDemographicsCSV toDemog(Person person) {
 		return toCSV(person, person.getDemographic(), person.getBaseline());
 	}

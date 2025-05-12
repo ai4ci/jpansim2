@@ -5,17 +5,24 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.abm.ImmutableInHostPhenomenologicalState;
-import io.github.ai4ci.abm.InHostPhenomenologicalState;
-import io.github.ai4ci.abm.Person;
-import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
-import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.util.SimpleDistribution;
 
 @Value.Immutable
+//@JsonTypeInfo(use = Id.NAME, requireTypeIdForSubtypes = OptBoolean.FALSE, defaultImpl = ImmutablePhenomenologicalModel.class)
+//@JsonSubTypes({
+//	@Type(value=ImmutablePhenomenologicalModel.class, name="complete"), 
+//	@Type(value=PartialPhenomenologicalModel.class, name="partial")
+//})
 @JsonSerialize(as = ImmutablePhenomenologicalModel.class)
 @JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
 public interface PhenomenologicalModel extends InHostConfiguration {
+	
+//	@Partial @Value.Immutable 
+//	@JsonSerialize(as = PartialPhenomenologicalModel.class)
+//	@JsonDeserialize(as = PartialPhenomenologicalModel.class)
+//	public interface _PartialPhenomenologicalModel extends PhenomenologicalModel, Abstraction.Modification<PhenomenologicalModel>{
+//		default _PartialPhenomenologicalModel self() {return this;}
+//	}
 	
 	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
 			

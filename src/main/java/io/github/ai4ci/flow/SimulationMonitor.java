@@ -20,6 +20,8 @@ import oshi.hardware.HardwareAbstractionLayer;
 
 public class SimulationMonitor implements Runnable {
 
+	private static final long WAIT_FOR_MEMORY = 5*60*1000;
+
 	static Logger log = LoggerFactory.getLogger(SimulationMonitor.class);
 	
 	SimulationFactory factory;
@@ -66,9 +68,9 @@ public class SimulationMonitor implements Runnable {
 			SystemInfo si = new SystemInfo();
 			HardwareAbstractionLayer hal = si.getHardware();
 			long maxMem = hal.getMemory().getTotal();
+			long abortTime = Long.MAX_VALUE;
 			
 			while (!factory.finished() || isRunning(executor)) {
-				
 				
 				int checkAgainInMs = 1000;
 				// long memLimit = factory.getSimulationSize().orElse(0);
@@ -83,14 +85,18 @@ public class SimulationMonitor implements Runnable {
 				}
 				
 				if (freeMem() < maxMem * 0.10) {
+					abortTime = Math.min(abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY);
 					if (executor != null) {
 						executor.pause();
 						log.warn("Very low memory. Throttling simulation execution. Memory: "+freeMemG());
 					} else {
 						log.warn("Very low memory. Delaying simulation execution. Memory: "+freeMemG());
 					}
+					log.warn("Aborting in "+(abortTime-System.currentTimeMillis())/1000+" secs unless memory improves");
 					checkAgainInMs = 1000;
+					
 				} else {
+					abortTime = Long.MAX_VALUE;
 					if ( isRunning(executor) ) {
 						executor.unpause();
 					} else {
@@ -135,6 +141,10 @@ public class SimulationMonitor implements Runnable {
 				
 				// Sleep the monitor thread until a simulation finishes or a 
 				// new simulation is queued.
+				if (System.currentTimeMillis() > abortTime) {
+					log.error("Low memory has not been cleared after "+WAIT_FOR_MEMORY/1000+" seconds. Aborting");
+					break;
+				}
 				waitForEvent(checkAgainInMs);
 			}
 			

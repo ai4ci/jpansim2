@@ -110,7 +110,7 @@ ggplot(demog,aes(x=age,y=mobilityBaseline))+geom_point(alpha=0.1)
 ```
 
 ```{r}
-contacts = readr::read_csv("~/tmp/contact.csv")
+contacts = readr::read_csv("~/tmp/contacts.csv")
 contacts %>% glimpse()
 
 expected = demog %>% mutate(age = floor(age)) %>% group_by(age) %>%
@@ -125,10 +125,9 @@ expected = expected %>% cross_join(expected %>% rename_with(.fn = ~ paste0("cont
   mutate(expected = density*contactDensity*nrow(contacts))
 
 contact_matrix = contacts %>% 
-  filter(experimentName == "strategy:ignore") %>%
   select(id,contactId) %>% 
-  inner_join(demog %>% filter(experimentName == "strategy:ignore") %>% select(age,id), by="id") %>%
-  inner_join(demog %>% filter(experimentName == "strategy:ignore") %>% select(contactAge = age,contactId=id), by="contactId") %>%
+  inner_join(demog %>% select(age,id), by="id") %>%
+  inner_join(demog %>% select(contactAge = age,contactId=id), by="contactId") %>%
   mutate(age = floor(age), contactAge=floor(contactAge)) %>%
   group_by(age,contactAge) %>%
   count()

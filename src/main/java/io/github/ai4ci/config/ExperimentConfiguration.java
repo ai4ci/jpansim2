@@ -58,7 +58,6 @@ public interface ExperimentConfiguration {
 	/**
 	 * Generate a subset of the experiment setups that are relevant to this 
 	 * SLURM node if there is more than one node. If this is  
-	 * @param config
 	 * @return
 	 */
 	@JsonIgnore

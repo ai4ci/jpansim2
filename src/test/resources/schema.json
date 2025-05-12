@@ -56,9 +56,6 @@
         },
         "peakToRecoveryDelay" : {
           "$ref" : "#/definitions/ImmutableSimpleDistribution"
-        },
-        "symptomCutoff" : {
-          "type" : "number"
         }
       }
     },
@@ -104,9 +101,6 @@
         "targetRecoveryRate" : {
           "$ref" : "#/definitions/ImmutableSimpleDistribution"
         },
-        "targetSymptomsCutoff" : {
-          "type" : "number"
-        },
         "virionsDiseaseCutoff" : {
           "type" : "integer"
         }
@@ -142,11 +136,20 @@
         "appUseProbability" : {
           "$ref" : "#/definitions/ImmutableSimpleDistribution"
         },
+        "asymptomaticFraction" : {
+          "type" : "number"
+        },
         "availableTests" : {
           "type" : "array",
           "items" : {
             "$ref" : "#/definitions/TestParameters"
           }
+        },
+        "caseFatalityRate" : {
+          "type" : "number"
+        },
+        "caseHospitalisationRate" : {
+          "type" : "number"
         },
         "complianceProbability" : {
           "$ref" : "#/definitions/ImmutableSimpleDistribution"
@@ -212,11 +215,20 @@
                 "appUseProbability" : {
                   "$ref" : "#/definitions/ImmutableSimpleDistribution"
                 },
+                "asymptomaticFraction" : {
+                  "type" : "number"
+                },
                 "availableTests" : {
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/definitions/TestParameters"
                   }
+                },
+                "caseFatalityRate" : {
+                  "type" : "number"
+                },
+                "caseHospitalisationRate" : {
+                  "type" : "number"
                 },
                 "complianceProbability" : {
                   "$ref" : "#/definitions/ImmutableSimpleDistribution"

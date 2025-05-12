@@ -23,8 +23,8 @@
     "default" : {
       "@type" : "age-stratified",
       "name" : "age-stratified",
-      "networkSize" : 10000,
       "initialImports" : 5,
+      "networkSize" : 10000,
       "ageDistribution" : {
         "minimum" : 0.0,
         "maximum" : 120.0,
@@ -73,6 +73,9 @@
   "setupReplications" : 1,
   "executionConfig" : {
     "name" : "execution",
+    "asymptomaticFraction" : 0.5,
+    "caseHospitalisationRate" : 0.05,
+    "caseFatalityRate" : 0.01,
     "contactProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.5,
@@ -90,7 +93,6 @@
       "dispersion" : 0.01
     },
     "inHostConfiguration" : {
-      "symptomCutoff" : 0.5,
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
         "type" : "LOG_NORM",
@@ -168,19 +170,15 @@
     "name" : "behaviour",
     "modifications" : [ {
       "name" : "ignore",
-      "contactDetectedProbability" : 0.0,
       "defaultBehaviourModelName" : "Test"
     }, {
       "name" : "smart-agent",
-      "contactDetectedProbability" : 0.0,
       "defaultBehaviourModelName" : "SmartAgentTesting"
     }, {
       "name" : "reactive-test",
-      "contactDetectedProbability" : 0.0,
       "defaultBehaviourModelName" : "ReactiveTestAndIsolate"
     }, {
       "name" : "symptom-management",
-      "contactDetectedProbability" : 0.0,
       "defaultBehaviourModelName" : "NonCompliant"
     } ]
   } ],

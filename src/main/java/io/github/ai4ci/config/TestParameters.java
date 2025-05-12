@@ -1,4 +1,4 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.config;
 
 import java.io.Serializable;
 

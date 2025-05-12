@@ -21,8 +21,11 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 //import com.kjetland.jackson.jsonSchema.SubclassesResolver;
 //import com.kjetland.jackson.jsonSchema.SubclassesResolverImpl;
 
-import io.github.ai4ci.abm.BehaviourModel;
-import io.github.ai4ci.abm.PolicyModel;
+import io.github.ai4ci.abm.behaviour.NonCompliant;
+import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
+import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
+import io.github.ai4ci.abm.behaviour.Test;
+import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.util.SimpleDistribution;
 
 public class ExampleConfig {
@@ -42,7 +45,7 @@ public class ExampleConfig {
 						)
 				.withExecutionConfig(
 						ExecutionConfiguration.DEFAULT
-						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
+						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.withImportationProbability(0D)
 						// .setInHostConfiguration(StochasticModel.DEFAULT)
 						)
@@ -50,19 +53,19 @@ public class ExampleConfig {
 						"behaviour", 
 						PartialExecutionConfiguration.builder()
 						.setName("ignore")
-						.setDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.setDefaultBehaviourModelName(Test.class.getSimpleName())
 						.build(),
 						PartialExecutionConfiguration.builder()
 						.setName("smart-agent")
-						.setDefaultBehaviourModelName(BehaviourModel.SmartAgentTesting.class.getSimpleName())
+						.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
 						.build(),
 						PartialExecutionConfiguration.builder()
 						.setName("reactive-test")
-						.setDefaultBehaviourModelName(BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName())
+						.setDefaultBehaviourModelName(ReactiveTestAndIsolate.class.getSimpleName())
 						.build(),
 						PartialExecutionConfiguration.builder()
 						.setName("symptom-management")
-						.setDefaultBehaviourModelName(BehaviourModel.NonCompliant.class.getSimpleName())
+						.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
 						.build()
 						)
 				);
@@ -80,8 +83,8 @@ public class ExampleConfig {
 				.withSetupReplications(1)
 				.withExecutionConfig(
 						ExecutionConfiguration.DEFAULT
-						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
+						.withDefaultBehaviourModelName(Test.class.getSimpleName())
 						.withImportationProbability(0D) //.001D)
 						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
 						// .withInHostConfiguration(StochasticModel.DEFAULT)
@@ -118,8 +121,8 @@ public class ExampleConfig {
 				.withSetupReplications(1)
 				.withExecutionConfig(
 						ExecutionConfiguration.DEFAULT
-						.withDefaultPolicyModelName(PolicyModel.NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(BehaviourModel.Test.class.getSimpleName())
+						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
+						.withDefaultBehaviourModelName(Test.class.getSimpleName())
 						.withImportationProbability(0D)
 						// .withInHostConfiguration(StochasticModel.DEFAULT)
 						)

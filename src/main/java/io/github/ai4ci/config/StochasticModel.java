@@ -5,16 +5,24 @@ import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.abm.ImmutableInHostStochasticState;
-import io.github.ai4ci.abm.InHostStochasticState;
-import io.github.ai4ci.abm.Person;
-import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.util.SimpleDistribution;
 
 @Value.Immutable
+//@JsonTypeInfo(use = Id.NAME, requireTypeIdForSubtypes = OptBoolean.FALSE, defaultImpl = ImmutableStochasticModel.class)
+//@JsonSubTypes({
+//	@Type(value=ImmutableStochasticModel.class, name="complete"), 
+//	@Type(value=PartialStochasticModel.class, name="partial")
+//})
 @JsonSerialize(as = ImmutableStochasticModel.class)
 @JsonDeserialize(as = ImmutableStochasticModel.class)
 public interface StochasticModel extends InHostConfiguration {
+	
+//	@Partial @Value.Immutable 
+//	@JsonSerialize(as = PartialStochasticModel.class)
+//	@JsonDeserialize(as = PartialStochasticModel.class)
+//	public interface _PartialStochasticModel extends StochasticModel, Abstraction.Modification<StochasticModel>{
+//		default _PartialStochasticModel self() {return this;}
+//	}
 	
 	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel.builder()
 			.setTargetCellCount(10000)

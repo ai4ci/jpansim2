@@ -306,3 +306,16 @@ $$
 R = 1+r \times T_c \\
 r = \frac{\beta \langle k^2 \rangle - \langle k \rangle (\beta+\mu)}{\langle k \rangle}
 $$
+
+
+
+
+# Product 2 logistics
+
+$$
+y_1=\frac{1}{e^{-a\left(x-c\right)}+1} \\
+y_2=\frac{1}{e^{b\left(x-d\right)}+1} \\
+y=y_1*y_2 \\
+y = \frac{e^{\left(ax+bd\right)}}{e^{\left(ax+bx\right)}+e^{\left(ac+bx\right)}+e^{\left(ac+bd\right)}+e^{\left(ax+bd\right)}} \\
+y = \frac{1}{e^{b\left(x-d\right)}+e^{\left(b\left(x-d\right)-a\left(x-c\right)\right)}+e^{-a\left(x-c\right)}+1}
+$$

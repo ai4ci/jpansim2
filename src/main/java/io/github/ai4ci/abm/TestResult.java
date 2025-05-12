@@ -7,6 +7,8 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.ImmutableTestParameters;
+import io.github.ai4ci.config.TestParameters;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ShallowList;
 import io.github.ai4ci.util.Sampler;

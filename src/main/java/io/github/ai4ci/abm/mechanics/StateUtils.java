@@ -2,14 +2,17 @@ package io.github.ai4ci.abm.mechanics;
 
 import static io.github.ai4ci.util.ModelNav.baseline;
 
-import io.github.ai4ci.abm.BehaviourModel;
+import java.util.function.Predicate;
+
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonHistory.Builder;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.OutbreakState;
+import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.TestResult.Type;
+import io.github.ai4ci.abm.behaviour.BehaviourModel;
 import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ModelNav;
@@ -281,6 +284,7 @@ public class StateUtils {
 				return graduallyRestoreBehaviour(i-1,out);
 			}
 
+			
 			@Override
 			public String getName() {
 				return state.getName();
@@ -290,16 +294,42 @@ public class StateUtils {
 	}
 	
 	/**
+	 * {@link #branchPeopleTo(OutbreakState, BehaviourState, Predicate)}
+	 */
+	public static void branchPeopleTo(OutbreakState current, BehaviourState behaviour) {
+		branchPeopleTo(current, behaviour, p -> true);
+	}
+	
+	/**
+	 * Force all people in a model to branch to a specified behaviour, the current
+	 * state is pushed to allow people to return to the current behaviour 
+	 * (using a returnFromBranch call).
+	 * @param current the current model state.
+	 * @param behaviour the target behaviour.
+	 * @param filter ally update only to certain people (e.g. by age for changing behaviour)
+	 */
+	public static void branchPeopleTo(OutbreakState current, BehaviourState behaviour, Predicate<Person> filter) {
+		ModelNav.people(current)
+			.filter(filter)
+			.forEach( ps -> {
+				if (!ps.getCurrentState().isDead()) { //.getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD))
+					ps.getStateMachine().forceTo(behaviour);
+				}
+			}
+	);
+	}
+	
+	/**
 	 * Force all people in a model to branch to a set behaviour, the current
 	 * state is pushed to allow people to return to the current behaviour 
 	 * (using a returnFromBranch call).
 	 * @param current
 	 * @param behaviour
 	 */
-	public static void branchTo(OutbreakState current, BehaviourState behaviour) {
+	public static void returnPeopleFromBranch(OutbreakState current) {
 		ModelNav.people(current).forEach( ps -> {
 			if (!ps.getCurrentState().isDead()) { //.getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD))
-				ps.getStateMachine().forceTo(behaviour);
+				ps.getStateMachine().returnFromBranch();
 			}
 		}
 	);
@@ -313,7 +343,7 @@ public class StateUtils {
 	 * @param behaviour
 	 */
 	public static BehaviourState branchTo(PersonState current, BehaviourState behaviour) {
-		current.getEntity().getStateMachine().branchToState(behaviour);
+		current.getEntity().getStateMachine().rememberCurrentState(behaviour);
 		return behaviour;
 	}
 	
@@ -322,7 +352,7 @@ public class StateUtils {
 	 * @param context
 	 * @return
 	 */
-	public static BehaviourState returnFromBranch(StateMachineContext context) {
+	public static BehaviourState toLastBranchPoint(StateMachineContext context) {
 		return context.pullBehaviour();
 	}
 	

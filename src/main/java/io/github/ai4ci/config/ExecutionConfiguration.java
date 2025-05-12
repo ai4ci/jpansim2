@@ -10,11 +10,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.Data.Partial;
-import io.github.ai4ci.abm.BehaviourModel;
-import io.github.ai4ci.abm.PolicyModel;
-import io.github.ai4ci.abm.TestParameters;
 import io.github.ai4ci.abm.TestResult;
+import io.github.ai4ci.abm.behaviour.BehaviourModel;
+import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
 import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.policy.PolicyModel;
+import io.github.ai4ci.abm.policy.ReactiveLockdown;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ShallowList;
 // import io.reactivex.rxjava3.annotations.Nullable;
@@ -66,8 +67,8 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 //			.setScreeningPeriod( Distribution.gamma(7.0,1D) )
 //			.setProbabilityScreened(0.01)
 			
-			.setDefaultBehaviourModelName( BehaviourModel.ReactiveTestAndIsolate.class.getSimpleName() )
-			.setDefaultPolicyModelName( PolicyModel.ReactiveLockdown.class.getSimpleName() )
+			.setDefaultBehaviourModelName( ReactiveTestAndIsolate.class.getSimpleName() )
+			.setDefaultPolicyModelName( ReactiveLockdown.class.getSimpleName() )
 			
 			.setSymptomSensitivity(SimpleDistribution.unimodalBeta(0.5, 0.01))
 			.setSymptomSpecificity(SimpleDistribution.unimodalBeta(0.95, 0.01))
@@ -96,7 +97,7 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	 * {@link io.github.ai4ci.abm.PersonBaseline#getMobilityBaseline()}
 	 */
 	SimpleDistribution getContactProbability();
-	double getContactDetectedProbability();
+	Double getContactDetectedProbability();
 	SimpleDistribution getComplianceProbability();
 	SimpleDistribution getAppUseProbability();
 	
@@ -146,8 +147,8 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	@Value.Lazy default BehaviourModel getDefaultBehaviourModel() {
 		try {
 			String name = getDefaultBehaviourModelName();
-			if (!name.startsWith(BehaviourModel.class.getCanonicalName())) 
-				name = BehaviourModel.class.getCanonicalName() + "$" + name;
+			if (!name.startsWith(BehaviourModel.class.getPackageName())) 
+				name = BehaviourModel.class.getPackageName() + "." + name;
 			Class<?> clz = Class.forName(name);
 			Method m = clz.getDeclaredMethod("values");
 			BehaviourModel[] x = (BehaviourModel[]) m.invoke(null);
@@ -162,8 +163,8 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	@Value.Lazy default PolicyModel getDefaultPolicyModel() {
 		try {
 			String name = getDefaultPolicyModelName();
-			if (!name.startsWith(PolicyModel.class.getCanonicalName())) 
-				name = PolicyModel.class.getCanonicalName() + "$" + name;;
+			if (!name.startsWith(PolicyModel.class.getPackageName())) 
+				name = PolicyModel.class.getPackageName() + "." + name;
 			Class<?> clz = Class.forName(name);
 			Method m = clz.getDeclaredMethod("values");
 			PolicyModel[] x = (PolicyModel[]) m.invoke(null);
