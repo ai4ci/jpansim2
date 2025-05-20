@@ -12,8 +12,8 @@ import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.TestResult.Type;
-import io.github.ai4ci.abm.behaviour.BehaviourModel;
 import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
+import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.Sampler;
@@ -22,10 +22,8 @@ public class StateUtils {
 
 	/**
 	 * Flags a behaviour model as seeking (and performing) a PCR test if the 
-	 * person has been symptomatic for 2 days and is compliant and has not had a test in a set 
-	 * number of days (regardless of test outcome). 
-	 * 
-	 * The outcome of testing can be 
+	 * person has been symptomatic for 2 days in a row and is compliant and has 
+	 * not had a test in a set number of days (regardless of test outcome).  
 	 */
 	public static interface DoesPCRIfSymptomatic extends StateMachine.BehaviourState {
 		default public void updateHistory(ImmutablePersonHistory.Builder builder, 
@@ -34,12 +32,13 @@ public class StateUtils {
 		}
 	}
 	
+	/**
+	 * Flags a behaviour model for not needing any testing or history updates.
+	 */
 	public static interface DefaultNoTesting extends StateMachine.BehaviourState {
 		default public void updateHistory(ImmutablePersonHistory.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {}
 	}
-	
-
 	
 	private static double decayToOne(double p, double rate) {
 		return decayTo(p, 1, rate);
@@ -49,7 +48,7 @@ public class StateUtils {
 //		return decayTo(p, 0, rate);
 //	}
 	
-	private static double decayTo(double p, double target, double rate) {
+	protected static double decayTo(double p, double target, double rate) {
 		return p + (target-p) * Conversions.probabilityFromRate(rate);
 	}
 	
@@ -67,6 +66,9 @@ public class StateUtils {
 		return target;	
 	}
 	
+	/**
+	 * Self isolate in response to symptoms but only if person is compliant.
+	 */
 	public static void decreaseSociabilityIfSymptomatic(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		if (person.isSymptomatic()) {
@@ -74,35 +76,48 @@ public class StateUtils {
 		}
 	}
 	
+	/**
+	 * Self isolate but only if compliant. More for an advisory or self imposed
+	 * reduction in response to symptoms. 
+	 * lockdown.
+	 */
 	public static void decreaseSociabilityIfCompliant(ImmutablePersonState.Builder builder, 
 			PersonState person) {
-		selfIsolate(builder,person,false);
+		selfIsolateIfCompliant(builder,person);
 	}
 	
 	
 	
-	
+	/**
+	 * Self isolate. If not compliant this will still have an effect. This is 
+	 * the option in enforced lock-down type scenarios. 
+	 */
 	public static void decreaseSociabilityStrictly(ImmutablePersonState.Builder builder, 
 			PersonState person) {
-		selfIsolate(builder,person,true);
+		builder.setMobilityModifier(
+			baseline(person).getSelfIsolationDepth()
+		);
 	}
 	
-	private static void selfIsolate(ImmutablePersonState.Builder builder, 
-			PersonState person, boolean partialNonCompliance) {
+	/**
+	 * If the person is compliant reduce their mobility to the minimum. If 
+	 * not compliant then if partial flag is set they will reduce their mobility 
+	 * to a level scaled by their level of compliance.
+	 */
+	private static void selfIsolateIfCompliant(ImmutablePersonState.Builder builder, 
+			PersonState person) {
 		if (person.isCompliant()) {
+			// non compliant people
 			builder.setMobilityModifier(
 				baseline(person).getSelfIsolationDepth()
 			);
-		} else if (partialNonCompliance) {
-			builder.setMobilityModifier(
-					1-Conversions.scaleProbabilityByOR(
-						1-baseline(person).getSelfIsolationDepth(),
-						person.getAdjustedCompliance()
-					)
-			);
-		}
+		} 
 	}
 	
+	/**
+	 * Decrease mobility by a set proportion for every day that the
+	 * person is symptomatic, towards the minimum value of their self isolation 
+	 */
 	public static void decreaseSociabilitySlowlyIfSymptomatic(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		if (person.isSymptomatic()) {
@@ -110,10 +125,14 @@ public class StateUtils {
 					decayTo(
 						person.getMobilityModifier(), 
 						ModelNav.baseline(person).getSelfIsolationDepth(),
-						1.0/4 ));
+						ModelNav.modelParam(person).getOrganicRateOfMobilityChange() ));
 		}
 	}
 	
+	/**
+	 * Restore mobility and transmissibility by a set proportion to their default
+	 * levels while a patient remains asymptomatic 
+	 */
 	public static void restoreSociabilitySlowlyIfAsymptomatic(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		if (!person.isSymptomatic()) {
@@ -121,18 +140,26 @@ public class StateUtils {
 		}
 	}
 	
+	/**
+	 * Restore mobility and transmissibility by a set proportion to their default
+	 * levels. 
+	 */
 	public static void restoreSociabilitySlowly(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		builder.setMobilityModifier(
-			decayToOne(person.getMobilityModifier(), 1.0/4 ));
+			decayToOne(
+					person.getMobilityModifier(), 
+					ModelNav.modelParam(person).getOrganicRateOfMobilityChange() 
+			));
 		builder.setTransmissibilityModifier(
-			decayToOne(person.getTransmissibilityModifier(), 1.0/4 ));
+			decayToOne(
+					person.getTransmissibilityModifier(), 
+					ModelNav.modelParam(person).getOrganicRateOfMobilityChange()
+			));
 	}
 	
 	/**
 	 * Restore mobility and transmissibility to baseline.
-	 * @param builder
-	 * @param current
 	 */
 	public static void resetBehaviour(ImmutablePersonState.Builder builder,
 			PersonState current) {
@@ -140,41 +167,66 @@ public class StateUtils {
 		builder.setTransmissibilityModifier( 1.0 );
 	}
 	
-	
+	/**
+	 * Seek a test if any symptoms (and compliant, and not recently tested)
+	 */
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
 			PersonState person) {
 		seekPcrIfSymptomatic(builder, person, 1);
 	}
 	
+	/**
+	 * do a PCR test.
+	 */
 	public static void doPCR(ImmutablePersonHistory.Builder builder, 
 			PersonState person) {
 		TestResult test = TestResult.resultFrom(person, Type.PCR).get();
 		builder.addTodaysTests(test);
 	}
 	
+	/**
+	 * do a LFT test.
+	 */
+	public static void doLFT(ImmutablePersonHistory.Builder builder, 
+			PersonState person) {
+		TestResult test = TestResult.resultFrom(person, Type.LFT).get();
+		builder.addTodaysTests(test);
+	}
+	
+	/**
+	 * The person will test themselves using PCR (immediately) if they are 
+	 * symptomatic consecutively for a number of days, compliant and they have 
+	 * not recently been tested. Recent here is defined
+	 * as they have had a PCR test within the last presumed incubation period
+	 * of the disease
+	 */
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
 			PersonState person, int days) {
-		if (isSymptomatic(person, days) && isTestingAllowed(person) ) {
+		if (isSymptomaticAndCompliant(person, days) && isTestingAllowed(person) ) {
 			doPCR(builder,person);
 		}
 	}
 	
-	public static boolean isSymptomatic(PersonState person, int days) {
+	public static boolean isSymptomaticAndCompliant(PersonState person, int days) {
 		return person.isSymptomaticConsecutively(days) && person.isCompliant();
 	}
 	
-	public static boolean isHighRiskOfInfection(PersonState person, double cutoff) {
+	public static boolean isHighRiskOfInfectionAndCompliant(PersonState person, double cutoff) {
 		return person.getProbabilityInfectiousToday() > cutoff && person.isCompliant(); 
 	}
 	
+	/**
+	 * The person is compliant and they have not had a recent test (within the
+	 * presumed incubation period of disease). If there is some question as to
+	 * whether they need a test and they have recently has one this will stop
+	 * them having another one.
+	 */
 	public static boolean isTestingAllowed(PersonState person) {
 		return !person.isRecentlyTested(Type.PCR) && person.isCompliant();
 	}
 	
 	/**
 	 * Only for use in nextState methods. Looks to see if a test was conducted
-	 * @param person
-	 * @return
 	 */
 	public static boolean isTestedToday(PersonState person) {
 		return ModelNav.history(person)
@@ -183,29 +235,30 @@ public class StateUtils {
 	}
 	
 	/**
-	 * Linear 2% per step reduction in compliance until reaches zero
-	 * @param builder
-	 * @param person
+	 * Linear step reduction in compliance until reaches zero. The amount is 
+	 * configured in the {@link ExecutionConfiguration}.
 	 */
 	public static void complianceFatigue(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		if (person.isCompliant()) {
 			builder.setComplianceModifier(
-				linearToZero( person.getComplianceModifier(), 0.02 )
+				linearToZero( person.getComplianceModifier(), 
+					ModelNav.modelParam(person).getComplianceDeteriorationRate())
 			);
 		}
 	}
 	
 	/**
-	 * Linear 1% per step improvement in compliance until 100%
-	 * @param builder
-	 * @param person
+	 * Linear step improvement in compliance until reaches 1. The amount is 
+	 * configured in the {@link ExecutionConfiguration}.
 	 */
 	public static void complianceRestoreSlowly(ImmutablePersonState.Builder builder, 
 			PersonState person) {
 		if (person.isCompliant()) {
 			builder.setComplianceModifier(
-				linearToOne( person.getComplianceModifier(), 0.01 )
+				linearToOne( person.getComplianceModifier(), 
+					ModelNav.modelParam(person).getComplianceImprovementRate()
+				)
 			);
 		}
 	}
@@ -214,9 +267,8 @@ public class StateUtils {
 	 * places machine into given behaviour for up to i iterations, then reverts to
 	 * the last pushed behaviour. If the behaviour changes before the countdown
 	 * is up then the machine will proceed with new behaviour.
-	 * @param i
-	 * @param state
-	 * @return
+	 * @param i the number of iterations
+	 * @param state the state to temporarily enter
 	 */
 	public static BehaviourState countdown(int i, BehaviourState state) {
 		
@@ -251,9 +303,8 @@ public class StateUtils {
 	 * A state that reverts mobility and transmissibility to 
 	 * baseline while the machine continues in normal operation, over a set time 
 	 * period. 
-	 * @param i
-	 * @param state
-	 * @return
+	 * @param i time over which to restore behaviour
+	 * @param state next state to enter into immediately.
 	 */
 	public static BehaviourState graduallyRestoreBehaviour(int i, BehaviourState state) {
 		
@@ -311,6 +362,7 @@ public class StateUtils {
 	public static void branchPeopleTo(OutbreakState current, BehaviourState behaviour, Predicate<Person> filter) {
 		ModelNav.people(current)
 			.filter(filter)
+			.filter(p -> !p.getCurrentState().isDead())
 			.forEach( ps -> {
 				if (!ps.getCurrentState().isDead()) { //.getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD))
 					ps.getStateMachine().forceTo(behaviour);
@@ -323,8 +375,6 @@ public class StateUtils {
 	 * Force all people in a model to branch to a set behaviour, the current
 	 * state is pushed to allow people to return to the current behaviour 
 	 * (using a returnFromBranch call).
-	 * @param current
-	 * @param behaviour
 	 */
 	public static void returnPeopleFromBranch(OutbreakState current) {
 		ModelNav.people(current).forEach( ps -> {
@@ -339,8 +389,6 @@ public class StateUtils {
 	 * Force one person to branch to a set behaviour, the current
 	 * state is pushed to allow them to return to the current behaviour 
 	 * (using a returnFromBranch call).
-	 * @param current
-	 * @param behaviour
 	 */
 	public static BehaviourState branchTo(PersonState current, BehaviourState behaviour) {
 		current.getEntity().getStateMachine().rememberCurrentState(behaviour);
@@ -349,8 +397,6 @@ public class StateUtils {
 	
 	/** 
 	 * return from a branched behaviour model.
-	 * @param context
-	 * @return
 	 */
 	public static BehaviourState toLastBranchPoint(StateMachineContext context) {
 		return context.pullBehaviour();

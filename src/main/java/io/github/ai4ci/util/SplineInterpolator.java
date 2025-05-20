@@ -27,12 +27,8 @@ public class SplineInterpolator implements Serializable {
 	 * This function uses the Fritsch-Carlson method for computing the spline parameters.
 	 * http://en.wikipedia.org/wiki/Monotone_cubic_interpolation
 	 * 
-	 * @param x
-	 *            The X component of the control points, strictly increasing.
-	 * @param y
-	 *            The Y component of the control points
-	 * @return
-	 * 
+	 * @param x The X component of the control points, strictly increasing.
+	 * @param y The Y component of the control points
 	 * @throws IllegalArgumentException
 	 *             if the X or Y arrays are null, have different lengths or have fewer than 2 values.
 	 */

@@ -3,7 +3,6 @@ package io.github.ai4ci.util;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
@@ -101,7 +100,7 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	};
 	
 	@JsonIgnore
-	default double pLessThan(double x) {
+	default double getCumulative(double x) {
 		return getCDF().interpolate(x);
 	};
 	
@@ -112,10 +111,6 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	@JsonIgnore
 	default double getDensity(double x) {
 		return getCDF().interpolateDifferential(x);
-	};
-	@JsonIgnore
-	default double getCumulative(double x) {
-		return getCDF().interpolate(x);
 	};
 	
 	static int KNOTS = 30;

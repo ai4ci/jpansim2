@@ -14,6 +14,7 @@ import org.mapstruct.factory.Mappers;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.OutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.Person;
@@ -21,7 +22,6 @@ import io.github.ai4ci.abm.PersonBaseline;
 import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
-import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 
 @Mapper(
@@ -30,11 +30,8 @@ import io.github.ai4ci.util.DelayDistribution;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class CSVMapper {
-	
+	 
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
-	
-//	@Mapping(target= "personId", source="entity.id")
-//	public abstract ImmutablePersonCSV toCSV(PersonHistory history);
 	
 	@Mapping(target= "personId", source="entity.id")
 	public abstract ImmutablePersonStateCSV toCSV(PersonState state);
@@ -43,6 +40,10 @@ public abstract class CSVMapper {
 	
 	@Mapping(target = "observationTime", source="entity.currentState.time")
 	public abstract ImmutableOutbreakHistoryCSV toCSV(OutbreakHistory history);
+	
+	public abstract ImmutableOutbreakFinalStateCSV toFinalCSV(OutbreakState currentState);
+	
+	public abstract ImmutableDebugParametersCSV toCSV(Outbreak outbreak, OutbreakBaseline baseline);
 	
 //	@Mapping(target = "rtForward", ignore = true)
 //	@Mapping(target = "observationTime", ignore = true)
@@ -61,7 +62,7 @@ public abstract class CSVMapper {
 //			);
 //	};
 	
-	public Stream<ImmutableInfectivityProfileCSV> infectivityProfile(Outbreak outbreak) {
+	public Stream<InfectivityProfileCSV> infectivityProfile(Outbreak outbreak) {
 		DelayDistribution dd = outbreak.getExecutionConfiguration().getInfectivityProfile();
 		return IntStream
 			.range(0,  (int) dd.size())
@@ -75,7 +76,8 @@ public abstract class CSVMapper {
 			);
 	};
 	
-	//@Mapping(target= "id", source="person.entity.id")
+	@Mapping(target="hilbertX", expression = "java(person.getHilbertCoordinates()[0])")
+	@Mapping(target="hilbertY", expression = "java(person.getHilbertCoordinates()[1])")
 	protected abstract ImmutablePersonDemographicsCSV toCSV(Person person, PersonDemographic demog, PersonBaseline baseline);
 	
 	public ImmutablePersonDemographicsCSV toDemog(Person person) {
@@ -99,4 +101,6 @@ public abstract class CSVMapper {
 	protected abstract HashMap<String,Object> toMap(ImmutableContactCSV csv);
 	
 	public abstract ImmutableOutbreakConfigurationJson toJson(Outbreak outbreak);
+
+	
 }

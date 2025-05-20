@@ -3,14 +3,12 @@ package io.github.ai4ci.abm;
 import java.util.List;
 import java.util.Optional;
 
-import org.davidmoten.hilbert.HilbertCurve;
-import org.davidmoten.hilbert.SmallHilbertCurve;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.Data;
-import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
 import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
+import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.util.Ephemeral;
 
 @Value.Modifiable
@@ -18,12 +16,7 @@ import io.github.ai4ci.util.Ephemeral;
 public abstract class Person implements Entity, HistoricalStateProvider<PersonHistory> {
  
 	/** 
-	 * Creates a new person and adds them into the outbreak network
-	 * TODO: this is not suitable for creatimg people in a multithreaded 
-	 * manner. It would be better for the outbreak person list to be an
-	 * array with
-	 * @param outbreak
-	 * @return
+	 * Creates a new person and adds them into the outbreak network.
 	 */
 	public static ModifiablePerson createPersonStub(Outbreak outbreak) {
 		ModifiablePerson tmp = new ModifiablePerson();
@@ -53,10 +46,7 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	public abstract List<PersonHistory> getHistory();
 	
 	public long[] getHilbertCoordinates() {
-		double size = (double) this.getOutbreak().getSetupConfiguration().getNetworkSize();
-		int bits = (int) Math.ceil(0.5*Math.log(size)/Math.log(2));
-		SmallHilbertCurve c = HilbertCurve.small().bits(bits).dimensions(2);
-		return c.point(this.getId());
+		return this.getOutbreak().getSetupConfiguration().getHilbertCoords(this.getId());
 	}
 	
 	public Optional<PersonHistory> getCurrentHistory() {

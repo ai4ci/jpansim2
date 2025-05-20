@@ -5,8 +5,6 @@ import java.util.stream.IntStream;
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.junit.jupiter.api.Test;
 
-import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
-
 class TestDistribution {
 
 	static EmpiricalDistribution testAgeDist = ImmutableEmpiricalDistribution.builder()
@@ -42,7 +40,7 @@ class TestDistribution {
 		System.out.println(dist.getCentral());
 		System.out.println(dist.sample());
 		System.out.println(dist.getMedian());
-		System.out.println(dist.pLessThan(25));
+		System.out.println(dist.getCumulative(25));
 		
 		IntStream.range(0, 120).mapToObj(i -> dist.getDensity(i)+" "+dist.getCumulative(i)).forEach(System.out::println);
 		
@@ -64,7 +62,7 @@ class TestDistribution {
 		System.out.println(dist.getMedian());
 		System.out.println(dist.getInterpolation().getCentral());
 		System.out.println(dist.getInterpolation().getMedian());
-		System.out.println(dist.pLessThan(2.5));
+		System.out.println(dist.getCumulative(2.5));
 		
 		IntStream.range(0, 10000).mapToDouble(i -> dist.getInterpolation().sample()).average().ifPresent(System.out::println);
 	}
@@ -85,7 +83,7 @@ class TestDistribution {
 		 * .forEach(System.out::println);
 		 */
 		
-		IntStream.range(0, 80).mapToObj(i -> fn.interpolate((double) i)+" "+fn2.interpolate((double) i))
+		IntStream.range(0, 80).mapToObj(i -> fn.value((double) i)+" "+fn2.value((double) i))
 		.forEach(System.out::println);
 	}
 }

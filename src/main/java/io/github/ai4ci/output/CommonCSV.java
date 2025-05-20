@@ -1,12 +1,10 @@
 package io.github.ai4ci.output;
 
-import static io.github.ai4ci.util.CSVUtil.*;
-
 import io.github.ai4ci.flow.CSVWriter;
 
 public interface CommonCSV  {
 
-	public interface Model extends CSVWriter.Writeable{
+	public interface Model extends CSVWriter.Writeable {
 		String getModelName();
 		String getExperimentName();
 		

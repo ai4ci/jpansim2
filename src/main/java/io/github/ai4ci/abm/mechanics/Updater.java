@@ -16,8 +16,6 @@ import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.ModelUpdate;
-import io.github.ai4ci.abm.ModelUpdate.OutbreakUpdaterFn;
-import io.github.ai4ci.abm.ModelUpdate.PersonUpdaterFn;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
@@ -39,11 +37,12 @@ public class Updater {
 	
 	public Updater() {
 		this.outbreakProcessors = new ArrayList<>();
-		this.outbreakProcessors.add(ModelUpdate.OutbreakUpdaterFn.DEFAULT.fn());
+		for (ModelUpdate.OutbreakUpdaterFn value: ModelUpdate.OutbreakUpdaterFn.values())
+			this.outbreakProcessors.add(value.fn());
 		this.personProcessors = new ArrayList<>();
-		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.DEFAULT.fn());
-		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.IMPORTATION_PROTOCOL.fn());
-		this.personProcessors.add(ModelUpdate.PersonUpdaterFn.IMMUNISATION_PROTOCOL.fn());
+		for (ModelUpdate.PersonUpdaterFn value: ModelUpdate.PersonUpdaterFn.values())
+			this.personProcessors.add(value.fn());
+		
 	}
 	
 	public Updater withPersonProcessor(
@@ -90,7 +89,6 @@ public class Updater {
 	 * copying the current state and incrementing the time. At the same
 	 * time we population the nextHisotry for outbreak and people from the
 	 * current state (and current time)
-	 * @param outbreak
 	 */
 	
 	private void prepareUpdate(Outbreak outbreak) {
@@ -142,16 +140,12 @@ public class Updater {
 	
 	/**
 	 * The contact network is established for every person.
-	 * then update
-	 * Update the outbreak history according to the current policy.
-	 * the person histories according to the current behaviour. This second step
-	 * is where testing is usually carried out. 
-	 *  
-	 * @param outbreak
+	 * then update the outbreak history according to the current policy. Then
+	 * the person histories according to their current behaviour. This second step
+	 * is where the behaviour models implement testing. 
 	 */
 	private void updateHistory(Outbreak outbreak) {
 		// Sampler sampler = Sampler.getSampler();
-		// TODO: ? ImmutableOutbreakHistory.Builder nextOutbreakHistory = outbreak.getNextHistory().get();
 		if (outbreak instanceof ModifiableOutbreak) {
 			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			PersonStateContacts contactNetwork = Contact.contactNetwork(m);
@@ -275,11 +269,15 @@ public class Updater {
 	 * setting the current state to the new state. Makes sure that the agents
 	 * state are all also updated before updating the model state, and record 
 	 * the new state in the model history. This means the model history is always
-	 * up to date with teh current model state
-	 * @param outbreak the mutable model.
+	 * up to date with the current model state.
+	 * 
+	 * <br> N.B. This is where the limit in person history length is implemented.
 	 */
 	private void switchHistory(Outbreak outbreak) {
-		int limit = (int) outbreak.getExecutionConfiguration().getInfectivityProfile().size()*2;
+		int limit = (int) Math.max(
+				outbreak.getBaseline().getSymptomDuration(),
+				outbreak.getBaseline().getInfectiveDuration()
+		) * 2;
 		if (outbreak instanceof ModifiableOutbreak) {
 			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			m.getPeople()

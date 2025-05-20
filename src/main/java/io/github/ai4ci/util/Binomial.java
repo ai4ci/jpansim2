@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.statistics.distribution.NormalDistribution;
 
+@Deprecated
 public class Binomial extends MutablePair<Integer,Integer> {
 	
 	public static class Confidence extends ImmutablePair<Double, Double> {
@@ -44,7 +45,6 @@ public class Binomial extends MutablePair<Integer,Integer> {
 	}
 	
 	public static Binomial of(int num, int denom) {
-		//TODO check denom bigger that num
 		return new Binomial(num,denom);
 	}
 	

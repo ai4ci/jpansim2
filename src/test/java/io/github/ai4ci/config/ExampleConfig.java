@@ -3,9 +3,6 @@ package io.github.ai4ci.config;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -26,17 +23,18 @@ import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
 import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
 import io.github.ai4ci.abm.behaviour.Test;
 import io.github.ai4ci.abm.policy.NoControl;
+import io.github.ai4ci.config.inhost.MarkovStateModel;
+import io.github.ai4ci.config.inhost.PhenomenologicalModel;
+import io.github.ai4ci.config.inhost.StochasticModel;
+import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.util.SimpleDistribution;
 
-public class ExampleConfig {
+public enum ExampleConfig {
 
-	public static Map<String,ExperimentConfiguration> configurations = new HashMap<>();
-
-	static {
-		// The default
-		configurations.put("default",ExperimentConfiguration.DEFAULT);
-
-		configurations.put("behaviour-comparison",  
+	DEFAULT ("default",ExperimentConfiguration.DEFAULT),
+	
+	BEHAVIOUR ("behaviour-comparison",  
 				ExperimentConfiguration.DEFAULT
 				.withBatchConfig(
 						BatchConfiguration.DEFAULT
@@ -68,9 +66,9 @@ public class ExampleConfig {
 						.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
 						.build()
 						)
-				);
+				),
 
-		configurations.put("test-R0",  
+		R0 ("test-R0",  
 				ExperimentConfiguration.DEFAULT
 				.withBatchConfig(
 						BatchConfiguration.DEFAULT
@@ -105,9 +103,9 @@ public class ExampleConfig {
 						.setRO(3D)
 						.build()
 						)
-				);
+				),
 
-		configurations.put("age-stratification",  
+		AGE_STRAT ("age-stratification",  
 				ExperimentConfiguration.DEFAULT
 				.withBatchConfig(
 						BatchConfiguration.DEFAULT
@@ -117,19 +115,61 @@ public class ExampleConfig {
 						)
 				.withSetupConfig(
 						AgeStratifiedNetworkConfiguration.DEFAULT
-						)
+				)
 				.withSetupReplications(1)
 				.withExecutionConfig(
 						ExecutionConfiguration.DEFAULT
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.withDefaultBehaviourModelName(Test.class.getSimpleName())
 						.withImportationProbability(0D)
-						// .withInHostConfiguration(StochasticModel.DEFAULT)
-						)
+						.withDemographicAdjustment(DemographicAdjustment.AGE_DEFAULT)
+						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
+					)
 				.withExecutionReplications(1)
-				);
+				),
 
-	}
+		IN_HOST ("in-host-test", 
+				ExperimentConfiguration.DEFAULT
+				.withBatchConfig(
+						BatchConfiguration.DEFAULT
+							.withExporters(Exporters.values())
+				)
+				.withExecutionConfig(
+						ExecutionConfiguration.DEFAULT
+						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
+						.withDefaultBehaviourModelName(Test.class.getSimpleName())
+						.withImportationProbability(0D)
+						.withSymptomSensitivity(SimpleDistribution.point(1D))
+						.withSymptomSpecificity(SimpleDistribution.point(1D))
+				)
+				.withFacet(
+					"in-host-models",
+					PartialExecutionConfiguration.builder()
+						.setName("markov")
+						.setInHostConfiguration(
+							MarkovStateModel.DEFAULT
+						)
+						.build(),
+						PartialExecutionConfiguration.builder()
+						.setName("phenomenological")
+						.setInHostConfiguration(
+							PhenomenologicalModel.DEFAULT
+						)
+						.build(),
+						PartialExecutionConfiguration.builder()
+						.setName("stochastic")
+						.setInHostConfiguration(
+							StochasticModel.DEFAULT
+						)
+						.build()
+				)
+			);
+			
+	public String name;
+	public ExperimentConfiguration config;
+	ExampleConfig(String name, ExperimentConfiguration config) {this.name = name;this.config=config;}
+	
+	
 
 	public static void main(String[] args) throws IOException {
 
@@ -142,10 +182,10 @@ public class ExampleConfig {
 
 		System.out.println(directory);
 
-		configurations.forEach((s,c) -> {
+		Arrays.stream(ExampleConfig.values()).forEach((a) -> {
 			try {
-				System.out.println(directory.resolve(s+".json"));
-				c.writeConfig(directory.resolve(s+".json"));
+				System.out.println(directory.resolve(a.name+".json"));
+				a.config.writeConfig(directory.resolve(a.name+".json"));
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}

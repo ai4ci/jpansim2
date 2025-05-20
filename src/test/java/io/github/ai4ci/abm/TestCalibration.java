@@ -6,9 +6,9 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.ai4ci.config.InHostConfiguration;
+import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.ImmutableDelayDistribution;
 
 class TestCalibration {
 
@@ -47,8 +47,9 @@ class TestCalibration {
 	@Test
 	void testConversions() {
 		
-		DelayDistribution dd = InHostConfiguration.getInfectivityProfile(
+		ImmutableDelayDistribution dd = InHostConfiguration.getInfectivityProfile(
 				out.getExecutionConfiguration().getInHostConfiguration(),
+				out.getExecutionConfiguration(),
 				100, 100);
 		dd = dd.withPAffected(0.4);
 		System.out.println(dd.totalHazard(0.2)+"\n");
@@ -56,6 +57,7 @@ class TestCalibration {
 		Arrays.stream(
 		InHostConfiguration.getViralLoadProfile(
 				out.getExecutionConfiguration().getInHostConfiguration(),
+				out.getExecutionConfiguration(),
 				100, 100)
 		).forEach(System.out::println);
 		
@@ -64,6 +66,14 @@ class TestCalibration {
 		System.out.println(Conversions.oddsRatio(0.25, 0.5));
 		System.out.println(Conversions.oddsRatio(0.5, 0.25));
 		System.out.println(Conversions.oddsRatio(0.1, 0.4));
+	}
+		
+	@Test
+	void testExponential() {
+		
+		System.out.println(1-Math.pow(1-Conversions.probabilityFromQuantile(10, 0.95),10));
+		System.out.println(Conversions.probabilityFromQuantile(10, 0.95));
+		
 	}
 	
 	@Test

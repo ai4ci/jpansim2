@@ -17,6 +17,13 @@ public interface BatchConfiguration {
 			ImmutableBatchConfiguration.builder()
 			.setSimulationDuration(200)
 			.setUrnBase("default")
+			.setExporters(
+				Exporters.DEMOGRAPHICS,
+				Exporters.SUMMARY,
+				Exporters.INFECTIVITY_PROFILE,
+				Exporters.INTERNAL_STATE,
+				Exporters.FINAL_STATE
+			)
 			.build();
 
 	static Logger log = LoggerFactory.getLogger(BatchConfiguration.class);
@@ -72,8 +79,8 @@ public interface BatchConfiguration {
 				Exporters.DEMOGRAPHICS,
 				Exporters.SUMMARY,
 				Exporters.INFECTIVITY_PROFILE,
-				Exporters.INTERNAL_STATE
-				// TODO: true test positive line list.
+				Exporters.INTERNAL_STATE,
+				Exporters.FINAL_STATE
 		};
 	};
 

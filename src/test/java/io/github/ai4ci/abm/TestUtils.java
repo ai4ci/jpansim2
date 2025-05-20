@@ -4,23 +4,25 @@ import java.util.function.Predicate;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.config.ConfigMerger;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
-import io.github.ai4ci.config.WattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.ExecutionBuilder;
+import io.github.ai4ci.util.ReflectionUtils;
 
 @Value.Immutable
 public interface TestUtils {
 
 	@Value.Derived default Outbreak getOutbreak() {
 		return ExecutionBuilder.buildExperiment(
-				ConfigMerger.INSTANCE.mergeConfiguration(
+				//ConfigMerger.INSTANCE.mergeConfiguration(
+				ReflectionUtils.merge(
 						WattsStrogatzConfiguration.DEFAULT,
 						getSetupTweak()
 				),
-				ConfigMerger.INSTANCE.mergeConfiguration(
+				//ConfigMerger.INSTANCE.mergeConfiguration(
+				ReflectionUtils.merge(
 						ExecutionConfiguration.DEFAULT,
 						getExecutionTweak()
 				),

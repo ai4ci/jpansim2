@@ -32,6 +32,12 @@ public interface PersonBaseline extends Serializable {
 	Double getSymptomSensitivity();
 	
 	BehaviourState getDefaultBehaviourState();
+	
+	/**
+	 * The minimum mobility modifier that a person will experience. This is an
+	 * odds ratio that is applied to their baseline probability
+	 * @return
+	 */
 	Double getSelfIsolationDepth();
 	Double getAppUseProbability();
 	

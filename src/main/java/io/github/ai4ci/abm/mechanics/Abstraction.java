@@ -3,6 +3,7 @@ package io.github.ai4ci.abm.mechanics;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.DoubleUnaryOperator;
 
 import org.immutables.value.Value;
 
@@ -13,16 +14,22 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
-import io.github.ai4ci.config.ImmutableFixedValueFunction;
-import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.util.ImmutableFixedValueFunction;
+import io.github.ai4ci.config.setup.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-
-import io.github.ai4ci.config.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.inhost.PartialPhenomenologicalModel;
+import io.github.ai4ci.config.inhost.PartialStochasticModel;
+import io.github.ai4ci.config.setup.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.util.EmpiricalFunction.Link;
+import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
+import io.github.ai4ci.util.ImmutableSimpleDistribution;
+import io.github.ai4ci.util.ImmutableTransformedDistribution;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ResampledDistribution;
 import io.github.ai4ci.util.Sampler;
+import io.github.ai4ci.util.TransformedDistribution;
 
 public interface Abstraction {
 
@@ -32,7 +39,8 @@ public interface Abstraction {
 		@Type(PartialWattsStrogatzConfiguration.class), 
 		@Type(PartialExecutionConfiguration.class), 
 		@Type(PartialAgeStratifiedNetworkConfiguration.class),
-//		@Type(PartialStochasticModel.class)
+		@Type(PartialStochasticModel.class),
+		@Type(PartialPhenomenologicalModel.class)
 	})
 	public interface Modification<X> {
 		@Value.NonAttribute X self();
@@ -43,8 +51,8 @@ public interface Abstraction {
 		@Type(ImmutableEmpiricalFunction.class), 
 		@Type(ImmutableFixedValueFunction.class)
 	})
-	public interface Interpolator {
-		double interpolate(double y);
+	public interface SimpleFunction {
+		double value(double y);
 	}
 
 	public interface Entity extends Serializable {
@@ -63,18 +71,28 @@ public interface Abstraction {
 		}
 	}
 	
+	@JsonTypeInfo(use = Id.DEDUCTION)
+	@JsonSubTypes( {
+		@Type(ImmutableSimpleDistribution.class),
+		@Type(ImmutableEmpiricalDistribution.class)
+	})
 	public interface Distribution {
 		
 		int PRECISION = 10000;
+		double DX = 0.00001; 
 		
 		double getCentral();
-		double pLessThan(double x);
+		double getCumulative(double x);
 		double getMedian();
 		
 		double sample(Sampler rng);
 		
 		default double sample() {
 			return sample(Sampler.getSampler());
+		}
+		
+		default double getDensity(double x) {
+			return (getCumulative(x+DX)-getCumulative(x-DX))/(2*DX); 
 		}
 		
 		default ResampledDistribution combine(Distribution with, BiFunction<Double,Double,Double> using) {
@@ -85,6 +103,22 @@ public interface Abstraction {
 					.build();
 		};
 		
+		default TransformedDistribution transform(Link link) {
+			return transform(link.fn, link.invFn);
+		}
+		
+		default TransformedDistribution transform(DoubleUnaryOperator link) {
+			return transform(link, (d) -> {
+				throw new RuntimeException("Inverse not implemented");});
+		}
+		
+		default TransformedDistribution transform(DoubleUnaryOperator link, DoubleUnaryOperator inverse) {
+			return ImmutableTransformedDistribution.builder()
+					.setBaseDistribution(this)
+					.setLink(link)
+					.setInverseLink(inverse)
+					.build();
+		};
 
 	}
 	

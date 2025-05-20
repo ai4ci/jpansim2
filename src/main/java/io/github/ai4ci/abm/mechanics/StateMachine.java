@@ -41,9 +41,6 @@ public class StateMachine implements Serializable {
 	
 	/** 
 	 * Update the state machine and store the new state
-	 * @param builder
-	 * @param person
-	 * @param rng
 	 */
 	public synchronized void performStateUpdate(ImmutablePersonState.Builder builder, PersonState person, Sampler rng) {
 		if (person.isDead()) {
@@ -129,6 +126,7 @@ public class StateMachine implements Serializable {
 	}
 	
 	public void forceTo(BehaviourState state) {
+		if (state.equals(NonCompliant.DEAD)) return;
 		if (this.getState() instanceof BehaviourState) {
 			synchronized(this) {
 				rememberCurrentState(state);
@@ -159,8 +157,11 @@ public class StateMachine implements Serializable {
 	 * @param state
 	 */
 	public void rememberCurrentState(State<?,?,?,?> state) {
-		if (!((Enum<?>) state).getDeclaringClass().equals(((Enum<?>) getState()).getDeclaringClass()))
-			context.pushState(currentState);
+		if (state instanceof Enum && getState() instanceof Enum) {
+			//Don't remember if this is a different state from same behaviour model
+			if (((Enum<?>) state).getDeclaringClass().equals(((Enum<?>) getState()).getDeclaringClass())) return;
+		}
+		context.pushState(currentState);
 	}
 	
 	public void returnFromBranch() {

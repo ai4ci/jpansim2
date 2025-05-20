@@ -1,10 +1,13 @@
-package io.github.ai4ci.config;
+package io.github.ai4ci.config.inhost;
 
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.Data.Partial;
+import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
 import io.github.ai4ci.util.SimpleDistribution;
 
 @Value.Immutable
@@ -17,12 +20,12 @@ import io.github.ai4ci.util.SimpleDistribution;
 @JsonDeserialize(as = ImmutableStochasticModel.class)
 public interface StochasticModel extends InHostConfiguration {
 	
-//	@Partial @Value.Immutable 
-//	@JsonSerialize(as = PartialStochasticModel.class)
-//	@JsonDeserialize(as = PartialStochasticModel.class)
-//	public interface _PartialStochasticModel extends StochasticModel, Abstraction.Modification<StochasticModel>{
-//		default _PartialStochasticModel self() {return this;}
-//	}
+	@Partial @Value.Immutable @SuppressWarnings("immutables")
+	@JsonSerialize(as = PartialStochasticModel.class)
+	@JsonDeserialize(as = PartialStochasticModel.class)
+	public interface _PartialStochasticModel extends StochasticModel, Abstraction.Modification<StochasticModel>{
+		default _PartialStochasticModel self() {return this;}
+	}
 	
 	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel.builder()
 			.setTargetCellCount(10000)
@@ -38,11 +41,11 @@ public interface StochasticModel extends InHostConfiguration {
 			.build();
 	
 	Integer getTargetCellCount();
-	SimpleDistribution getImmuneTargetRatio();
-	SimpleDistribution getImmuneActivationRate();
-	SimpleDistribution getImmuneWaningRate();
-	SimpleDistribution getInfectionCarrierProbability();
-	SimpleDistribution getTargetRecoveryRate();
+	Distribution getImmuneTargetRatio();
+	Distribution getImmuneActivationRate();
+	Distribution getImmuneWaningRate();
+	Distribution getInfectionCarrierProbability();
+	Distribution getTargetRecoveryRate();
 	
 	Double getBaselineViralInfectionRate();
 	Double getBaselineViralReplicationRate();

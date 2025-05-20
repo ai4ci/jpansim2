@@ -14,10 +14,8 @@ import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.SocialRelationship;
-import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
-import io.github.ai4ci.util.Conversions;
+import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.util.EmpiricalDistribution;
-import io.github.ai4ci.util.EmpiricalFunction;
 import io.github.ai4ci.util.Sampler;
 
 public interface AgeStratifiedNetworkSetup {
@@ -34,7 +32,7 @@ public interface AgeStratifiedNetworkSetup {
 		return tmp;
 	}
 	
-	default void setupOutbreak(ModifiableOutbreak outbreak, AgeStratifiedNetworkConfiguration config, Sampler sampler) {
+	default ModifiableOutbreak setupOutbreak(ModifiableOutbreak outbreak, AgeStratifiedNetworkConfiguration config, Sampler sampler) {
 		
 		// For starters lets keep this simple.
 		// We generate a vanilla social network but age weight the edge strength
@@ -75,5 +73,7 @@ public interface AgeStratifiedNetworkSetup {
 				)
 			);
 		});
+		
+		return outbreak;
 	}
 }

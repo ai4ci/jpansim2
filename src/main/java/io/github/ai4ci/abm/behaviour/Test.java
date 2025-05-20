@@ -8,6 +8,7 @@ import io.github.ai4ci.abm.mechanics.StateUtils.DefaultNoTesting;
 import io.github.ai4ci.util.Sampler;
 
 public enum Test implements BehaviourModel, DefaultNoTesting {
+	
 	NONE {
 		@Override
 		public BehaviourState nextState(ImmutablePersonState.Builder builder, 

@@ -15,7 +15,7 @@ import org.immutables.value.Value;
  * Relationships are discrete versions of https://grodri.github.io/glms/notes/c7s1
  */
 @Value.Immutable
-public abstract class DelayDistribution implements Serializable, WithDelayDistribution {
+public abstract class DelayDistribution implements Serializable {
  
 	abstract public double[] getProfile();
 	
@@ -145,8 +145,6 @@ public abstract class DelayDistribution implements Serializable, WithDelayDistri
 	/**
 	 * What proportion of individuals expected to have been affected by
 	 * day X. (i.e. 1-prob(survived to day X)) 
-	 * @param intValue
-	 * @return
 	 */
 	public double affected(int intValue) {
 		return 1-this.survival()[intValue];
@@ -170,7 +168,7 @@ public abstract class DelayDistribution implements Serializable, WithDelayDistri
 		return output;
 	}
 	
-	public static DelayDistribution unnormalised(double... profile) {
+	public static ImmutableDelayDistribution unnormalised(double... profile) {
 		return ImmutableDelayDistribution.builder()
 			.setProfile(profile)
 			.setPAffected(1)
@@ -218,6 +216,13 @@ public abstract class DelayDistribution implements Serializable, WithDelayDistri
 				.reduce((d1, d2) -> d1*d2)
 				.orElse(1);	
 	}
+
+	public int getQuantile(double d) {
+		for (int i=0; i<this.size(); i++) {
+			if (this.cumulative(i) > d) return i;
+		}
+		return (int) this.size();
+	};
 	
 //		double density[] = new double[cumulative.length];
 //		for (int i=0; i<cumulative.length; i++) {

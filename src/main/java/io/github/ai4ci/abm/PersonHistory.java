@@ -1,22 +1,24 @@
 package io.github.ai4ci.abm;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.immutables.value.Value;
 
+import io.github.ai4ci.util.ModelNav;
+
 @Value.Immutable
 public interface PersonHistory extends PersonTemporalState {
 	
 	/**
 	 * The list of tests taken today. Initially the result will be marked as 
-	 * PENDING until the test is processed. (the true result will be available 
-	 * to the model immediately). The TestResult objects
+	 * PENDING until the test is processed. (the true result is available 
+	 * internally to the model immediately, but not necessarily observed).
 	 */
 	List<TestResult> getTodaysTests();
 	
@@ -28,6 +30,11 @@ public interface PersonHistory extends PersonTemporalState {
 	 * @return
 	 */
 	Contact[] getTodaysContacts();
+	
+	/**
+	 * A list of exposures made in this time period. These are contacts who are
+	 * infectious.
+	 */
 	Exposure[] getTodaysExposures();
 	
 	default Optional<PersonHistory> getPrevious() {
@@ -36,25 +43,40 @@ public interface PersonHistory extends PersonTemporalState {
 	
 	boolean isSymptomatic();
 	boolean isReportedSymptomatic();
+	boolean isRequiringHospitalisation();
 	Double getNormalisedSeverity();
 	Double getNormalisedViralLoad();
 	Double getAdjustedTransmissibility();
+	
+	/** {@link PersonState#getAdjustedMobility()} */
 	Double getAdjustedMobility();
+	
+	/** {@link PersonState#getSusceptibilityModifier()} */
 	Double getSusceptibilityModifier();
+	
+	/** {@link PersonState#getBehaviour()} */
 	String getBehaviour();
+	
+	/** {@link PersonState#getContactExposure()} */
 	Double getContactExposure();
 	
-	double getSymptomLogLikelihood();
-	double getProbabilityInfectiousToday();
+	/** {@link PersonState#getSymptomLogLikelihood()} */
+	Double getSymptomLogLikelihood();
 	
-	public static class Infection implements Serializable {
-		Contact contact;
-		public static Infection create(Contact contact) {
-			return new Infection(contact);
-		}
-		Infection(Contact contact) {this.contact = contact;}
-		public Contact getContact() {return contact;}
-	}
+	/** {@link PersonState#getProbabilityInfectiousToday()} */
+	Double getProbabilityInfectiousToday();
+	
+//	/** {@link PersonState#getProbabilityImmuneToday()} */
+//	double getProbabilityImmuneToday();
+//	
+//	
+//	default double getProbabilityRecentlyInfectious(int limit) {
+//		if (limit == 0) return 0;
+//		this.getDirectLogLikelihood(, limit)
+//		return 1-(1-getProbabilityInfectiousToday())*(1-getPrevious().map(p -> p.getProbabilityRecentlyInfectious(limit-1)).orElse(0D));
+//	}
+	
+
 	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
@@ -64,10 +86,11 @@ public interface PersonHistory extends PersonTemporalState {
 	 * should map back to the same instant in time for that infector.
 	 * @return
 	 */
+	@Deprecated
 	@Value.Lazy default Optional<PersonHistory> getInfector() {
 		return getInfectiousContact()
-				.map(c -> c.getExposer(this))
-				.flatMap(ph2 -> ph2.getInfectionStart());
+				.map(exposure -> exposure.getExposer(this))
+				.flatMap(exposer -> exposer.getInfectionStart());
 	} 
 	
 	/**
@@ -78,7 +101,9 @@ public interface PersonHistory extends PersonTemporalState {
 	 * should map back to the same instant in time for that infector.
 	 * @return
 	 */
+	@Deprecated
 	@Value.Lazy default Optional<Exposure> getInfectiousContact() {
+		
 		return getNewInfection().flatMap(ph -> 
 			ph.getLastExposure().flatMap(e -> 
 				Arrays.stream(e.getTodaysExposures())
@@ -87,40 +112,39 @@ public interface PersonHistory extends PersonTemporalState {
 		);
 	}
 	
+	/**
+	 * If person is infected here find the infectee state at the point in time 
+	 * they became infectious. 
+	 */
+	@Value.Lazy
+	@Deprecated
 	default Optional<PersonHistory> getInfectionStart() {
-		return this.getInfectionStart(getTime());
+		if (!this.isInfectious()) return Optional.empty();
+		if (this.isIncidentInfection()) return Optional.of(this);
+		return this.getPrevious().flatMap(p -> p.getInfectionStart());
 	}
 	
 	/**
-	 * If person is infected here find the index at the point in time they 
-	 * were infected. 
+	 * Find if a person is newly infectious today. This is not the same as being
+	 * newly exposed.
 	 * @return
 	 */
-	@Value.Lazy default Optional<PersonHistory> getInfectionStart(int limit) {
-		if (limit==0) return Optional.empty();
-		if (!isInfectious()) return Optional.empty();
-		if (getPrevious().isPresent()) {
-			// This is infectious and previous is not.
-			if (!getPrevious().get().isInfectious()) return Optional.of(this);
-			// This is infectious and previous is infectious. Continue looking.
-			else return getInfectionStart(limit-1);
-		}
-		// This is infectious and no previous can be found. Assume this is an 
-		// imported case, we will set it as the start, but empty might be just as
-		// valid.
-		return Optional.of(this);
-	}
-	
-	/**
-	 * Find if a person is newly infectious today.
-	 * @return
-	 */
+	@Deprecated
 	@Value.Lazy default Optional<PersonHistory> getNewInfection() {
-		if (!isInfectious()) return Optional.empty();
-		if (getPrevious().isPresent()) {
-			if (!getPrevious().get().isInfectious()) return Optional.of(this);
-		}
+		if (isIncidentInfection()) return Optional.of(this);
 		return Optional.empty();
+	}
+	
+	/**
+	 * Is this person newly exposed today? defined as the first time a non zero
+	 * exposure is recorded within one infectious period.
+	 * @return
+	 */
+	@Value.Lazy default boolean isIncidentExposure() {
+		return isIncident(
+			ph -> ph.getContactExposure() > 0,
+			ModelNav.modelBase(this).getInfectiveDuration()
+		);
 	}
 	
 	/**
@@ -128,21 +152,50 @@ public interface PersonHistory extends PersonTemporalState {
 	 * @return
 	 */
 	@Value.Lazy default boolean isIncidentInfection() {
-		if (!isInfectious()) return false;
+		return isIncident(
+			ph -> ph.isInfectious(),
+			ModelNav.modelBase(this).getInfectiveDuration()
+		);
+	}
+	
+	/**
+	 * Is this person newly needing hospitalisation today, or is this part of 
+	 * the same infection episode (as defined by the average duration of 
+	 * symptoms.
+	 * @return
+	 */
+	@Value.Lazy default boolean isIncidentHospitalisation() {
+		return isIncident(
+			ph -> ph.isRequiringHospitalisation(),
+			ModelNav.modelBase(this).getSymptomDuration()
+		);
+	}
+	
+	
+	private boolean isIncident(Predicate<PersonHistory> test, int limit) {
+		if (!test.test(this)) return false;
 		if (getPrevious().isPresent()) {
-			if (!getPrevious().get().isInfectious()) return true;
+			if (!getPrevious().get().isRecently(
+				test,
+				limit
+			)) return true;
 		}
 		return false;
 	}
 	
+	private boolean isRecently(Predicate<PersonHistory> test, int limit) {
+		if (limit == 0) return false;
+		if (test.test(this)) return true;
+		return getPrevious().map(p -> p.isRecently(test, limit-1)).orElse(Boolean.FALSE);
+	}
+	
 	/**
-	 * Find the infectee's state at the time of last exposure to virus.
-	 * @return
+	 * Find the infectee's state at the start of last episode of exposure to virus,
+	 * I.e. the first in a run of exposures, which are separated by less that 
+	 * one infectious period. 
 	 */
 	default Optional<PersonHistory> getLastExposure() {
-		if (this.getContactExposure() > 0 &&
-				this.getPrevious().map(p -> p.getContactExposure() == 0).orElse(Boolean.FALSE)) 
-					return Optional.of(this);
+		if (this.isIncidentExposure()) return Optional.of(this);
 		return this.getPrevious().flatMap(p -> p.getLastExposure());
 	}
 	
@@ -158,9 +211,6 @@ public interface PersonHistory extends PersonTemporalState {
 	 * On a day in the future what do the test results taken up to this day 
 	 * tell us about the relative odds of a person being infected on this day
 	 * now that we know the results. 
-	 * @param day
-	 * @param limit
-	 * @return
 	 */
 	default double getHistoricalTestLogLikelihood(int day, int limit) {
 		return this.getHistoricalTests(limit)
@@ -174,13 +224,12 @@ public interface PersonHistory extends PersonTemporalState {
 	 * @param day when are we interested in (i.e. usually the day of contact) 
 	 * @param limit how long prior to the day are we interested in? so a test a 
 	 * long time age is irrelevant
-	 * @return
 	 */
 	default double getDirectLogLikelihood(int day, int limit) {
 		return 
 				this.getSymptomLogLikelihood() +
 				this.getHistoricalTestLogLikelihood(day, limit);
-				// TODO: immunity? proven previous covid?
+				// TODO: Assessment of individual direct risk of disease needs to account for known previous infection.
 	}
 	
 	default Stream<TestResult> getResultsBySampleDate(int time) {
@@ -193,8 +242,9 @@ public interface PersonHistory extends PersonTemporalState {
 	
 	/**
 	 * The maximum delay for test results for this individual is used when we
-	 * assemble
-	 * @return
+	 * assemble the forward looking list of test results on a per day basis. 
+	 * i.e. the list of results organised by sample date as they would appear
+	 * on the release date, including delay distribution.
 	 */
 	@Value.Derived default int getMaxDelay() {
 		return (int) this.getTodaysTests().stream().mapToLong(tr -> tr.getDelay()).max().orElse(0);
@@ -203,7 +253,6 @@ public interface PersonHistory extends PersonTemporalState {
 	/**
 	 * The list of tests taken today, indexed by the delay until the results 
 	 * are available.
-	 * @return
 	 */
 	@Value.Lazy default List<List<TestResult>> getResultsBySampleDate() {
 		return 

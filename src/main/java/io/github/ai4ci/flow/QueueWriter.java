@@ -8,8 +8,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import io.github.ai4ci.util.PauseableThread;
-
 public class QueueWriter extends Thread implements CSVWriter.Queue {
 		
 		ConcurrentLinkedQueue<String> queue;
@@ -129,5 +127,9 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 		
 		public boolean isWaiting() {
 			return waiting;
+		}
+		
+		public String report() {
+			return waiting ? "empty" : "writing";
 		}
 	}

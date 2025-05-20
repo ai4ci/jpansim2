@@ -6,12 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +22,8 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.flow.CSVWriter.Writeable;
 import io.github.ai4ci.output.CSVMapper;
-import io.github.ai4ci.output.ImmutableOutbreakCSV;
-import io.github.ai4ci.output.ImmutablePersonStateCSV;
 import io.github.ai4ci.output.OutbreakConfigurationJson;
 
 /**
@@ -56,23 +54,29 @@ public class StateExporter implements Closeable {
 		return out;
 	}
 	
-	//TODO: make this a runnable thread pool with a buffer 
 	public static class ExportSelector<X extends CSVWriter.Writeable> {
 		Export.Stage stage;
 		Class<X> type;
-		Function<Outbreak,Stream<X>> selector;
 		String filename;
 		int size;
 		CSVWriter<X> writer;
+		Function<Outbreak, Stream<? extends Writeable>> selector;
 		
 		private ExportSelector(
-				Class<X> type,
-				Function<Outbreak,Stream<X>> selector
+				Class<X> type
 			) {
 			Export.Stage stage = type.getAnnotation(Export.class).stage();
 			String file = type.getAnnotation(Export.class).value();
 			int size = type.getAnnotation(Export.class).size();
-			this.type = type; this.selector = selector; this.filename = file; this.size = size; this.stage = stage;
+			try {
+				this.selector = type.getAnnotation(Export.class).selector().getDeclaredConstructor().newInstance();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			this.type = type;
+			
+			
+			this.filename = file; this.size = size; this.stage = stage;
 			
 		}
 		
@@ -85,11 +89,8 @@ public class StateExporter implements Closeable {
 			}
 		}
 		
-		public static <X extends CSVWriter.Writeable> ExportSelector<X> ofMany(Class<X> type, Function<Outbreak,Stream<X>> selector) {
-			return new  ExportSelector<X>(type,selector);
-		}
-		public static <X extends CSVWriter.Writeable> ExportSelector<X> ofOne(Class<X> type, Function<Outbreak,X> selector) {
-			return new  ExportSelector<X>(type,o -> Stream.of(selector.apply(o)));
+		public static <X extends CSVWriter.Writeable> ExportSelector<X> of(Class<X> type) {
+			return new  ExportSelector<X>(type);
 		}
 		public void close() {
 			writer.close();
@@ -107,6 +108,10 @@ public class StateExporter implements Closeable {
 
 		public void join() throws InterruptedException {
 			writer.join();
+		}
+
+		public String report() {
+			return writer.report();
 		}
 	}
 	
@@ -131,7 +136,7 @@ public class StateExporter implements Closeable {
 				ExportSelector<X> sel2 = (ExportSelector<X>) sel; 
 				if (sel2.writer != null)
 					sel2.writer.export(
-							// this should execute in the forkjoinpool
+							(Stream<X>) // this should execute in the forkjoinpool
 							// it include the CSV mapper
 							sel2.selector.apply(outbreak).parallel()
 					);
@@ -181,6 +186,10 @@ public class StateExporter implements Closeable {
 		for (ExportSelector<?> sw : this.stepWriters) {
 			sw.join();
 		}
+	}
+	
+	protected String report() {
+		return this.stepWriters.stream().map(s -> s.report()).collect(Collectors.joining("; "));
 	}
 	
 }

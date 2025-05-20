@@ -8,15 +8,17 @@ import io.github.ai4ci.util.Sampler;
 public interface DefaultOutbreakInitialiser {
 	
 	
-	default void initialiseOutbreak(ImmutableOutbreakState.Builder builder, Outbreak outbreak,
+	default ImmutableOutbreakState initialiseOutbreak(ImmutableOutbreakState.Builder builder, Outbreak outbreak,
 			Sampler sampler) {
 		ExecutionConfiguration config = outbreak.getExecutionConfiguration();
 		builder
 			.setTransmissibilityModifier( 1.0 )
 			.setContactDetectedProbability( config.getContactDetectedProbability() )
 			.setPresumedInfectiousPeriod( config.getInitialEstimateInfectionDuration().intValue() )
+			.setPresumedIncubationPeriod( config.getInitialEstimateIncubationPeriod().intValue() )
 			.setPresumedSymptomSensitivity( config.getInitialEstimateSymptomSensitivity() ) 
 			.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSensitivity() );
 	
+		return builder.build();
 	}
 }

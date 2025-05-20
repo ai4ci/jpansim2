@@ -14,6 +14,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
+import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.ImmutableAgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.ImmutableWattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.PartialAgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 
 public interface ExperimentFacet {
 	

@@ -1,7 +1,12 @@
-package io.github.ai4ci.config;
+package io.github.ai4ci.config.setup;
 
 import java.io.Serializable;
 
+import org.davidmoten.hilbert.HilbertCurve;
+import org.davidmoten.hilbert.SmallHilbertCurve;
+import org.immutables.value.Value;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -32,4 +37,15 @@ public interface SetupConfiguration extends Abstraction.Named, Abstraction.Repli
 	Integer getNetworkSize();
 	Integer getInitialImports();
 	
+	@JsonIgnore
+	@Value.Derived private int hilbertBits() {
+		double size = (double) this.getNetworkSize();
+		return (int) Math.ceil(0.5*Math.log(size)/Math.log(2));
+	}
+	
+	default long[] getHilbertCoords(Integer id) {
+		SmallHilbertCurve c = HilbertCurve.small().bits(hilbertBits()).dimensions(2);
+		double size = (double) this.getNetworkSize();
+		return c.point((long) (id/size*Math.pow(2, hilbertBits()*2)));
+	};
 }

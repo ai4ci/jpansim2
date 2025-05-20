@@ -1,10 +1,14 @@
-package io.github.ai4ci.config;
+package io.github.ai4ci.config.inhost;
 
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.Data.Partial;
+import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
+import io.github.ai4ci.config.DemographicAdjustment;
 import io.github.ai4ci.util.SimpleDistribution;
 
 @Value.Immutable
@@ -15,14 +19,14 @@ import io.github.ai4ci.util.SimpleDistribution;
 //})
 @JsonSerialize(as = ImmutablePhenomenologicalModel.class)
 @JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
-public interface PhenomenologicalModel extends InHostConfiguration {
+public interface PhenomenologicalModel extends InHostConfiguration,  DemographicAdjustment.Phenomenological<Distribution, Double> {
 	
-//	@Partial @Value.Immutable 
-//	@JsonSerialize(as = PartialPhenomenologicalModel.class)
-//	@JsonDeserialize(as = PartialPhenomenologicalModel.class)
-//	public interface _PartialPhenomenologicalModel extends PhenomenologicalModel, Abstraction.Modification<PhenomenologicalModel>{
-//		default _PartialPhenomenologicalModel self() {return this;}
-//	}
+	@Partial @Value.Immutable @SuppressWarnings("immutables")
+	@JsonSerialize(as = PartialPhenomenologicalModel.class)
+	@JsonDeserialize(as = PartialPhenomenologicalModel.class)
+	public interface _PartialPhenomenologicalModel extends PhenomenologicalModel, Abstraction.Modification<PhenomenologicalModel>{
+		default _PartialPhenomenologicalModel self() {return this;}
+	}
 	
 	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel.builder()
 			
@@ -32,7 +36,7 @@ public interface PhenomenologicalModel extends InHostConfiguration {
 			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
 			.setApproxPeakViralLoad( SimpleDistribution.unimodalBeta(0.5, 0.1))
 			.setIncubationToPeakViralLoadDelay(SimpleDistribution.logNorm(2D, 1D))
-			.setPeakToRecoveryDelay(SimpleDistribution.logNorm(8D,3D))
+			.setPeakToRecoveryDelay(SimpleDistribution.logNorm(5D,3D))
 			
 			.setApproxPeakImmuneResponse( SimpleDistribution.unimodalBeta(0.5, 0.1))
 			.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
@@ -40,16 +44,15 @@ public interface PhenomenologicalModel extends InHostConfiguration {
 			
 			.build();
 	
-	// double getSymptomCutoff(); removing this to implement an IFR
-	double getInfectiousnessCutoff();
+	Double getInfectiousnessCutoff();
 	
-	SimpleDistribution getIncubationPeriod();
-	SimpleDistribution getApproxPeakViralLoad();
-	SimpleDistribution getIncubationToPeakViralLoadDelay();
-	SimpleDistribution getPeakToRecoveryDelay();
+	Distribution getIncubationPeriod();
+	Distribution getApproxPeakViralLoad();
+	Distribution getIncubationToPeakViralLoadDelay();
+	Distribution getPeakToRecoveryDelay();
 	
-	SimpleDistribution getApproxPeakImmuneResponse();
-	SimpleDistribution getPeakImmuneResponseDelay();
-	SimpleDistribution getImmuneWaningHalfLife();
+	Distribution getApproxPeakImmuneResponse();
+	Distribution getPeakImmuneResponseDelay();
+	Distribution getImmuneWaningHalfLife();
 	
 }

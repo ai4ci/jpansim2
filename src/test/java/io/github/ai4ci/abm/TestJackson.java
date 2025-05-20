@@ -15,11 +15,11 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
 import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
 import io.github.ai4ci.abm.policy.NoControl;
-import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PhenomenologicalModel;
+import io.github.ai4ci.config.inhost.PartialPhenomenologicalModel;
+import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.output.CSVMapper;
 import io.github.ai4ci.output.ImmutablePersonStateCSV;
 import io.github.ai4ci.util.CSVUtil;
@@ -57,10 +57,11 @@ class TestJackson {
 				PartialExecutionConfiguration.builder()
 					.setName("longer-incubation")
 					.setInHostConfiguration(
-							PhenomenologicalModel.DEFAULT
-								.withIncubationPeriod(
+							PartialPhenomenologicalModel.builder()
+								.setIncubationPeriod(
 										SimpleDistribution.logNorm(10D, 4D)
 								)
+								.build()
 					).build()
 				);
 		

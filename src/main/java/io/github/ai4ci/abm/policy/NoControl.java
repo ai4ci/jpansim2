@@ -8,6 +8,9 @@ import io.github.ai4ci.util.Sampler;
 
 public enum NoControl implements PolicyModel {
 	
+	/**
+	 * No central control of the outbreak
+	 */
 	DEFAULT {
 		@Override
 		public PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,

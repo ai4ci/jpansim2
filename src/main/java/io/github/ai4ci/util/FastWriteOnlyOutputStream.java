@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
  * There appears to be an upper limit on allocating byte buffers in a sensible
  * amoutn of time. Large buffers are very slow to allocate.
  */
+@Deprecated
 public class FastWriteOnlyOutputStream extends OutputStream {
 
 	static Logger log = LoggerFactory.getLogger(FastWriteOnlyOutputStream.class);

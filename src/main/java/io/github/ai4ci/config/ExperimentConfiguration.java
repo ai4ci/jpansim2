@@ -23,10 +23,13 @@ import com.google.common.io.Files;
 import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
 import io.github.ai4ci.config.ExperimentFacet.ExecutionFacet;
 import io.github.ai4ci.config.ExperimentFacet.SetupFacet;
+import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.StateExporter;
+import io.github.ai4ci.util.ReflectionUtils;
 
 
-@Value.Immutable
+@Value.Immutable @Value.Modifiable
 @JsonSerialize(as = ImmutableExperimentConfiguration.class)
 @JsonDeserialize(as = ImmutableExperimentConfiguration.class)
 public interface ExperimentConfiguration {
@@ -35,14 +38,14 @@ public interface ExperimentConfiguration {
 	ImmutableExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
 			.setBatchConfig(BatchConfiguration.DEFAULT)
 			.setSetupConfig(
-					List.of(
-							ImmutableWattsStrogatzFacet.builder().setDefault(WattsStrogatzConfiguration.DEFAULT).build(),
-							ImmutableAgeStratifiedNetworkFacet.builder().setDefault(AgeStratifiedNetworkConfiguration.DEFAULT).build()
-							)
-					)
+				List.of(
+					ImmutableWattsStrogatzFacet.builder().setDefault(WattsStrogatzConfiguration.DEFAULT).build()//,
+					//ImmutableAgeStratifiedNetworkFacet.builder().setDefault(AgeStratifiedNetworkConfiguration.DEFAULT).build()
+				)
+			)
 			.setExecutionConfig(
 					ExecutionConfiguration.DEFAULT
-					)
+			)
 			.setExecutionReplications(1)
 			.setSetupReplications(1)
 			.build();
@@ -90,22 +93,27 @@ public interface ExperimentConfiguration {
 		for (SetupFacet<?> facet: setupCfg) {
 
 			SetupConfiguration base = facet.getDefault();
-			for (Modification<? extends SetupConfiguration> mod: facet.getModifications()) {
-
-				if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
-
-				SetupConfiguration modified = (SetupConfiguration) ConfigMerger.INSTANCE
-						.mergeConfiguration(
-								base, mod
-								)
-						.withName(
-								facet.getName()+":"+mod.self().getName()
-								);
-
-				tmp.add(modified);
+			
+			if (facet.getModifications().isEmpty()) tmp.add(base);
+			else {
+				for (Modification<? extends SetupConfiguration> mod: facet.getModifications()) {
+	
+					if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
+	
+					SetupConfiguration modified = (SetupConfiguration) 
+	//						ConfigMerger.INSTANCE
+	//						.mergeConfiguration(
+							ReflectionUtils.merge(
+									base, mod
+									)
+							.withName(
+									facet.getName()+":"+mod.self().getName()
+									);
+	
+					tmp.add(modified);
+				}
 			}
-
-			if (tmp.isEmpty()) tmp.add(base);
+			
 		}
 
 		List<SetupConfiguration> tmp2 = new ArrayList<>();
@@ -122,14 +130,14 @@ public interface ExperimentConfiguration {
 	@JsonIgnore
 	default List<ExecutionConfiguration> getExecution() {
 
-		ExecutionConfiguration base = getExecutionConfig();
-		List<ExecutionConfiguration> out = new ArrayList<>();
+		ImmutableExecutionConfiguration base = getExecutionConfig();
+		List<ImmutableExecutionConfiguration> out = new ArrayList<>();
 		out.add(base);
 		for (ExecutionFacet facet: getFacets()) {
 			//if (facet instanceof ExperimentFacet.SetupModification s) {
 
 			String facetName = facet.getName();
-			List<ExecutionConfiguration> tmp = new ArrayList<>();
+			List<ImmutableExecutionConfiguration> tmp = new ArrayList<>();
 
 			for (Modification<ExecutionConfiguration> mod: facet.getModifications()) {
 
@@ -138,13 +146,11 @@ public interface ExperimentConfiguration {
 					if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
 
 					out.forEach(b -> {
-						ImmutableExecutionConfiguration modified = ConfigMerger.INSTANCE
-								.mergeConfiguration(
-										b, mod
-										)
-								.withName(
-										(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
-										+facetName+":"+mod.self().getName());
+						ImmutableExecutionConfiguration modified = 
+								(ImmutableExecutionConfiguration) ReflectionUtils.merge(b, mod)
+						.withName(
+								(!b.getName().equals(base.getName()) ? b.getName()+":" : "")
+								+facetName+":"+mod.self().getName());
 						tmp.add(modified);
 					});
 				}

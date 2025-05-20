@@ -20,7 +20,7 @@ public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 
 	/**
 	 * Patient will probably test if they have symptoms, then wait for the
-	 * result.
+	 * result. They will self isolate if they 
 	 */
 	REACTIVE_PCR {
 
@@ -62,7 +62,7 @@ public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 				return NonCompliant.DEFAULT;
 			}
 			if (!person.isSymptomatic()) {
-				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod())) {
+				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod(), 0.95)) {
 					resetBehaviour(builder,person);
 					return REACTIVE_PCR;
 				}

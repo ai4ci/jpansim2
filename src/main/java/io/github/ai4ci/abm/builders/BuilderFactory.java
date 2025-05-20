@@ -1,8 +1,9 @@
 package io.github.ai4ci.abm.builders;
 
-import io.github.ai4ci.config.AgeStratifiedNetworkConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
-import io.github.ai4ci.config.WattsStrogatzConfiguration;
+import io.github.ai4ci.abm.mechanics.AbstractModelBuilder;
+import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 
 public class BuilderFactory {
 

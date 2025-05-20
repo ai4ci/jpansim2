@@ -1,4 +1,4 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.inhost;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -7,9 +7,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.config.ExposureModel;
-import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
-import io.github.ai4ci.config.PhenomenologicalModel;
+import io.github.ai4ci.abm.inhost.ExposureModel.BiPhasicLogistic;
+import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 
@@ -54,19 +53,15 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	}
 	
 	default double getNormalisedSeverity() {
-		// In this model the viral load is the severity. This is a limitation
-		// as there is little delay possible.
-		return getViralLoad();
-		//return Conversions.rateRatio( getViralLoad(), this.getConfig().getSymptomCutoff() );
+		// In this model the viral load is the same as severity, but there is a 
+		// question as to how to combine multiple exposures.
+		
+		return this.getExposures().stream()
+				.mapToDouble(e -> e.getExposureViralLoad(getTime(), getViralLoadModel()))
+				.max()
+				.orElse(0);
 	};
 
-	// TODO: need to work out how to make some of these personal to the age
-	// of the individual. We can't just have the configuration as a parameter
-	// here as that is generic for everyone. Everything here apart from 
-	// infectiousness cutoff could be parameterised depending on age.
-	
-	
-	
 	default InHostPhenomenologicalState update(Sampler sampler, double virionDose, double immunisationDose) { //, double immuneModifier) {
 		// Overall modifiers are a number around 1:
 		// Double hostImmunity = immuneModifier;

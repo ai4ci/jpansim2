@@ -3,17 +3,19 @@ package io.github.ai4ci.abm.builders;
 import io.github.ai4ci.abm.ImmutablePersonBaseline;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.util.ReflectionUtils;
 import io.github.ai4ci.util.Sampler;
 
 public interface DefaultPersonBaseliner {
 
-	default void baselinePerson(ImmutablePersonBaseline.Builder builder, Person person, Sampler rng) {
-		ExecutionConfiguration configuration = person.getOutbreak().getExecutionConfiguration();
+	default ImmutablePersonBaseline baselinePerson(ImmutablePersonBaseline.Builder builder, Person person, Sampler rng) {
+		ExecutionConfiguration configuration = 
+				ReflectionUtils.modify(
+						person.getOutbreak().getExecutionConfiguration(),
+						person.getOutbreak().getExecutionConfiguration().getDemographicAdjustment(),
+						person.getDemographic()
+				);
 		person.getStateMachine().init(configuration.getDefaultBehaviourModel());
-		
-		// TODO: in the future this will have to be reconfigured to fit with 
-		// different types of person e.g. age groups etc.
-		// Possibly all of this can be some kind of function of the person demographics?
 		
 		builder
 			.setMobilityBaseline(	Math.sqrt( configuration.getContactProbability().sample(rng) ) )
@@ -27,6 +29,7 @@ public interface DefaultPersonBaseliner {
 			.setSelfIsolationDepth( configuration.getMaximumSocialContactReduction().sample(rng) )
 		;
 		
+		return builder.build();
 	}
 	
 }

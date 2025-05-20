@@ -9,9 +9,9 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.config.InHostConfiguration;
+import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
-import io.github.ai4ci.util.EmpiricalDistribution;
+import io.github.ai4ci.util.HistogramDistribution;
 
 public class Calibration {
 
@@ -37,13 +37,10 @@ public class Calibration {
 	 * We should also have the individuals baselined. This means we can look
 	 * at their individual mobility and hence the probability of contact
 	 * across the network. 
-	 * 
-	 * @param outbreak
-	 * @return
 	 */
 	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 		
-//		// TODO: encapsulate elsewhere?
+// TODO: encapsulate builder state checking functions somewhere
 //		if (outbreak instanceof ModifiableOutbreak) {
 //			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 //			if (!(
@@ -170,10 +167,6 @@ public class Calibration {
 	 * random population at the R0 in a network where repeated exposure is the
 	 * norm. In this case I think the effective generation time will also be
 	 * shorter. This comes down to the rate of repeated exposure.
-	 * 
-	 * @param outbreak
-	 * @param R0
-	 * @return
 	 */
 	public static double inferViralLoadTransmissionProbabilityFactor(Outbreak outbreak, double R0) {
 		double c = contactsPerPersonPerDay(outbreak);
@@ -210,7 +203,9 @@ public class Calibration {
 	/**
 	 * Calibrate severity cutoffs for events based on probability. Events might
 	 * be hospitalisation, death, and be relative to infection so always a 
-	 * number less than 1.
+	 * number less than 1. A small IFR correlates with a high cutoff for severity
+	 * based on population severity distribution. Therefore for a 0.01 IFR we 
+	 * cut-off at the 0.99 quantile for severity.
 	 * @param outbreak the outbreak
 	 * @param infectionEventRatio a ratio between infected and those infected and 
 	 * e.g. hospitalised.
@@ -218,9 +213,11 @@ public class Calibration {
 	 */
 	public static double inferSeverityCutoff(Outbreak outbreak, double infectionEventRatio) {
 		
-		EmpiricalDistribution dist = InHostConfiguration.getPeakSeverity(outbreak.getExecutionConfiguration().getInHostConfiguration(), 1000, 50); 
+		HistogramDistribution dist = InHostConfiguration.getPeakSeverity(
+				outbreak.getExecutionConfiguration().getInHostConfiguration(), 
+				outbreak.getExecutionConfiguration(), 1000, 50); 
 		//N.B. only interested in the in host peak hence we can use a shorter duration.
-		double tmp = dist.getQuantile().interpolate(infectionEventRatio);
+		double tmp = dist.getQuantile(1-infectionEventRatio);
 		return tmp;
 	}
 	

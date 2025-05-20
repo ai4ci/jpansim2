@@ -64,13 +64,12 @@ public interface TestParameters extends Serializable {
 	 * (1-sens) of the time. The CDF of the uniform that does this is a straight
 	 * line going through the points 0,(1-sens) and 1,(1-spec). This is connected
 	 * to the rogan gladen estimator.
-	 * @param normalisedSignal
-	 * @param sensitivity
-	 * @param specificity
-	 * @param rng
-	 * @return
 	 */
 	static double applyNoise(double normalisedSignal, double sensitivity, double specificity, Sampler rng) {
+		// TODO: Convert test error to use a normally distributed noise function 
+		// this assumes a 0-1 range of signal. all we need to do is look at 
+		// a normal with sensitivity / specificity quantiles at 0 and 1, or 
+		// what ever the test limit is.
 		return Math.max(0, normalisedSignal +
 				(rng.uniform()-(1 - sensitivity)) / (specificity + sensitivity - 1));
 	}

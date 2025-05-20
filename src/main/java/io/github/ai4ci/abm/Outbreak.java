@@ -11,7 +11,7 @@ import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
 import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
 import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.ThreadSafeArray;
 
@@ -63,4 +63,6 @@ public abstract class Outbreak implements Entity, HistoricalStateProvider<Outbre
 	public Optional<PersonHistory> getPersonHistoryByIdAndTime(int id, int time) {
 		return this.getPersonById(id).flatMap(p -> p.getHistoryEntry(time));
 	}; 
+	
+	
 }

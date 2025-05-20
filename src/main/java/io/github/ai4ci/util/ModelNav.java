@@ -16,8 +16,7 @@ import io.github.ai4ci.abm.PersonTemporalState;
 import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
 import io.github.ai4ci.abm.mechanics.Abstraction.TemporalState;
 import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.PartialAgeStratifiedNetworkConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 
 public class ModelNav {
 
@@ -119,8 +118,6 @@ public class ModelNav {
 	/**
 	 * The corresponding history entries for this point in time in the outbreak
 	 * i.e. A stream of individuals at the same time point. 
-	 * @param outbreakHistory
-	 * @return
 	 */
 	public static Stream<PersonHistory> peopleHistory(OutbreakHistory outbreakHistory) {
 		int time = outbreakHistory.getTime();
@@ -145,6 +142,10 @@ public class ModelNav {
 		if (entity instanceof Outbreak) return ((Outbreak) entity).getExecutionConfiguration();
 		if (entity instanceof Person) return ((Person) entity).getOutbreak().getExecutionConfiguration();
 		throw new RuntimeException();
+	}
+
+	public static OutbreakBaseline modelBase(OutbreakTemporalState outbreakState) {
+		return outbreakState.getEntity().getBaseline();
 	}
 	
 	

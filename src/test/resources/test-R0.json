@@ -11,8 +11,8 @@
     "default" : {
       "@type" : "watts-strogatz",
       "name" : "setup",
-      "initialImports" : 5,
       "networkSize" : 10000,
+      "initialImports" : 5,
       "networkRandomness" : 0.15,
       "networkConnectedness" : 100
     }
@@ -32,14 +32,15 @@
     "complianceProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.99,
-      "dispersion" : 0.001
+      "dispersion" : 0.1
     },
     "appUseProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.97,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "inHostConfiguration" : {
+      "@type" : "phenomenological",
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
         "type" : "LOG_NORM",
@@ -93,12 +94,12 @@
     "symptomSensitivity" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.5,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "symptomSpecificity" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.95,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "initialEstimateInfectionDuration" : 10.0,
     "initialEstimateSymptomSensitivity" : 0.5,
@@ -106,11 +107,12 @@
     "maximumSocialContactReduction" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.2,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "defaultBehaviourModelName" : "Test",
     "defaultPolicyModelName" : "NoControl",
     "importationProbability" : 0.0,
+    "demographicAdjustment" : { },
     "rO" : 2.5
   },
   "facets" : [ {

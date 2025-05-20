@@ -1,10 +1,12 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.abm.inhost;
 
-import static java.lang.Math.*;
+import static java.lang.Math.exp;
+import static java.lang.Math.floor;
+import static java.lang.Math.pow;
 
 import org.immutables.value.Value;
 
-import io.github.ai4ci.config.StochasticModel;
+import io.github.ai4ci.config.inhost.StochasticModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 
@@ -83,7 +85,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		return getImmune() - getImmunePriming() - getImmuneActive();
 	}
 
-		/**
+	/**
 	 * Update the viral load for a person. 
 	 * This depends on the PersonHistory being up to date which it should be based
 	 * on the fact this is updated during the next update phase.
@@ -102,17 +104,13 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		
 		int immunePriming = (int) floor(immunisationDose * this.getImmuneDormant());
 		
-		// Overall modifiers are a number around 1:
-//		Double hostImmunity = immuneModifier;
-//		Double viralActivity = viralActivityModifier;
-		// Disable:
-		// TODO:  
+		// TODO: review need for host immunity and viral activity modifiers
 		Double hostImmunity = 1D;
 		Double viralActivity = 1D;
 		
 		// Viral factors are shared across the model
 		Double rate_infection = this.getConfig().getBaselineViralInfectionRate() * viralActivity;
-		Double rate_virion_replication = pow(this.getConfig().getBaselineViralReplicationRate(),viralActivity); // TODO: update
+		Double rate_virion_replication = pow(this.getConfig().getBaselineViralReplicationRate(),viralActivity);
 		Double rate_infected_given_exposed = rate_virion_replication;
 		// Host factors
 		
@@ -171,22 +169,22 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 					)
 				);
 		Integer target_newly_exposed = rng.binom(target_interacted, p_infection);
-		Double p_target_recovery = pFromRate(rate_target_recovery);
+		Double p_target_recovery = Conversions.probabilityFromRate(rate_target_recovery);
 		Integer target_recovered = rng.binom(getTargetRemoved(), p_target_recovery);
 		// Targets - infected
-		Double p_infected_given_exposed = pFromRate(rate_infected_given_exposed);
-		Double p_target_cellular_removal = pFromRate( rate_cellular_removal * getImmuneActive() / ((double) getTargets()));
+		Double p_infected_given_exposed = Conversions.probabilityFromRate(rate_infected_given_exposed);
+		Double p_target_cellular_removal = Conversions.probabilityFromRate( rate_cellular_removal * getImmuneActive() / ((double) getTargets()));
 		Integer target_exposed_removal = rng.binom(getTargetExposed(), (1-p_propensity_chronic) * p_target_cellular_removal); 
 		Integer target_start_infected = rng.binom(getTargetExposed()-target_exposed_removal, p_infected_given_exposed);
 		Integer target_infected_removed = rng.binom(getTargetInfected(), p_target_cellular_removal);
 
 		// Immunity - priming
-		Double p_priming_given_infected = pFromRate(rate_priming_given_infected * (getTargetExposed()+getTargetInfected()) / (double) getTargets());
+		Double p_priming_given_infected = Conversions.probabilityFromRate(rate_priming_given_infected * (getTargetExposed()+getTargetInfected()) / (double) getTargets());
 		Integer immune_start_priming = rng.binom(getImmuneDormant(), p_priming_given_infected);
-		Double p_active_given_priming = pFromRate(rate_active_given_priming);
+		Double p_active_given_priming = Conversions.probabilityFromRate(rate_active_given_priming);
 		Integer immune_start_active = rng.binom(getImmunePriming(), p_active_given_priming);
 		// Immunity - active
-		Double p_senescence_given_active = pFromRate(rate_senescence_given_active);
+		Double p_senescence_given_active = Conversions.probabilityFromRate(rate_senescence_given_active);
 		Integer immune_senescence = rng.binom(getImmuneActive(), p_senescence_given_active);
 		
 		if (immunePriming > this.getImmune()) immunePriming = this.getImmune();
@@ -207,9 +205,6 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 				.build();
 	}
 	
-	private double pFromRate(double rate) {
-		if (rate < 0) rate = 0;
-		return 1-exp(-rate);
-	}
+
 	
 }

@@ -4,12 +4,13 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
-import io.github.ai4ci.config.ExposureModel;
-import io.github.ai4ci.config.ExposureModel.BiPhasicLogistic;
+import io.github.ai4ci.abm.inhost.ExposureModel;
+import io.github.ai4ci.abm.inhost.InHostModelState;
+import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState;
+import io.github.ai4ci.abm.inhost.ExposureModel.BiPhasicLogistic;
+import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.PhenomenologicalModel;
 
 class TestPhenomenologicalModel {
 
@@ -46,7 +47,7 @@ class TestPhenomenologicalModel {
 	void testViralLoad() {
 		Sampler rng = Sampler.getSampler();
 		PhenomenologicalModel tmp = (PhenomenologicalModel) config.getOutbreak().getExecutionConfiguration().getInHostConfiguration();
-		InHostPhenomenologicalState state2 = (InHostPhenomenologicalState) InHostModelState.test(tmp, rng);
+		InHostPhenomenologicalState state2 = (InHostPhenomenologicalState) InHostModelState.test(tmp, config.getOutbreak().getExecutionConfiguration(), rng);
 		
 		for (int i =0; i<=10; i++ ) {
 			System.out.println(state2.toString());

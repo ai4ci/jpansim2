@@ -1,4 +1,4 @@
-package io.github.ai4ci.config;
+package io.github.ai4ci.abm.inhost;
 
 import static java.lang.Math.exp;
 import static java.lang.Math.log;

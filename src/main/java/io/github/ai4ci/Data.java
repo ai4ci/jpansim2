@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 // import com.j256.simplecsv.common.CsvColumn;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize.Typing;
 
+import io.github.ai4ci.config.DemographicAdjustment;
+
 public @interface Data {
 
 	@Target({ElementType.PACKAGE, ElementType.TYPE})
@@ -29,7 +31,7 @@ public @interface Data {
 	    toBuilder = "toBuilder",
 	    strictBuilder = false,
 	    underrideHashCode = "hash",
-	    // strictModifiable = false,
+	    strictModifiable = false,
 	    passAnnotations = {
 	    		// CsvColumn.class
 	    		Export.class
@@ -57,7 +59,7 @@ public @interface Data {
 	    with="with*",
 	    toBuilder = "toBuilder",
 	    strictBuilder = false,
-	    // strictModifiable = false,
+	    strictModifiable = false,
 	    passAnnotations = {
 	    		// CsvColumn.class
 	    },
@@ -79,9 +81,9 @@ public @interface Data {
 	@Value.Style(
 	    get = {"is*", "get*"}, // Detect 'get' and 'is' prefixes in accessor methods
 	    init = "set*", // Builder initialization methods will have 'set' prefix
-	    deepImmutablesDetection = true,
+	    deepImmutablesDetection = false,
 	    passAnnotations = {
-	    		// CsvColumn.class
+	    		DemographicAdjustment.Scale.class
 	    },
 	    typeAbstract = "_Partial*",
 	    typeImmutable = "Partial*",
@@ -92,7 +94,8 @@ public @interface Data {
 	    // builder = "new" //, // construct builder using 'new' instead of factory method
 	    // allows MapStruct to map immutable instance to builder.
 	    
-	    ) 
+	    )
+	@SuppressWarnings("immutables")
 	public static @interface Partial {}
 
 	

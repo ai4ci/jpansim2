@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Exposure;
-import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.util.ThreadSafeArray;
 
 public class PersonStateContacts implements Serializable {

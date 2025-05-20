@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.OptionalLong;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExecutionConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.util.PauseableThread;
 
 /**
@@ -71,16 +70,18 @@ public class SimulationFactory extends PauseableThread {
 		this.builder = new Iterator<Outbreak>() {
 
 			ExecutionBuilder setupBuilder;
-			int setup = 0;
-			int exec = 0;
 			
+			int count = 0;
 			@Override
 			public boolean hasNext() {
-				return setup < setups.size() && exec < executions.size();
+				return count < setups.size() * executions.size();
 			}
 
 			@Override
 			public Outbreak next() {
+				
+				int setup = count / executions.size();
+				int exec = count % executions.size();
 				
 				if (!hasNext()) throw new NoSuchElementException("Iterator exhausted");
 				
@@ -105,14 +106,7 @@ public class SimulationFactory extends PauseableThread {
 				builder2.initialiseStatus(exCfg);
 				SimulationFactory.this.activity = "model ready: "+exCfg.getName()+":"+exCfg.getReplicate();
 				
-				if (exec >= executions.size()) {
-					setup += 1;
-					exec = 0;
-				} else {
-					exec += 1;
-				}
-				
-				
+				count += 1;
 				
 				return builder2.build();
 			}
@@ -200,13 +194,14 @@ public class SimulationFactory extends PauseableThread {
 	/**
 	 * Increase simulation queue if loads of memory and risk simulation waiting
 	 * for factory.
-	 * TODO: The cache being part of the factory is a problem because we can't
-	 * parallelise the factory. Increasing the cache size probably wont improve 
+	 * 
+	 * <br> TODO: Parallelise the simulation factory. 
+	 * The cache being part of the factory is a problem because we can't
+	 * parallelise it. Increasing the cache size probably wont improve 
 	 * performance if the factory is the limiting factor in the overall speed.
-	 * @param cache
 	 */
-	public void increaseCacheSize(int cache) {
-		this.cacheSize.set(cache);
+	public void increaseCacheSize(int items) {
+		this.cacheSize.set(items);
 	}
 	
 	/**

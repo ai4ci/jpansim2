@@ -16,13 +16,6 @@ import io.github.ai4ci.util.Sampler;
  */
 public interface State<BUILDER,HISTORY,STATE,X extends State<BUILDER,HISTORY,STATE,X>> extends Serializable {
 	
-	/**
-	 * 
-	 * @param person
-	 * @param context
-	 * @param rng
-	 * @return
-	 */
 	default boolean filter(STATE person, StateMachineContext context, Sampler rng) {
 		return true;
 	}
@@ -36,7 +29,6 @@ public interface State<BUILDER,HISTORY,STATE,X extends State<BUILDER,HISTORY,STA
 	 * 
 	 * @param builder the next PersonHistory builder (usually)
 	 * @param current the current PersonHistory
-	 * @param context
 	 * @param rng the sampler
 	 */
 	void updateHistory(HISTORY builder, STATE current, StateMachineContext context, Sampler rng); 
@@ -57,10 +49,6 @@ public interface State<BUILDER,HISTORY,STATE,X extends State<BUILDER,HISTORY,STA
 	 * stack when behaviour is forced and allow it to revert after
 	 * 
 	 * @param builder the next PersonState builder.
-	 * @param current
-	 * @param context
-	 * @param rng
-	 * @return
 	 */
 	X nextState(BUILDER builder, STATE current, StateMachineContext context, Sampler rng);
 

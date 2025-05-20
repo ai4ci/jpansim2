@@ -49,7 +49,6 @@ public class ModelUpdate {
 					(builder, person, rng) -> {
 						//PersonBaseline baseline = person.getBaseline();
 						//PersonState current = person.getCurrentState();
-						//TODO: a time dependent immunisation schedule;
 						builder.setImmunisationDose(0D);
 				})
 		),

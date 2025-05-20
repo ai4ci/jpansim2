@@ -3,8 +3,8 @@ package io.github.ai4ci.abm.behaviour;
 import static io.github.ai4ci.abm.mechanics.StateUtils.complianceFatigue;
 import static io.github.ai4ci.abm.mechanics.StateUtils.decreaseSociabilityIfCompliant;
 import static io.github.ai4ci.abm.mechanics.StateUtils.doPCR;
-import static io.github.ai4ci.abm.mechanics.StateUtils.isHighRiskOfInfection;
-import static io.github.ai4ci.abm.mechanics.StateUtils.isSymptomatic;
+import static io.github.ai4ci.abm.mechanics.StateUtils.isHighRiskOfInfectionAndCompliant;
+import static io.github.ai4ci.abm.mechanics.StateUtils.isSymptomaticAndCompliant;
 import static io.github.ai4ci.abm.mechanics.StateUtils.isTestedToday;
 import static io.github.ai4ci.abm.mechanics.StateUtils.isTestingAllowed;
 import static io.github.ai4ci.abm.mechanics.StateUtils.resetBehaviour;
@@ -17,6 +17,7 @@ import io.github.ai4ci.abm.TestResult.Result;
 import io.github.ai4ci.abm.mechanics.StateMachineContext;
 import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
 import io.github.ai4ci.abm.mechanics.StateUtils.DefaultNoTesting;
+import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.Sampler;
 
 public enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
@@ -31,7 +32,9 @@ public enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
 		public void updateHistory(ImmutablePersonHistory.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
 			
-			if (isSymptomatic(person, 2) || isHighRiskOfInfection(person, 0.25)  ) {
+			if (isSymptomaticAndCompliant(person, 2) || isHighRiskOfInfectionAndCompliant(person, 
+						ModelNav.modelParam(person).getSmartAppRiskTrigger()
+					)  ) {
 				if (isTestingAllowed(person)) doPCR(builder,person);
 			}
 			
@@ -69,7 +72,7 @@ public enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
 				return NonCompliant.DEFAULT;
 			}
 			if (!person.isSymptomatic()) {
-				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod())) {
+				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod(),0.95)) {
 					resetBehaviour(builder,person);
 					return REACTIVE_PCR;
 				}

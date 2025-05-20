@@ -8,25 +8,26 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.exc.StreamWriteException;
-import com.fasterxml.jackson.databind.DatabindException;
-
-import io.github.ai4ci.config.BatchConfiguration;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.config.SetupConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 
 public class SimulationMonitor implements Runnable {
 
 	private static final long WAIT_FOR_MEMORY = 5*60*1000;
-
+	// reserve at least 512Mb for system
+	private static final long RESERVE = 512*1024*1024;
+	
+	static SystemInfo si = new SystemInfo();
+	static HardwareAbstractionLayer hal = si.getHardware();
 	static Logger log = LoggerFactory.getLogger(SimulationMonitor.class);
 	
 	SimulationFactory factory;
 	StateExporter exporter;
 	SimulationExecutor executor;
+	
 	int duration;
 	
 	Object trigger = new Object();
@@ -40,21 +41,30 @@ public class SimulationMonitor implements Runnable {
 		duration = config.getBatchConfig().getSimulationDuration();
 	}
 	
-	
-	static long freeMem() {
-		SystemInfo si = new SystemInfo();
-		HardwareAbstractionLayer hal = si.getHardware();
+	public static double usedOfAvailable(long sysReserved) {
 		
-		return hal.getMemory().getAvailable();
-		
-//		Runtime runtime = Runtime.getRuntime();
-//		long allocatedMemory = runtime.totalMemory() - runtime.freeMemory();
-//		// allocatedMemory = allocatedMemory > maxMem ? maxMem : allocatedMemory;  
-//		return (runtime.maxMemory() - allocatedMemory);
+		float sysAvail = ((float) hal.getMemory().getAvailable()-sysReserved)/(1024*1024*1024);
+		float freeHeap = ((float) Runtime.getRuntime().freeMemory())/(1024*1024*1024);
+		float maxHeap = ((float) Runtime.getRuntime().maxMemory())/(1024*1024*1024);
+		float currentHeap = ((float) Runtime.getRuntime().totalMemory())/(1024*1024*1024);
+		float allocatable = Math.min(maxHeap-currentHeap, sysAvail);
+		float allocated = currentHeap - freeHeap;
+		return allocated/(currentHeap+allocatable);
 	}
 	
-	static String freeMemG() {
-		return String.format("%1.2f Gb", ((float) freeMem())/(1024*1024*1024));
+	public static String freeMemG() {
+		float sys = ((float) hal.getMemory().getAvailable())/(1024*1024*1024);
+		float freeHeap = ((float) Runtime.getRuntime().freeMemory())/(1024*1024*1024);
+		float maxHeap = ((float) Runtime.getRuntime().maxMemory())/(1024*1024*1024);
+		float currentHeap = ((float) Runtime.getRuntime().totalMemory())/(1024*1024*1024);
+		float allocatable = Math.min(maxHeap-currentHeap, sys);
+		float allocated = currentHeap - freeHeap;
+		return String.format("%1.2f Gb remaining; %1.2f Gb used (%1.2f%%) [%1.2f Gb system]", 
+				allocatable+freeHeap,
+				allocated,
+				allocated/(currentHeap+allocatable)*100,
+				sys
+		);
 	}
 	
 	private boolean isRunning(SimulationExecutor ex) {
@@ -65,9 +75,8 @@ public class SimulationMonitor implements Runnable {
 		SimulationExecutor executor = null;
 		try {
 			
-			SystemInfo si = new SystemInfo();
-			HardwareAbstractionLayer hal = si.getHardware();
-			long maxMem = hal.getMemory().getTotal();
+			double freeSysGb = hal.getMemory().getAvailable()/(1024*1024*1024);
+			
 			long abortTime = Long.MAX_VALUE;
 			
 			while (!factory.finished() || isRunning(executor)) {
@@ -75,8 +84,7 @@ public class SimulationMonitor implements Runnable {
 				int checkAgainInMs = 1000;
 				// long memLimit = factory.getSimulationSize().orElse(0);
 				
-				if (freeMem() < maxMem * 0.20) {
-					System.gc();
+				if (usedOfAvailable(RESERVE) > 0.80 || freeSysGb < 1) {
 					factory.pause();
 					log.warn("Low memory. Throttling factory production. Memory: "+freeMemG());
 				} else {
@@ -84,7 +92,8 @@ public class SimulationMonitor implements Runnable {
 					factory.unpause();
 				}
 				
-				if (freeMem() < maxMem * 0.10) {
+				if (usedOfAvailable(RESERVE) > 0.90 || freeSysGb < 0.5) {
+					System.gc();
 					abortTime = Math.min(abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY);
 					if (executor != null) {
 						executor.pause();
@@ -93,6 +102,13 @@ public class SimulationMonitor implements Runnable {
 						log.warn("Very low memory. Delaying simulation execution. Memory: "+freeMemG());
 					}
 					log.warn("Aborting in "+(abortTime-System.currentTimeMillis())/1000+" secs unless memory improves");
+					log.info("Exporters: "+exporter.report());
+					
+					if (exporter.allWaiting()) {
+						log.warn("Exporters all empty. Trying to clear simulation despite very low memory.");
+						if (executor != null) { executor.unpause(); }
+					}
+					
 					checkAgainInMs = 1000;
 					
 				} else {
@@ -119,7 +135,7 @@ public class SimulationMonitor implements Runnable {
 					}
 				}
 				
-				if (freeMem() < maxMem * 0.05) {
+				if (usedOfAvailable(RESERVE) > 0.95 || freeSysGb < 0.25) {
 					
 					if (
 							exporter.allWaiting() &&
@@ -176,6 +192,7 @@ public class SimulationMonitor implements Runnable {
 		log.info("Build complete: "+factory.status());
 		synchronized(this.trigger) {this.trigger.notifyAll();}
 	};
+	
 	
 }
 

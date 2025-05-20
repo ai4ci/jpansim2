@@ -1,14 +1,24 @@
 package io.github.ai4ci.output;
 
+import java.util.stream.Stream;
+
 import org.immutables.value.Value;
 
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
+import io.github.ai4ci.abm.Outbreak;
 
 @Value.Immutable
-@Export(stage = Stage.UPDATE, value = "summary.csv", size = 64)
+@Export(stage = Stage.UPDATE, value = "summary.csv", size = 64, selector = OutbreakCSV.Selector.class)
 public interface OutbreakCSV extends CommonCSV.State {
 
+	static class Selector implements Export.Selector {
+		@Override
+		public Stream<OutbreakCSV> apply(Outbreak o) {
+			return Stream.of(CSVMapper.INSTANCE.toCSV(o.getCurrentState()));
+		}
+	}
+	
 	long getIncidence();
 	long getCumulativeInfections(); 
 	long getCumulativeDeaths();
@@ -18,8 +28,8 @@ public interface OutbreakCSV extends CommonCSV.State {
 	double getAverageMobility();
 	double getAverageViralLoad();
 	double getAverageCompliance();
-	long getTestPositives();
-	long getTestNegatives();
+	long getTestPositivesByResultDate();
+	long getTestNegativesByResultDate();
 	double getPresumedTestPositivePrevalence();
 	double getRtEffective();
 	String getPolicy();

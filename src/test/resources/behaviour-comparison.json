@@ -11,8 +11,8 @@
     "default" : {
       "@type" : "watts-strogatz",
       "name" : "setup",
-      "initialImports" : 5,
       "networkSize" : 10000,
+      "initialImports" : 5,
       "networkRandomness" : 0.15,
       "networkConnectedness" : 100
     }
@@ -37,36 +37,6 @@
         "x" : [ 0.0, 10.0, 25.0, 40.0, 60.0, 70.0 ],
         "y" : [ 2.0, 0.5, 1.5, 0.5, 1.0, 0.5 ],
         "link" : "LOG"
-      },
-      "oddsMobilityFromAge" : {
-        "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 75.0 ],
-        "y" : [ 2.0, 1.0, 1.5, 1.25, 0.8, 1.2 ],
-        "link" : "LOG"
-      },
-      "oddsTransmissionFromAge" : {
-        "value" : 1.0
-      },
-      "oddsComplianceFromAge" : {
-        "value" : 1.0
-      },
-      "oddsAppUseFromAge" : {
-        "value" : 1.0
-      },
-      "oddsMaximumSocialContactReductionFromAge" : {
-        "value" : 1.0
-      },
-      "scaleIncubationPeriodFromAge" : {
-        "value" : 1.0
-      },
-      "scaleRecoveryPeriodFromAge" : {
-        "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 65.0 ],
-        "y" : [ 1.0, 0.5, 0.5, 0.75, 1.0, 2.0 ],
-        "link" : "LOG"
-      },
-      "oddsSevereOutcomeFromAge" : {
-        "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 65.0, 85.0 ],
-        "y" : [ 1.0, 0.5, 0.5, 0.75, 1.0, 2.0, 4.0 ],
-        "link" : "LOG"
       }
     }
   } ],
@@ -79,20 +49,21 @@
     "contactProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.5,
-      "dispersion" : 0.05
+      "dispersion" : 0.25
     },
     "contactDetectedProbability" : 0.9,
     "complianceProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.99,
-      "dispersion" : 0.001
+      "dispersion" : 0.1
     },
     "appUseProbability" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.97,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "inHostConfiguration" : {
+      "@type" : "phenomenological",
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
         "type" : "LOG_NORM",
@@ -146,12 +117,12 @@
     "symptomSensitivity" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.5,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "symptomSpecificity" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.95,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "initialEstimateInfectionDuration" : 10.0,
     "initialEstimateSymptomSensitivity" : 0.5,
@@ -159,11 +130,12 @@
     "maximumSocialContactReduction" : {
       "type" : "UNIMODAL_BETA",
       "central" : 0.2,
-      "dispersion" : 0.01
+      "dispersion" : 0.1
     },
     "defaultBehaviourModelName" : "ReactiveTestAndIsolate",
     "defaultPolicyModelName" : "NoControl",
     "importationProbability" : 0.0,
+    "demographicAdjustment" : { },
     "rO" : 2.5
   },
   "facets" : [ {

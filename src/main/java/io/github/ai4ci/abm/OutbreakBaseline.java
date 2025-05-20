@@ -58,5 +58,9 @@ public interface OutbreakBaseline extends Serializable {
 	
 	PolicyState getDefaultPolicyState();
 	
+	int getInfectiveDuration();
+	int getSymptomDuration();
+	
+	
 	
 }

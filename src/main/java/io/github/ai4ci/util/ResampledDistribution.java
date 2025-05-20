@@ -2,13 +2,10 @@ package io.github.ai4ci.util;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.stream.IntStream;
-
 import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
-import io.github.ai4ci.util.ImmutableEmpiricalDistribution.Builder;
 
 @Value.Immutable
 public interface ResampledDistribution extends Abstraction.Distribution,Serializable {
@@ -46,7 +43,7 @@ public interface ResampledDistribution extends Abstraction.Distribution,Serializ
 				);
 	}
 	
-	default double pLessThan(double x) {
+	default double getCumulative(double x) {
 		return ((double) Arrays.stream(getSamples()).filter(d -> d<x).count())/PRECISION;
 	}
 	

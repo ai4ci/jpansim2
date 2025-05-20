@@ -3,7 +3,6 @@ package io.github.ai4ci.util;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.DoubleUnaryOperator;
 
@@ -19,14 +18,15 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @Value.Immutable
 @JsonSerialize(as = ImmutableEmpiricalFunction.class)
 @JsonDeserialize(as = ImmutableEmpiricalFunction.class)
-public interface EmpiricalFunction extends Serializable, Abstraction.Interpolator {
+public interface EmpiricalFunction extends Serializable, Abstraction.SimpleFunction {
  
 	public static enum Link {
 		NONE (d->d, d->d), 
 		LOG (d -> Math.log(d), d -> Math.exp(d)), 
 		LOGIT (d -> Conversions.logit(d), d -> Conversions.expit(d));
 		
-		public DoubleUnaryOperator fn; public DoubleUnaryOperator invFn;
+		public DoubleUnaryOperator fn; 
+		public DoubleUnaryOperator invFn;
 		Link( DoubleUnaryOperator fn, DoubleUnaryOperator invFn) {
 			this.fn = fn;
 			this.invFn = invFn;
@@ -74,7 +74,7 @@ public interface EmpiricalFunction extends Serializable, Abstraction.Interpolato
 	}
 	
 	
-	default double interpolate(double x) {
+	default double value(double x) {
 		if (x<getMin()) return getDataPoints().get(getMin());
 		if (x>getMax()) return getDataPoints().get(getMax());
 		return getLink().invFn.applyAsDouble(getInterpolator().interpolate(x));
@@ -83,7 +83,7 @@ public interface EmpiricalFunction extends Serializable, Abstraction.Interpolato
 	default EmpiricalFunction normalise(EmpiricalDistribution input) {
 		RombergIntegrator tmp = new RombergIntegrator(0.0001, 0.0001, RombergIntegrator.DEFAULT_MIN_ITERATIONS_COUNT  ,RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT);
 		double total = tmp.integrate(100000, 
-				x -> this.interpolate(x) * input.getDensity(x), 
+				x -> this.value(x) * input.getDensity(x), 
 				input.getMinimum(), input.getMaximum());
 		
 		return ImmutableEmpiricalFunction.builder()

@@ -1,4 +1,4 @@
-package io.github.ai4ci.config;
+package io.github.ai4ci.util;
 
 import java.io.Serializable;
 
@@ -12,14 +12,18 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @Value.Immutable
 @JsonSerialize(as = ImmutableFixedValueFunction.class)
 @JsonDeserialize(as = ImmutableFixedValueFunction.class)
-public interface FixedValueFunction extends Serializable, Abstraction.Interpolator {
+public interface FixedValueFunction extends Serializable, Abstraction.SimpleFunction {
 
 	double getValue();
-	default double interpolate(double x) {
+	default double value(double x) {
 		return getValue();
 	}
 	
 	public static FixedValueFunction ofOne() {
 		return ImmutableFixedValueFunction.builder().setValue(1).build();
+	}
+	
+	public static FixedValueFunction of(double value) {
+		return ImmutableFixedValueFunction.builder().setValue(value).build();
 	}
 }

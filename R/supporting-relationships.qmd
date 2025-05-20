@@ -470,3 +470,74 @@ ggplot(hilbert(m=matrix(1), n=6, r=2), aes(x, y)) + geom_path()+ opt
 # ggplot(hilbert(m=matrix(-.0001), n=4, r=25), aes(x, y)) + geom_polygon()+ coord_polar()+opt
 
 ```
+
+# Scaling an Odds ratio by a probability
+
+(Deprecated: this was avoided by not scaling the odds)
+
+We have the probability of contact defined as a baseline probability multiplied
+by a mobility odds ratio. Scaling takes the form of the expit of the 
+logit of probability plus by the log odds:
+
+```{r}
+baseline_p_contact = 0.6
+mobilityOR = seq(0.5,1.50,0.1)
+
+# modified_p_contact = 
+expit(logit(baseline_p_contact)+log(mobilityOR))
+```
+
+The problem is that sometimes a low probability of compliance to instruction 
+means that the mobility odds (actually the limit of mobility odds) has to be 
+modified, to reflect the poor compliance. In this case the mobility odds ratio 
+will increase typically from a level less than 1 towards 1. In some situations
+mobility OR can be > 1 though. Poor compliance in this situation could mean extra
+mobility. A compliance level of 0.9 will result in less of an upwards adjustment 
+to the mobility odds than a compliance of 0.1. A compliance of zero doesn't make 
+specific sense. A compliance of 1 means that the mobility odd shouldn't change.
+
+
+
+$$
+logit(P_{eff}) = logit(P_{base}) + log(O_{mob})
+$$
+
+The probability of contact will be change by compliance. It will be closer to 
+one.
+
+$$
+P_{adj} = 1-(1-P_{eff})(1-P_{compliance}) \\
+1-P_{adj} = (1-P_{eff})(1-P_{compliance}) \\
+
+logit(P_{adj}) = log(\frac{
+  1-(1-P_{eff})(1-P_{compliance}) }{
+  (1-P_{eff})(1-P_{compliance})
+}) \\
+
+logit(P_{adj}) = log(\frac{
+  1-(1-P_{eff})(1-P_{compliance}) }{
+  (1-P_{eff})(1-P_{compliance})
+}) \\
+
+logit(P_{adj}) = log(\frac{
+  1-(1-P_{eff})(1-P_{compliance}) }{
+  (1-P_{eff})(1-P_{compliance})
+}) \\
+$$
+
+$$
+1 - P_{eff} = \frac{1-P_{adj}}{1-P_{compliance}}\\
+P_{eff} = 1-\frac{1-P_{adj}}{1-P_{compliance}}\\
+
+logit(P_{eff}) = log(\frac{1-\frac{1-P_{adj}}{1-P_{compliance}}}{\frac{1-P_{adj}}{1-P_{compliance}}})\\
+
+logit(P_{eff}) = log(\frac{1-\frac{1-P_{adj}}{1-P_{compliance}}}{\frac{1-P_{adj}}{1-P_{compliance}}})\\
+
+log(\frac{P_{base}}{1-P_{base}})+log(O_{mob})
+$$
+
+
+Mobility is an odds ratio of contact. If the patient is non compliant to 
+guidance than the probability of contact will increase compare to if they are
+compliant. Odds contact is probability contacted divided by probability not 
+contacted. 

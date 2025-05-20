@@ -12,7 +12,7 @@ import io.github.ai4ci.abm.Calibration;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.SocialRelationship;
-import io.github.ai4ci.config.WattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.util.Sampler;
 
 public interface DefaultNetworkSetup {
@@ -21,7 +21,7 @@ public interface DefaultNetworkSetup {
 	
 	
 	@SuppressWarnings("unchecked")
-	default void setupOutbreak(ModifiableOutbreak outbreak, WattsStrogatzConfiguration setupConfig, Sampler sampler) {
+	default ModifiableOutbreak setupOutbreak(ModifiableOutbreak outbreak, WattsStrogatzConfiguration setupConfig, Sampler sampler) {
 		
 		SimpleWeightedGraph<Person, SocialRelationship> socialNetwork = 
 				new SimpleWeightedGraph<Person, SocialRelationship>(
@@ -52,6 +52,8 @@ public interface DefaultNetworkSetup {
 		// This sets the weight of the network. This is accessible as 
 		// the "connectednessQuantile" of the relationship.
 		socialNetwork.edgeSet().forEach(r -> socialNetwork.setEdgeWeight(r, sampler.uniform()));
+		
+		return outbreak;
 	}
 	
 	

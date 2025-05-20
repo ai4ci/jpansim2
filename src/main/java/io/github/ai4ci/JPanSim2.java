@@ -5,27 +5,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.stream.Collectors;
-
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
-
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.config.Exporters;
-import io.github.ai4ci.config.ImmutableBatchConfiguration;
 import io.github.ai4ci.flow.SimulationMonitor;
 
 public class JPanSim2 {
 
 	/**
 	 * The main entry point for a command line or SLURM batch job.
-	 * 
-	 * @param args
 	 * @throws InterruptedException 
 	 * @throws IOException 
 	 */

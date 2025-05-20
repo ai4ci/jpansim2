@@ -103,6 +103,11 @@ public class SimpleAsyncFileWriter implements Queue {
 	public void join() throws InterruptedException {
 		writerThread.join();
 	}
+
+	@Override
+	public String report() {
+		return isWaiting() ? "waiting" : "writing";
+	}
 	
 //	public void purge() {
 //		synchronized(queue) {

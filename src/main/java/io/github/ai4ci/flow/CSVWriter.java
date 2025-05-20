@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.stream.Stream;
 
-
-
 import io.github.ai4ci.util.CSVUtil;
 
 public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
@@ -32,6 +30,7 @@ public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 		public boolean isWaiting();
 		//public void purge();
 		public void join() throws InterruptedException;
+		public String report();
 	}
 	
 	public static <X extends Writeable> CSVWriter<X> of(Class<X> type, File file, int size) throws IOException {
@@ -81,6 +80,10 @@ public class CSVWriter<X extends CSVWriter.Writeable> implements Closeable {
 
 	public void join() throws InterruptedException {
 		queueWriter.join();
+	}
+
+	public String report() {
+		return queueWriter.report();
 	}
 	
 //	public void purge() {

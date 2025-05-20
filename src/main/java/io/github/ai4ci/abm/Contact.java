@@ -66,8 +66,9 @@ public interface Contact extends Serializable {
 			PersonState one = network.getEdgeSource(r).getCurrentState();
 			PersonState two = network.getEdgeTarget(r).getCurrentState();
 			
-			// TODO: connectedness quantile is a proxy for the context of a contact
-			// If we wanted to control this a different set of fetaures of the 
+			// TODO: contacts stratified by venue such as work or school  
+			// connectedness quantile is a proxy for the context of a contact
+			// If we wanted to control this a different set of features of the 
 			// relationship could be used. At the moment this overloads mobility
 			// with type of contact, but in reality WORK contacts may be less
 			// Significant that home contacts. This is where we would implement
@@ -84,16 +85,6 @@ public interface Contact extends Serializable {
 				Integer oneref = one.getEntity().getId();
 				Integer tworef = two.getEntity().getId();
 				
-				//TODO: Confusion here. The contact detection probability
-				// and app use probability are used inconsistently.
-				// It feels like the contact detected probability is a
-				// system wide parameter (not here as a individual level parameter)
-				// and should describe how technically effective the app is
-				// and then there is individual probability of app use, which 
-				// covers phone actually switched on, app installed, and working.
-				// Then there is a third parameter probability compliance, but this
-				// describes compliance to self isolation more than use of an app...
-				
 				double jointDetect = 
 						one.getAdjustedAppUseProbability()*
 						two.getAdjustedAppUseProbability()*
@@ -105,7 +96,7 @@ public interface Contact extends Serializable {
 					.setDetected(detected)
 					.setParticipant1Id(oneref)
 					.setParticipant2Id(tworef)
-					// TODO: need to figure this out
+					// TODO: Proximity and duration of a contact aren't handled
 					// .setProximityDuration(contactProbability)
 					.build();
 				

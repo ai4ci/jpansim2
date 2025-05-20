@@ -13,7 +13,6 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.config.NullConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
-import io.github.ai4ci.config.BatchConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 
 public class SlurmAwareLogger {

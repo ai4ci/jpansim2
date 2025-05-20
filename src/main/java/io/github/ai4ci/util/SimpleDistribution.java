@@ -52,6 +52,7 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 	double getCentral();
 	@Nullable @Value.Default default Double getDispersion() {return null;}
 	
+	
 	private static SimpleDistribution of(Type type, Double mean, Double sd) {
 		return ImmutableSimpleDistribution.builder().setType(type)
 				.setDispersion(sd).setCentral(mean).build();
@@ -115,7 +116,7 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 				.toArray();
 	}
 	
-	default double pLessThan(double x) {
+	default double getCumulative(double x) {
 		return Arrays.stream(getSamples())
 			.filter(d -> d < x )
 			.count() / PRECISION;

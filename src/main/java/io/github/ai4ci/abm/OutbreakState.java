@@ -16,18 +16,26 @@ public interface OutbreakState extends OutbreakTemporalState {
 	
 	/**
 	 * An odds ratio describing day to day changes in the transmission due
-	 * to exogenous factors such as weather, or potentially viral evolution.  
-	 * @return
+	 * to exogenous factors such as weather, or potentially viral evolution.
+	 * None of these are yet defined but {@link ModelUpdate} will be where they
+	 * are implemented and configured as a function of time similar to the way
+	 * {@link io.github.ai4ci.config.DemographicAdjustment} are handled (although that has an additional
+	 * override that I don't think we will need here).
 	 */
 	Double getTransmissibilityModifier();
+
 	/**
-	 * A probability that if two people are in contact and both using apps
-	 * How likely is it that the app will detect the contact?
-	 * @return
+	 * A probability that if two people are in contact and both using apps How
+	 * likely is it that the app will detect the contact? The contact detected
+	 * probability is a system wide parameter and describes how technically
+	 * effective the app is. Then there is individual probability of app use,
+	 * which covers phone actually switched on, app installed, and working:
+	 * {@link PersonState#getAdjustedAppUseProbability()}
 	 */
 	Double getContactDetectedProbability();
 	
 	Integer getPresumedInfectiousPeriod();
+	Integer getPresumedIncubationPeriod();
 	Double getPresumedSymptomSpecificity();
 	Double getPresumedSymptomSensitivity();
 	
@@ -57,11 +65,15 @@ public interface OutbreakState extends OutbreakTemporalState {
 		return this.getIncidence() + ModelNav.history(this).map(h -> h.getCumulativeInfections()).orElse(0L);
 	}
 	
+	@Value.Lazy default long getMaximumIncidence() {
+		return Math.max(this.getIncidence(), ModelNav.history(this).map(h -> h.getMaximumIncidence()).orElse(0L));
+	};
+	
 	/**
-	 * Count of people with test positives in the results that become available today
-	 * @return
+	 * Count of people with test positives in the results that become available today.
+	 * this is 
 	 */
-	@Value.Lazy default long getTestPositives() {
+	@Value.Lazy default long getTestPositivesByResultDate() {
 		return ModelNav.peopleState(this)
 				.mapToInt(p ->
 					// If any of a persons results are positive today
@@ -75,9 +87,8 @@ public interface OutbreakState extends OutbreakTemporalState {
 	
 	/**
 	 * Count of people with test negatives in their results that become available today
-	 * @return
 	 */
-	@Value.Lazy default long getTestNegatives() {
+	@Value.Lazy default long getTestNegativesByResultDate() {
 		return ModelNav.peopleState(this)
 				.mapToInt(p -> {// If any of a persons results are positive today
 					if (p.getResults().isEmpty()) return 0;
@@ -95,6 +106,14 @@ public interface OutbreakState extends OutbreakTemporalState {
 				.filter(p -> p.isInfectious()).count();
 	}
 	
+	@Value.Lazy default Double getMaximumPrevalence() {
+		double todayPrev = ((double) this.getInfectedCount()) / 
+				(ModelNav.modelSetup(this).getNetworkSize() - 
+					this.getCumulativeDeaths());
+		
+		return Math.max(todayPrev, ModelNav.history(this).map(h -> h.getMaximumPrevalence()).orElse(0D));
+	};
+	
 	@Value.Lazy 
 	default Long getIncidence() {
 		return ModelNav.peopleCurrentHistory(this)
@@ -107,6 +126,32 @@ public interface OutbreakState extends OutbreakTemporalState {
 				.filter(p -> p.isSymptomatic()).count();
 	}
 	
+	
+	
+	
+
+	/**
+	 * Count of people newly requiring hospitalisation at any given time point. This 
+	 * would be equivalent to hospital admission incidence. 
+	 */
+	@Value.Lazy 
+	default Long getAdmissionIncidence() {
+		return ModelNav.peopleCurrentHistory(this)
+				.filter(p -> p.isIncidentHospitalisation()).count();
+	}
+	
+	@Value.Lazy default long getCumulativeAdmissions() {
+		return this.getAdmissionIncidence() + ModelNav.history(this).map(h -> h.getCumulativeAdmissions()).orElse(0L);
+	}
+	
+	@Value.Lazy default long getMaximumHospitalBurden() {
+		return Math.max(this.getHospitalisedCount(), ModelNav.history(this).map(h -> h.getMaximumHospitalBurden()).orElse(0L));
+	};
+	
+	/**
+	 * Count of people requiring hospitalisation at any given time point. This 
+	 * would be equivalent to hospital occupancy. 
+	 */
 	@Value.Lazy 
 	default Long getHospitalisedCount() {
 		return ModelNav.peopleState(this)
@@ -131,7 +176,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Derived default double getPresumedTestPositivePrevalence() {
 		int period = this.getPresumedInfectiousPeriod();
-		long pos = ModelNav.history(this, period).mapToLong(p -> p.getTestPositives()).sum();
+		long pos = ModelNav.history(this, period).mapToLong(p -> p.getTestPositivesByResultDate()).sum();
 		// long neg = ModelNav.history(this, period).mapToLong(p -> p.getTestNegatives()).sum();
 		// return ((double) pos)/((double) pos+neg);
 		return ((double) pos)/this.getEntity().getSetupConfiguration().getNetworkSize();
@@ -167,6 +212,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 		
 		return denominator == 0 ? Double.NaN : ((double) numerator)/denominator;
 	}
+	
 	
 //	default Double getRtEffective() {
 //		// people who are newly exposed today
