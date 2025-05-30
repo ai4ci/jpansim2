@@ -59,6 +59,10 @@ public class StateExporter implements Closeable {
 		Class<X> type;
 		String filename;
 		int size;
+		
+		// TODO: Abstract CSVWriter and implement DuckDBWriter using appendable interface
+		// https://duckdb.org/docs/stable/clients/java.html#appender
+		// This will need to be configurable in the Export annotation.
 		CSVWriter<X> writer;
 		Function<Outbreak, Stream<? extends Writeable>> selector;
 		

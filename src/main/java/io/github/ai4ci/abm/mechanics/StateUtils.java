@@ -11,6 +11,7 @@ import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult;
+import io.github.ai4ci.abm.TestResult.Result;
 import io.github.ai4ci.abm.TestResult.Type;
 import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
 import io.github.ai4ci.config.ExecutionConfiguration;
@@ -178,19 +179,21 @@ public class StateUtils {
 	/**
 	 * do a PCR test.
 	 */
-	public static void doPCR(ImmutablePersonHistory.Builder builder, 
+	public static TestResult doPCR(ImmutablePersonHistory.Builder builder, 
 			PersonState person) {
 		TestResult test = TestResult.resultFrom(person, Type.PCR).get();
 		builder.addTodaysTests(test);
+		return test;
 	}
 	
 	/**
 	 * do a LFT test.
 	 */
-	public static void doLFT(ImmutablePersonHistory.Builder builder, 
+	public static TestResult doLFT(ImmutablePersonHistory.Builder builder, 
 			PersonState person) {
 		TestResult test = TestResult.resultFrom(person, Type.LFT).get();
 		builder.addTodaysTests(test);
+		return test;
 	}
 	
 	/**
@@ -202,7 +205,7 @@ public class StateUtils {
 	 */
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
 			PersonState person, int days) {
-		if (isSymptomaticAndCompliant(person, days) && isTestingAllowed(person) ) {
+		if (isSymptomaticAndCompliant(person, days) && isPCRTestingAllowed(person) ) {
 			doPCR(builder,person);
 		}
 	}
@@ -212,7 +215,8 @@ public class StateUtils {
 	}
 	
 	public static boolean isHighRiskOfInfectionAndCompliant(PersonState person, double cutoff) {
-		return person.getProbabilityInfectiousToday() > cutoff && person.isCompliant(); 
+		double pInf = person.getProbabilityInfectiousToday();
+		return  pInf > cutoff && person.isCompliant();
 	}
 	
 	/**
@@ -221,17 +225,39 @@ public class StateUtils {
 	 * whether they need a test and they have recently has one this will stop
 	 * them having another one.
 	 */
-	public static boolean isTestingAllowed(PersonState person) {
+	public static boolean isPCRTestingAllowed(PersonState person) {
 		return !person.isRecentlyTested(Type.PCR) && person.isCompliant();
 	}
 	
 	/**
-	 * Only for use in nextState methods. Looks to see if a test was conducted
+	 * The person is compliant and they have not had a recent LFT test (within 
+	 * the last 2 days. If there is some question as to
+	 * whether they need a test and they have recently has one this will stop
+	 * them having another one.
+	 */
+	public static boolean isLFTTestingAllowed(PersonState person) {
+		return !person.isRecentlyTested(Type.LFT, 2) && person.isCompliant();
+	}
+	
+	/**
+	 * Only for use in nextState behaviour methods. Looks to see if a test was 
+	 * conducted on this day. 
 	 */
 	public static boolean isTestedToday(PersonState person) {
 		return ModelNav.history(person)
 				.map(h -> !h.getTodaysTests().isEmpty())
 				.orElse(Boolean.FALSE);
+	}
+	
+	/**
+	 * Only for use in nextState behaviour methods. Looks to see if a test was 
+	 * conducted on this day and the result is positive. This will generally
+	 * only be the case for LFTs 
+	 */
+	public static boolean isPositiveTestToday(PersonState person) {
+		return ModelNav.history(person).stream()
+				.flatMap(h -> h.getTodaysTests().stream())
+				.anyMatch(tr -> tr.resultOnDay(person.getTime()).equals(Result.POSITIVE));
 	}
 	
 	/**

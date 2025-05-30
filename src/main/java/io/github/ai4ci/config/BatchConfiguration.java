@@ -44,7 +44,7 @@ public interface BatchConfiguration {
 
 	@JsonIgnore
 	@Value.Derived default boolean isSlurmBatch() {
-		return System.getProperty("SLURM_ARRAY_TASK_ID") != null;
+		return System.getenv("SLURM_ARRAY_TASK_ID") != null;
 	};
 
 	/**
@@ -53,7 +53,7 @@ public interface BatchConfiguration {
 	 */
 	@JsonIgnore
 	@Value.Derived default int getBatchNumber() {
-		String tmp = System.getProperty("SLURM_ARRAY_TASK_ID"); // will be set to the job array index value or null.
+		String tmp = System.getenv("SLURM_ARRAY_TASK_ID"); // will be set to the job array index value or null.
 		if (tmp != null)  return Integer.parseInt(tmp);
 		return 1;
 	}
@@ -64,7 +64,7 @@ public interface BatchConfiguration {
 	 */
 	@JsonIgnore
 	@Value.Derived default int getBatchTotal() {
-		String tmp = System.getProperty("SLURM_ARRAY_TASK_COUNT"); //will be set to the number of tasks in the job array or null.
+		String tmp = System.getenv("SLURM_ARRAY_TASK_COUNT"); //will be set to the number of tasks in the job array or null.
 		if (tmp != null) return  Integer.parseInt(tmp);
 		return 1;
 	}

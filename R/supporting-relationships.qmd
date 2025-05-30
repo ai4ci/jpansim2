@@ -229,19 +229,28 @@ $$
 
 
 ```{r}
+rbeta2 = function(
+  n, 
+  mu = 0.5,
+  disp = 0.25
+) {
 
-mu = 0.995
+  sigma = sqrt(pmin(
+    mu^2*(1-mu)/(1+mu),
+    (1-mu)^2*(mu)/(2-mu)
+  ))
+  
+  sd = disp*sigma
+  
+  # regardless of mu one of alpha or beta should be equal to 1.
+  
+  alpha = (mu*(1-mu) / sd^2 -1) * mu
+  beta = (mu*(1-mu) / sd^2 -1) * (1-mu)
+  return(rbeta(n,a,b))
+}
 
-sigma = sqrt(pmin(
-  mu^2*(1-mu)/(1+mu),
-  (1-mu)^2*(mu)/(2-mu)
-))
-
-# regardless of mu one of alpha or beta should be equal to 1.
-
-alpha = (mu*(1-mu) / sigma^2 -1) * mu
-beta = (mu*(1-mu) / sigma^2 -1) * (1-mu)
-
+mean(rbeta2(1000, 0.5, 0.25))
+sd(rbeta2(1000, 0.5, 0.25))
 ```
 
 
@@ -473,6 +482,8 @@ ggplot(hilbert(m=matrix(1), n=6, r=2), aes(x, y)) + geom_path()+ opt
 
 # Scaling an Odds ratio by a probability
 
+Suppose we have some risk as an odds ratio.
+
 (Deprecated: this was avoided by not scaling the odds)
 
 We have the probability of contact defined as a baseline probability multiplied
@@ -483,61 +494,249 @@ logit of probability plus by the log odds:
 baseline_p_contact = 0.6
 mobilityOR = seq(0.5,1.50,0.1)
 
-# modified_p_contact = 
-expit(logit(baseline_p_contact)+log(mobilityOR))
+modified_p_contact = expit(logit(baseline_p_contact)+log(mobilityOR))
+modified_p_contact
 ```
 
+We are considering the case where compliance to instruction to self-isolate is 
+variable. If fully compliant to instruction a contact will not happen
+
 The problem is that sometimes a low probability of compliance to instruction 
-means that the mobility odds (actually the limit of mobility odds) has to be 
-modified, to reflect the poor compliance. In this case the mobility odds ratio 
+means that the resulting probability of contact will be higher. We would like 
+to reflect this in the odds ratio rather than in the joint probability.
+
+The adjusted final probability of contact is $P(contact) \cup ¬(P(compliance))$
+
+contact | compliant | result
+------- | --------- | ------
+YES     | YES       | NO
+YES     | NO        | YES
+NO      | YES       | NO
+NO      | NO        | NO
+
+
+```{r}
+
+p_compliance = 0.8
+p_adj = modified_p_contact * (1-p_compliance)
+p_adj
+
+```
+
+In this case the mobility odds ratio 
 will increase typically from a level less than 1 towards 1. In some situations
 mobility OR can be > 1 though. Poor compliance in this situation could mean extra
 mobility. A compliance level of 0.9 will result in less of an upwards adjustment 
 to the mobility odds than a compliance of 0.1. A compliance of zero doesn't make 
 specific sense. A compliance of 1 means that the mobility odd shouldn't change.
 
+# Testing and risk
 
+We want to identify the risk to a contact made at a particular time after a 
+contact is made. This depends on symptoms and test results.
+
+```
+contact :                      ┌─ 4 ─── 5 ─── 6 ─── 7 ─── 8 ─── 9 
+day     : 0 ─── 1 ─── 2 ─┬─ 3 ─┴─ 4 ─── 5 ─┬─ 6 ─── 7 ─── 8 ─── 9 
+test    :                │                 └─ 6 ─── 7 ─┬─ 8 ─── 9 
+result  :                │                             └─ 8 ─── 9 
+symptoms:                └─ 3 ─── 4 ─── 5  
+┬ ┴ ├ ─ ├ └ │
+```
+
+
+
+
+
+```
+contact :                      ┌─ 4 ─── 5 ─── 6 ─── 7 ─── 8 ─── 9 
+day     : 0 ─── 1 ─── 2 ─┬─ 3 ─┴─ 4 ─── 5 ─┬─ 6 ─── 7 ─── 8 ─┬─ 9 
+symptoms:                A                 B                 C
+```
+Symptom A is relevant and known at the point of contact. 
+Symptom B is relevant because it is within the incubation period but only known
+after day 5. Symptom C is not very relevant, although the probability of being
+infectious on day 3. 
+Symptom B is less relevant than symptom A because the probability of being 
+infectious is lower?
+
+
+From a person history I can find symptoms that are relevant to that point in time
+looking forward and backwards, but this will change over time as might include
+stuff that hasn't happened yet.
+
+From a person history I can find tests that are relevant to that point in time
+looking forward and backwards.
+
+Its only worth doing if there was a contact on that day and that contact is evaluating its 
+risk. This is probable as most days there will be some contacts.
+
+So I can evaluate what todays symptoms means for people in the past or future
+but this is trivial and pre-calculation may not bring benefit.
+
+We need to know for a contact (i.e. person history) what that will be in the
+future.
+
+Maybe I need to ask the question if the risk of contacting me is evaluated today (Person state)
+what is it given the date of contact? For each individual this is an array of
+the symptoms and tests as known today. back as long as 1 infectious period, but
+that might be relevant to 2 infectious periods.
+
+There is no point storing this outside of each state as it will likely change.
+memory is not an issue. 
+
+direct evidence could be nothing if no tests or symptoms but might as well calculate
+
+there is some idea of a kernel - each test or symptom will provide evidence 
+around the sample date (before and after). so evidence or things nearby in time.
+
+indirect evidence is the contacts. A contact with high risk informs a kernel as well
+but this is directed in time, and only can influence events after the contact.
+
+
+# Contact distributions
+
+We have a weighted social network, consisting of by default a fixed number of
+social contacts (when using the Watts-Strogatz generator), however in the future
+this may be defined as a randomly distributed variable ($N$). The weights can be
+interpreted as probabilities, and the number of social contacts as a sample
+size. In the simulation contacts are selected based on Bernoulli sample using
+the randomly assigned weight as a probability ($W$), adjusted by the two
+partipants' baseline mobility ($M_1$, $M_2$) which is itself a probability (e.g.
+that the person leaves home). The baseline mobility distributions could take any
+form but for this example we show a Beta distribution. The challenge is 
+to work out what distribution of weights ($W$) is needed to give the distribution of
+contacts something that resembles reality.
 
 $$
-logit(P_{eff}) = logit(P_{base}) + log(O_{mob})
+M_1 \sim Beta(95,5) \\
+M_2 \sim Beta(95,5) \\
+N \sim Point(300) \\
+C \sim Binomial( N, W \times M_1 \times M_2) \\
 $$
 
-The probability of contact will be change by compliance. It will be closer to 
-one.
+The number of contacts $C$ is dependent on the number of social contacts ($N$)
+which sets an upper limit for the number of contacts. In the first instance we
+consider the scenario where $N$ is a point distribution and $W$ is a uniform (our
+initial modelling assumptions).
 
-$$
-P_{adj} = 1-(1-P_{eff})(1-P_{compliance}) \\
-1-P_{adj} = (1-P_{eff})(1-P_{compliance}) \\
+```{r}
+# M1 and M2 are mobility baselines.
 
-logit(P_{adj}) = log(\frac{
-  1-(1-P_{eff})(1-P_{compliance}) }{
-  (1-P_{eff})(1-P_{compliance})
-}) \\
+qkum = function(u, a, b) {
+  return((1-(1-u)^(1/b))^(1/a))
+}
 
-logit(P_{adj}) = log(\frac{
-  1-(1-P_{eff})(1-P_{compliance}) }{
-  (1-P_{eff})(1-P_{compliance})
-}) \\
+rkum = function(n, a, b) {
+  qkum(runif(n))
+}
 
-logit(P_{adj}) = log(\frac{
-  1-(1-P_{eff})(1-P_{compliance}) }{
-  (1-P_{eff})(1-P_{compliance})
-}) \\
-$$
+dkum = function(x, a, b) {
+  return(
+    a*b*(x^(a-1))*((1-x^a)^(b-1))
+  )
+}
 
-$$
-1 - P_{eff} = \frac{1-P_{adj}}{1-P_{compliance}}\\
-P_{eff} = 1-\frac{1-P_{adj}}{1-P_{compliance}}\\
-
-logit(P_{eff}) = log(\frac{1-\frac{1-P_{adj}}{1-P_{compliance}}}{\frac{1-P_{adj}}{1-P_{compliance}}})\\
-
-logit(P_{eff}) = log(\frac{1-\frac{1-P_{adj}}{1-P_{compliance}}}{\frac{1-P_{adj}}{1-P_{compliance}}})\\
-
-log(\frac{P_{base}}{1-P_{base}})+log(O_{mob})
-$$
+ggplot()+
+   geom_function(fun = ~dkum(.x, 0.02,0.4))
 
 
-Mobility is an odds ratio of contact. If the patient is non compliant to 
-guidance than the probability of contact will increase compare to if they are
-compliant. Odds contact is probability contacted divided by probability not 
-contacted. 
+ggplot(tibble(x=qkum(seq(0,1,0.0001),1,6)), aes(x=x))+
+   geom_histogram(binwidth = 0.01)
+
+
+ggplot()+
+   geom_function(fun = ~dkum(.x, 0.01,0.7))
+
+ggplot(tibble(x=qkum(seq(0,1,0.0001),0.01,0.4)), aes(x=x))+
+   geom_histogram(binwidth = 0.01)
+```
+
+```{r}
+
+max_contacts = 100
+
+pop = tibble(
+  id = 1:1000,
+  mob = #rbeta2(1000,0.5,0.25),
+   runif(1000),
+  or = rlnorm(1000,log(0.95),0.05),
+  adj = expit(logit(mob)+log(or))
+)
+
+contacts = tibble(
+  id1 = unlist(lapply(1:1000,rep,max_contacts)),
+  off = rep(1:max_contacts,1000)
+) %>% mutate(
+  id2=(id1+off) %% 1000 + 1,
+  w = #rbeta2(100000, 0.8,0.9)
+    runif(1000 * max_contacts)
+    # rkum(100000, 0.02,0.2)
+    #rbeta(100000,0.1,0.3)# exp(1-1/runif(100000))
+) %>% 
+  inner_join(pop, by=join_by(id1==id)) %>%
+  inner_join(pop, by=join_by(id2==id), suffix = c("1","2")) %>%
+  glimpse()
+
+pow = 0.75
+
+base = contacts %>%
+  filter(runif(1000 * max_contacts) < (w*mob1*mob2)) %>%
+  group_by(id1) %>%
+  count() %>%
+  ungroup() %>%
+  tidyr::complete(id1=as.integer(1:1000), fill = list(n=0))
+
+adj = contacts %>%
+  filter(runif(1000 * max_contacts) < (w*adj1*adj2)) %>%
+  group_by(id1) %>%
+  count() %>%
+  ungroup() %>%
+  tidyr::complete(id1=as.integer(1:1000), fill = list(n=0))
+
+# base = contacts %>%
+#   filter(runif(100000) < w) %>%
+#   group_by(id1) %>%
+#   count()
+# 
+# adj = contacts %>%
+#   filter(runif(100000) < (expit(logit(w)+log(or1)+log(or2)))) %>%
+#   group_by(id1) %>%
+#   count()
+
+
+ggplot(contacts, aes(x=w))+geom_density()
+
+
+
+
+# dbeta2 = function(x, mu) {
+#   sd = sqrt(pmin(
+#     mu^2*(1-mu)/(1+mu),
+#     (1-mu)^2*(mu)/(2-mu)
+#   ))
+#   a = (mu*(1-mu) / sd^2 -1) * mu
+#   b = (mu*(1-mu) / sd^2 -1) * (1-mu)
+#   return(dbeta(x,a,b))
+# }
+# 
+# ggplot()+
+#   lapply(seq(0.01,0.1,0.01), function(a) geom_function(fun = ~dbeta2(.x, a)))
+# 
+# 
+# ggplot()+
+#   geom_function(fun = ~dbeta(.x, 0.1,0.6))
+# 
+# ggplot()+
+#   lapply(2:10, function(b) geom_function(fun = ~dbeta(.x, 0.2 , 0.2*b)))
+
+
+
+ggplot()+
+  geom_point(data=base,stat = "count",mapping = aes(x=n, y=after_stat(count)))+
+  geom_point(data=adj,stat = "count",mapping = aes(x=n, y=after_stat(count)),colour="red")+
+  scale_x_continuous(trans="log1p",limits = c(0,NA))+
+  scale_y_continuous(trans="log1p")
+```
+
+

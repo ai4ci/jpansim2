@@ -13,12 +13,12 @@ import io.github.ai4ci.util.Sampler;
 
 public interface InHostModelState<CFG extends InHostConfiguration> extends Serializable {
 
-	CFG getConfig();
+	// CFG getConfig();
 	@Value.NonAttribute double getNormalisedViralLoad();
 	@Value.NonAttribute double getNormalisedSeverity();
 	@Value.NonAttribute double getImmuneActivity();
 	@Value.NonAttribute boolean isInfected();
-	Integer getTime();
+	int getTime();
 	
 	InHostModelState<CFG> update(Sampler sampler, double virionExposure, double immunisationDose); // , double viralActivityModifier, double immuneModifier);
 	

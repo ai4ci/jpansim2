@@ -69,14 +69,12 @@ public interface InHostConfiguration extends Serializable {
 		for (int i = 0; i < duration; i++) {
 			infectivity[i] = infectivity[i] / samples;
 			cumulative[i] = infectivity[i] + (i == 0 ? 0 : cumulative[i - 1]);
-
 		}
 		int cutoff = 0;
 		double average = 0;
 		for (int i = 0; i < duration; i++) {
 			if (cumulative[i] / cumulative[duration - 1] > LIMIT) {
 				cutoff = i;
-
 				break;
 			}
 			average += infectivity[i] * i;

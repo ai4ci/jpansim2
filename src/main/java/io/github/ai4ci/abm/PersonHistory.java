@@ -16,7 +16,7 @@ import io.github.ai4ci.util.ModelNav;
 public interface PersonHistory extends PersonTemporalState {
 	
 	/**
-	 * The list of tests taken today. Initially the result will be marked as 
+	 * The list of tests taken on this day. Initially the result will be marked as 
 	 * PENDING until the test is processed. (the true result is available 
 	 * internally to the model immediately, but not necessarily observed).
 	 */
@@ -41,42 +41,17 @@ public interface PersonHistory extends PersonTemporalState {
 		return this.getEntity().getHistoryEntry(this.getTime()-1);
 	};
 	
-	boolean isSymptomatic();
-	boolean isReportedSymptomatic();
-	boolean isRequiringHospitalisation();
-	Double getNormalisedSeverity();
-	Double getNormalisedViralLoad();
-	Double getAdjustedTransmissibility();
+	default Optional<PersonHistory> getNext() {
+		return this.getEntity().getHistoryEntry(this.getTime()+1);
+	};
 	
-	/** {@link PersonState#getAdjustedMobility()} */
-	Double getAdjustedMobility();
+	default Stream<PersonHistory> getPrevious(int limit) {
+		if (limit == 0) return Stream.of(this); 
+		return Stream.concat(
+				Stream.of(this),
+				this.getPrevious(limit-1));
+	};
 	
-	/** {@link PersonState#getSusceptibilityModifier()} */
-	Double getSusceptibilityModifier();
-	
-	/** {@link PersonState#getBehaviour()} */
-	String getBehaviour();
-	
-	/** {@link PersonState#getContactExposure()} */
-	Double getContactExposure();
-	
-	/** {@link PersonState#getSymptomLogLikelihood()} */
-	Double getSymptomLogLikelihood();
-	
-	/** {@link PersonState#getProbabilityInfectiousToday()} */
-	Double getProbabilityInfectiousToday();
-	
-//	/** {@link PersonState#getProbabilityImmuneToday()} */
-//	double getProbabilityImmuneToday();
-//	
-//	
-//	default double getProbabilityRecentlyInfectious(int limit) {
-//		if (limit == 0) return 0;
-//		this.getDirectLogLikelihood(, limit)
-//		return 1-(1-getProbabilityInfectiousToday())*(1-getPrevious().map(p -> p.getProbabilityRecentlyInfectious(limit-1)).orElse(0D));
-//	}
-	
-
 	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
@@ -125,7 +100,7 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Find if a person is newly infectious today. This is not the same as being
+	 * Find if a person is newly infectious on this day. This is not the same as being
 	 * newly exposed.
 	 * @return
 	 */
@@ -136,7 +111,7 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Is this person newly exposed today? defined as the first time a non zero
+	 * Is this person newly exposed on this day? defined as the first time a non zero
 	 * exposure is recorded within one infectious period.
 	 * @return
 	 */
@@ -148,7 +123,7 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Is this person newly infectious today.
+	 * Is this person newly infectious on this day.
 	 * @return
 	 */
 	@Value.Lazy default boolean isIncidentInfection() {
@@ -159,7 +134,7 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Is this person newly needing hospitalisation today, or is this part of 
+	 * Is this person newly needing hospitalisation on this day, or is this part of 
 	 * the same infection episode (as defined by the average duration of 
 	 * symptoms.
 	 * @return
@@ -208,29 +183,63 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * On a day in the future what do the test results taken up to this day 
-	 * tell us about the relative odds of a person being infected on this day
-	 * now that we know the results. 
+	 * All the tests done in the last presumed infectious period
 	 */
-	default double getHistoricalTestLogLikelihood(int day, int limit) {
-		return this.getHistoricalTests(limit)
-			.mapToDouble(t -> t.logLikelihoodRatio(day, limit) )
-			.sum();
+	default Stream<TestResult> getStillRelevantTests() {
+		return this.getHistoricalTests(infPeriod());
 	}
 	
 	/**
-	 * The log-likelihood of an individual being infected at some point in the 
-	 * past.
-	 * @param day when are we interested in (i.e. usually the day of contact) 
-	 * @param limit how long prior to the day are we interested in? so a test a 
-	 * long time age is irrelevant
+	 * The collection of possibly still relevant test results for an individual that
+	 * generate a result on this day, regardless of when they were taken. This does look
+	 * backwards over all possibly relevant tests, there is possibility that some
+	 * tests that take a very long time to process compared to the infectious period
+	 * will not get picked up by this logic and we may have to revisit
 	 */
-	default double getDirectLogLikelihood(int day, int limit) {
-		return 
-				this.getSymptomLogLikelihood() +
-				this.getHistoricalTestLogLikelihood(day, limit);
-				// TODO: Assessment of individual direct risk of disease needs to account for known previous infection.
+	@Value.Lazy
+	default List<TestResult> getResults() {
+		return this.getStillRelevantTests().filter(r -> r.isResultToday(this.getTime())).collect(Collectors.toList());
+	};
+	
+	default Stream<Contact> getHistoricalContacts(int limit) {
+		if (limit == 0) return Arrays.stream(this.getTodaysContacts());
+		return Stream.concat(
+			Arrays.stream(this.getTodaysContacts()),
+			this.getPrevious().stream().flatMap(ph -> ph.getHistoricalContacts(limit-1))
+		);
 	}
+	
+	/**
+	 * All the contacts in the last presumed infectious period
+	 */
+	default Stream<Contact> getStillRelevantContacts() {
+		return this.getHistoricalContacts(infPeriod());
+	}
+	
+//	/**
+//	 * On a day in the future what do the test results taken up to this day 
+//	 * tell us about the relative odds of a person being infected on this day
+//	 * now that we know the results. 
+//	 */
+//	default double getHistoricalTestLogLikelihood(int day, int limit) {
+//		return this.getHistoricalTests(limit)
+//			.mapToDouble(t -> t.logLikelihoodRatio(day, limit) )
+//			.sum();
+//	}
+//	
+//	/**
+//	 * The log-likelihood of an individual being infected at some point in the 
+//	 * past. We need this in the history because we need to know for a historical 
+//	 * contact what their log-liklihood was at the time of the contact
+//	 * @param day when are we interested in (i.e. usually the day of contact) 
+//	 * @param limit how long prior to the day are we interested in? so a test a 
+//	 * long time age is irrelevant.
+//	 */
+//	default double getDirectLogLikelihood(int day, int limit) {
+//		return 
+//				this.getSymptomLogLikelihood() +
+//				this.getHistoricalTestLogLikelihood(day, limit);
+//	}
 	
 	default Stream<TestResult> getResultsBySampleDate(int time) {
 		int lim = time - this.getTime();
@@ -251,7 +260,7 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * The list of tests taken today, indexed by the delay until the results 
+	 * The list of tests taken on this day, indexed by the delay until the results 
 	 * are available.
 	 */
 	@Value.Lazy default List<List<TestResult>> getResultsBySampleDate() {
@@ -261,5 +270,13 @@ public interface PersonHistory extends PersonTemporalState {
 			)
 			.collect(Collectors.toList());
 	}
+
+//	/**
+//	 * An estimate of the person's infectiousness on this day based on test, symptoms
+//	 * and contacts, as might be calculated by a smart agent.
+//	 */
+//	default double getProbabilityInfectiousToday() {
+//		return this.getRiskModel().getProbabilityInfectiousToday();
+//	};
 	
 }

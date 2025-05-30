@@ -46,9 +46,9 @@ public interface TestUtils {
 	
 	@Value.Default default PartialWattsStrogatzConfiguration getSetupTweak() {
 		return PartialWattsStrogatzConfiguration.builder()
-			.setNetworkSize(100)
+			.setNetworkSize(1000)
 			.setNetworkConnectedness(30)
-			.setInitialImports(2)
+			.setInitialImports(50)
 			.build();
 	};
 	

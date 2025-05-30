@@ -13,6 +13,8 @@ public abstract class PauseableThread extends Thread {
 	volatile boolean waiting = false;
 	volatile Object trigger = new Object();
 	
+//	private Thread shutdownHook;
+	
 	protected PauseableThread() {
 		this(null,-1);
 	}
@@ -22,11 +24,12 @@ public abstract class PauseableThread extends Thread {
 		this.setDaemon(true);
 		if (priority > 0) this.setPriority(priority);
 		if (name != null) this.setName(name);
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				PauseableThread.this.halt();
-			}
-		});
+//		shutdownHook = new Thread() {
+//			public void run() {
+//				PauseableThread.this.halt();
+//			}
+//		};
+//		Runtime.getRuntime().addShutdownHook(shutdownHook);
 	}
 	
 	public boolean isWaiting() {
@@ -42,7 +45,7 @@ public abstract class PauseableThread extends Thread {
 	 * Threads can pause themselves but will never unpause (unless halting).
 	 */
 	public void pause() {
-		pause = true;
+		if (!isComplete()) pause = true;
 	}
 	
 	/**
@@ -59,7 +62,7 @@ public abstract class PauseableThread extends Thread {
 		setup();
 		while(!halt && !isComplete()) {
 			if (!pause) doLoop();
-			while (pause) {
+			while (pause && !isComplete() && !halt) {
 				this.waiting = true;
 				synchronized(trigger) {try {
 					trigger.wait();
@@ -69,7 +72,11 @@ public abstract class PauseableThread extends Thread {
 				this.waiting = false;
 			}
 		}
+//		Runtime.getRuntime().removeShutdownHook(shutdownHook);
+//		shutdownHook = null;
+		synchronized(trigger) {trigger.notifyAll();}
 		shutdown(isComplete());
+		return;
 	}
 	
 	public String status() {

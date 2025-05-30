@@ -49,8 +49,7 @@ public interface DefaultNetworkSetup {
 			Calibration.getConnectedness(outbreak)
 		);
 		
-		// This sets the weight of the network. This is accessible as 
-		// the "connectednessQuantile" of the relationship.
+		// This sets the weight of the network. 
 		socialNetwork.edgeSet().forEach(r -> socialNetwork.setEdgeWeight(r, sampler.uniform()));
 		
 		return outbreak;

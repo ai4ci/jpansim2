@@ -28,9 +28,10 @@ public interface TestParameters extends Serializable {
 	 * The SD of the delay in the result. This will be a log normal
 	 */
 	Double getSdTestDelay();
+	Double getLimitOfDetection();
 	
 	default double applyNoise(double normViralLoad, Sampler rng) {
-		return applyNoise(normViralLoad,getSensitivity(),getSpecificity(),rng);
+		return applyNoise(normViralLoad,getSensitivity(),getSpecificity(), getLimitOfDetection(),rng);
 	}
 	
 	default double positiveLikelihoodRatio() {
@@ -65,12 +66,12 @@ public interface TestParameters extends Serializable {
 	 * line going through the points 0,(1-sens) and 1,(1-spec). This is connected
 	 * to the rogan gladen estimator.
 	 */
-	static double applyNoise(double normalisedSignal, double sensitivity, double specificity, Sampler rng) {
+	static double applyNoise(double normalisedSignal, double sensitivity, double specificity, double limitOfDetection, Sampler rng) {
 		// TODO: Convert test error to use a normally distributed noise function 
 		// this assumes a 0-1 range of signal. all we need to do is look at 
 		// a normal with sensitivity / specificity quantiles at 0 and 1, or 
 		// what ever the test limit is.
-		return Math.max(0, normalisedSignal +
+		return Math.max(0, normalisedSignal + limitOfDetection *
 				(rng.uniform()-(1 - sensitivity)) / (specificity + sensitivity - 1));
 	}
 }

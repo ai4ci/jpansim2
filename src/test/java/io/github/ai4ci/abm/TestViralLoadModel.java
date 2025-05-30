@@ -62,6 +62,11 @@ public class TestViralLoadModel {
 				100, 100);
 		System.out.println(Arrays.toString(vl));
 		
+		DelayDistribution  v2 = InHostConfiguration.getSeverityProfile(
+				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
+				config.getOutbreak().getExecutionConfiguration(),
+				100, 100);
+		System.out.println(v2);
 	}
 	
 	@Test
@@ -71,6 +76,10 @@ public class TestViralLoadModel {
 		sm.forceTo(ReactiveTestAndIsolate.REACTIVE_PCR);
 		 
 		Updater u = new Updater();
+		u.withPersonProcessor(
+				pp -> pp.getId().equals(p.getId()) && pp.getCurrentState().getTime() == 2, 
+				(builder,person,rng) -> builder.setImportationExposure(1.0))
+		;
 		
 		for (int i =0; i<=10; i++ ) {
 			System.out.println(sm.getState().toString()+" symptoms:"+p.getCurrentState().isSymptomatic()+" compliant:"+p.getCurrentState().isCompliant());
@@ -94,12 +103,17 @@ public class TestViralLoadModel {
 	void applyNoise() {
 		Sampler rng = Sampler.getSampler();
 		System.out.println(IntStream.range(0, 100000).map(i -> 
-			TestParameters.applyNoise(0, 0.8, 0.95, rng) > 1 ? 0:1
+			TestParameters.applyNoise(0.0, 0.8, 0.95, 1.0, rng) > 1 ? 0:1
 			).average());
 		
 		System.out.println(IntStream.range(0, 100000).map(i -> 
-			TestParameters.applyNoise(1, 0.8, 0.95, rng) < 1 ? 0 : 1
+			TestParameters.applyNoise(1.0, 0.8, 0.95, 1.0, rng) < 1 ? 0 : 1
 		).average());
+		
+		// different detection limit
+		System.out.println(IntStream.range(0, 100000).map(i -> 
+		TestParameters.applyNoise(0.5, 0.8, 0.95, 0.5, rng) < 0.5 ? 0 : 1
+	).average());
 	}
 	
 }

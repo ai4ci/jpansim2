@@ -10,30 +10,16 @@ import org.immutables.value.Value;
 import io.github.ai4ci.util.ModelNav;
 
 @Value.Immutable
+/** 
+ * The historical state of the whole model. This is typically used to collect
+ * summary statistics for output from the {@link OutbreakState}, but also can
+ * play a role in informing the {@link io.github.ai4ci.abm.policy.PolicyModel} 
+ */
 public interface OutbreakHistory extends OutbreakTemporalState {
 	
-	Long getInfectedCount();
-	Long getIncidence();
-	Optional<OutbreakHistory> getPrevious();
-	
-	/**
-	 * The number of tests reported positive on the current simulation date. This
-	 * is reported on the date the test result is available (not when the test
-	 * was taken). 
-	 */
-	Long getTestPositivesByResultDate();
-	
-	/**
-	 * The number of tests reported negative on the current simulation date. This
-	 * is reported on the date the test result is available (not when the test
-	 * was taken).
-	 */
-	Long getTestNegativesByResultDate();
-	Long getCumulativeInfections();
-	Long getCumulativeAdmissions();
-	Long getMaximumIncidence();
-	Long getMaximumHospitalBurden();
-	Double getMaximumPrevalence();
+	default Optional<OutbreakHistory> getPrevious() {
+		return this.getEntity().getHistoryEntry(this.getTime()-1);
+	};
 	
 	/** Internal helper function for looking at delay of test results */
 	@Value.Lazy default int getMaxDelay() {
@@ -113,9 +99,4 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 			}).collect(Collectors.toList())
 			;
 	}
-	
-	
-	
-	
-
 }

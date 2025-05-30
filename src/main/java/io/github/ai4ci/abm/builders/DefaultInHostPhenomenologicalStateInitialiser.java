@@ -25,7 +25,7 @@ public interface DefaultInHostPhenomenologicalStateInitialiser {
 		double incubation = configuration.getIncubationPeriod().sample(rng);
 		return ImmutableInHostPhenomenologicalState.builder()
 				.setTime(time)
-				.setConfig(configuration)
+				.setInfectiousnessCutoff(configuration.getInfectiousnessCutoff())
 				.setViralLoadModel(
 						BiPhasicLogistic.calibrateViralLoad(
 								incubation, //onsetTime

@@ -15,7 +15,9 @@ class TestDefaultSim {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
-		ExperimentConfiguration tmp = ExampleConfig.BEHAVIOUR.config; 
+		ExperimentConfiguration tmp = 
+				//ExampleConfig.DEFAULT.config;
+				ExampleConfig.BEHAVIOUR.config; 
 		Path dir = SystemUtils.getUserHome().toPath().resolve("tmp");
 		
 		SlurmAwareLogger.setupLogger(tmp, dir, Level.INFO, Level.DEBUG);

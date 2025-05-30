@@ -2,6 +2,7 @@ package io.github.ai4ci.config;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -18,11 +19,14 @@ import io.github.ai4ci.abm.policy.PolicyModel;
 import io.github.ai4ci.abm.policy.ReactiveLockdown;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.config.inhost.PhenomenologicalModel;
+import io.github.ai4ci.config.riskmodel.Kernels;
+import io.github.ai4ci.config.riskmodel.RiskKernelConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ShallowList;
 // import io.reactivex.rxjava3.annotations.Nullable;
-import io.github.ai4ci.util.SimpleDistribution;
 
+import static io.github.ai4ci.config.riskmodel.RiskKernelConfiguration.*;
+import static io.github.ai4ci.util.SimpleDistribution.*;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableExecutionConfiguration.class)
@@ -46,11 +50,11 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 			.setCaseHospitalisationRate(0.05)
 			.setCaseFatalityRate(0.01)
 			
-			.setContactProbability( SimpleDistribution.unimodalBeta(0.5, 0.25))
-			.setAppUseProbability( SimpleDistribution.unimodalBeta(0.97, 0.1))
+			//.setContactProbability( unimodalBeta(0.5, 0.25))
+			.setAppUseProbability( unimodalBeta(0.97, 0.1))
 			.setContactDetectedProbability( 0.9 )
 			
-			.setComplianceProbability( SimpleDistribution.unimodalBeta(0.99, 0.1))
+			.setComplianceProbability( unimodalBeta(0.99, 0.1))
 			
 			
 //			.setRiskTrigger( Distribution.point(0.05) )
@@ -59,6 +63,7 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 //			.setHighRiskTransmissibilityModifier(0.95)
 			
 			.setInHostConfiguration( PhenomenologicalModel.DEFAULT )
+			
 			
 			.setLockdownStartPrevalenceTrigger(0.05)
 //			.setLockdownMinDuration(14)
@@ -72,8 +77,9 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 			.setDefaultBehaviourModelName( ReactiveTestAndIsolate.class.getSimpleName() )
 			.setDefaultPolicyModelName( ReactiveLockdown.class.getSimpleName() )
 			
-			.setSymptomSensitivity(SimpleDistribution.unimodalBeta(0.5, 0.1))
-			.setSymptomSpecificity(SimpleDistribution.unimodalBeta(0.95, 0.1))
+			.setSymptomSensitivity( unimodalBeta(0.5, 0.1))
+			.setSymptomSpecificity( unimodalBeta(0.95, 0.1))
+			
 			
 			.setInitialEstimateSymptomSensitivity(0.5)
 			.setInitialEstimateSymptomSpecificity(0.95)
@@ -81,7 +87,11 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 			.setInitialEstimateIncubationPeriod(4.0)
 			.setInitialEstimateInfectionDuration(10.0)
 			
-			.setMaximumSocialContactReduction(SimpleDistribution.unimodalBeta(0.5, 0.1))
+			.setRiskModelSymptomKernel( from(Kernels.DEFAULT_SYMPTOM_ONSET_KERNEL))
+			.setRiskModelContactsKernel( from(Kernels.DEFAULT_CONTACT_KERNEL))
+			.setRiskModelTestKernel( from(Kernels.DEFAULT_TEST_SAMPLE_KERNEL))
+			
+			.setMaximumSocialContactReduction( unimodalBeta(0.25, 0.1))
 			.setAvailableTests(TestResult.defaultTypes())
 			
 			.setImportationProbability(0.001D)
@@ -95,7 +105,8 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 			
 			.build();
 	 
-	// must have no optionals.
+	// must have no optionals but everything must be nullable for partially 
+	// populated config. I.e. no primitives in the config package.
 	Double getRO();
 	Double getAsymptomaticFraction();
 	Double getCaseHospitalisationRate();
@@ -116,14 +127,15 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 		return getInfectionCaseRate()*this.getCaseFatalityRate();
 	}
 	
-	/**
-	 * The proportion of a persons social network that they see each day
-	 * in a fully mobile population. The mobility baseline is determined from
-	 * the square root of this value, as the contact is the product of 2 peoples
-	 * mobility.
-	 * {@link io.github.ai4ci.abm.PersonBaseline#getMobilityBaseline()}
-	 */
-	Distribution getContactProbability();
+//	/**
+//	 * The proportion of a persons social network that they see each day
+//	 * in a fully mobile population. The mobility baseline is determined from
+//	 * the square root of this value, as the contact is the product of 2 peoples
+//	 * mobility.
+//	 * {@link io.github.ai4ci.abm.PersonBaseline#getMobilityBaseline()}
+//	 */
+//	Distribution getContactProbability();
+	
 	Double getContactDetectedProbability();
 	Distribution getComplianceProbability();
 	Distribution getAppUseProbability();
@@ -156,10 +168,15 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	Double getInitialEstimateSymptomSensitivity();
 	Double getInitialEstimateSymptomSpecificity();
 	
+	RiskKernelConfiguration getRiskModelSymptomKernel();
+	RiskKernelConfiguration getRiskModelTestKernel();
+	RiskKernelConfiguration getRiskModelContactsKernel();
+	
 	Distribution getMaximumSocialContactReduction();
 	
 	String getDefaultBehaviourModelName();
 	String getDefaultPolicyModelName();
+	
 	
 	/**
 	 * The absolute rate of decrease in compliance in situations where the
@@ -207,6 +224,16 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	 */
 	Double getSmartAppRiskTrigger();
 	
+	/**
+	 * Adjustment of different parameters as a function of age. In general
+	 * probabilistic parameters will be adjusted as an odds ratio and 
+	 * other real values quantities will be simply scaled by the adjustment 
+	 * value. Adjustments are matched by name. 
+	 * 
+	 * @see DemographicAdjustment.Execution
+	 * @see DemographicAdjustment.Phenomenological
+	 * @see DemographicAdjustment.Markov
+	 */
 	PartialDemographicAdjustment getDemographicAdjustment();
 	
 	//@SuppressWarnings("unchecked")
@@ -250,12 +277,5 @@ public interface ExecutionConfiguration extends Abstraction.Named, Abstraction.R
 	@Value.Lazy default DelayDistribution getSeverityProfile() {
 		return InHostConfiguration.getSeverityProfile(this.getInHostConfiguration(), this, 100, 100);
 	}
-	
-	
 
-
-	
-
-	
-	
 }

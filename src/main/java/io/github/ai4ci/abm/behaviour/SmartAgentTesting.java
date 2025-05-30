@@ -6,7 +6,7 @@ import static io.github.ai4ci.abm.mechanics.StateUtils.doPCR;
 import static io.github.ai4ci.abm.mechanics.StateUtils.isHighRiskOfInfectionAndCompliant;
 import static io.github.ai4ci.abm.mechanics.StateUtils.isSymptomaticAndCompliant;
 import static io.github.ai4ci.abm.mechanics.StateUtils.isTestedToday;
-import static io.github.ai4ci.abm.mechanics.StateUtils.isTestingAllowed;
+import static io.github.ai4ci.abm.mechanics.StateUtils.isPCRTestingAllowed;
 import static io.github.ai4ci.abm.mechanics.StateUtils.resetBehaviour;
 import static io.github.ai4ci.util.ModelNav.modelState;
 
@@ -35,7 +35,7 @@ public enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
 			if (isSymptomaticAndCompliant(person, 2) || isHighRiskOfInfectionAndCompliant(person, 
 						ModelNav.modelParam(person).getSmartAppRiskTrigger()
 					)  ) {
-				if (isTestingAllowed(person)) doPCR(builder,person);
+				if (isPCRTestingAllowed(person)) doPCR(builder,person);
 			}
 			
 		}

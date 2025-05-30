@@ -21,7 +21,7 @@ public class CSVUtil {
 	}
 	
 	private static String valueOf(Object object) {
-		if (object == null) return "";
+		if (object == null) return "NA";
 		if (object instanceof String) {
 			String value = (String) object;
 			if (value.contains(",") || value.contains("\"") || value.contains("\n")) {

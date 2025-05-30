@@ -13,13 +13,13 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 public interface InHostStochasticState extends InHostModelState<StochasticModel> {
 
-	Integer getTargets();
-	Double getImmuneTargetRatio();
-	Double getImmuneActivationRate();
-	Double getImmuneWaningRate();
-	Double getInfectionCarrierProbability();
-	Double getTargetRecoveryRate();
-	Integer getTime();
+	int getTargets();
+	double getImmuneTargetRatio();
+	double getImmuneActivationRate();
+	double getImmuneWaningRate();
+	double getInfectionCarrierProbability();
+	double getTargetRecoveryRate();
+	int getTime();
 	
 	int getVirions();
 	int getVirionsProduced();
@@ -31,7 +31,9 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	};
 	int getImmunePriming();
 	int getImmuneActive();
-
+	@Value.Redacted double getBaselineViralReplicationRate();
+	@Value.Redacted double getBaselineViralInfectionRate();
+	@Value.Redacted int getVirionsDiseaseCutoff();
 	
 
 	@Value.Derived
@@ -39,7 +41,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		return getTargets() - getTargetSusceptible() - getTargetExposed() - getTargetInfected();
 	}
 
-	StochasticModel getConfig();
+	// StochasticModel getConfig();
 	
 	@Value.Derived
 	/**
@@ -50,7 +52,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	 * @return
 	 */
 	default double getNormalisedViralLoad() {
-		double tmp = ((double) getVirionsProduced()) / (double) this.getConfig().getVirionsDiseaseCutoff();
+		double tmp = ((double) getVirionsProduced()) / (double) this.getVirionsDiseaseCutoff();
 		return tmp < 1 ? 0 : tmp;
 	}
 	
@@ -94,7 +96,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	 */
 	default InHostStochasticState update(Sampler rng, double virionDose, double immunisationDose) { //, double viralActivityModifier, double immuneModifier) {
 		
-		int virionsDx = this.getConfig().getVirionsDiseaseCutoff();
+		int virionsDx = this.getVirionsDiseaseCutoff();
 		
 		int time = getTime();
 		// This update function is called when the history has been updated, 
@@ -109,8 +111,8 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		Double viralActivity = 1D;
 		
 		// Viral factors are shared across the model
-		Double rate_infection = this.getConfig().getBaselineViralInfectionRate() * viralActivity;
-		Double rate_virion_replication = pow(this.getConfig().getBaselineViralReplicationRate(),viralActivity);
+		Double rate_infection = this.getBaselineViralInfectionRate() * viralActivity;
+		Double rate_virion_replication = pow(this.getBaselineViralReplicationRate(),viralActivity);
 		Double rate_infected_given_exposed = rate_virion_replication;
 		// Host factors
 		
@@ -204,6 +206,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 				.setImmuneActive(getImmuneActive()+ immune_start_active - immune_senescence)
 				.build();
 	}
+
 	
 
 	

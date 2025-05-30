@@ -49,6 +49,11 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 		return this.getOutbreak().getSetupConfiguration().getHilbertCoords(this.getId());
 	}
 	
+	/**
+	 * Gets the first history item unless there is no history. If called during
+	 * update cycle this will get the history at the same time as the current state.
+	 * If called after it will be the previous day.
+	 */
 	public Optional<PersonHistory> getCurrentHistory() {
 		if (getHistory().size() == 0) return Optional.empty();
 		return Optional.of(getHistory().get(0));

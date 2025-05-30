@@ -20,6 +20,9 @@ public interface DefaultOutbreakBaseliner {
 			.setViralLoadTransmissibilityProbabilityFactor( 
 					Calibration.inferViralLoadTransmissionProbabilityFactor(outbreak, configuration.getRO()) 
 			)
+			.setExpectedContactsPerPersonPerDay(
+					Calibration.contactsPerPersonPerDay(outbreak)
+			)
 			.setSeveritySymptomsCutoff(
 					configuration.getInHostConfiguration().getSeveritySymptomsCutoff(outbreak, configuration)
 			)

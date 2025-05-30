@@ -19,8 +19,9 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	
 	BiPhasicLogistic getViralLoadModel();
 	BiPhasicLogistic getImmunityModel();
-	List<ExposureModel> getExposures();
-	Integer getTime();
+	@Value.Redacted List<ExposureModel> getExposures();
+	double getInfectiousnessCutoff();
+	int getTime();
 	
 	@Value.Derived default double getViralLoad() {
 		return 1 - this.getExposures().stream()
@@ -38,18 +39,19 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 		.orElse(1);
 	}
 	
-	PhenomenologicalModel getConfig();
+	// PhenomenologicalModel getConfig();
 	
 	default double getNormalisedViralLoad() {
-		double tmp = Conversions.rateRatio( getViralLoad(), this.getConfig().getInfectiousnessCutoff() );
+		double tmp = Conversions.rateRatio( getViralLoad(), this.getInfectiousnessCutoff() );
 		return tmp < 1 ? 0 : tmp;
 	};
+	
 	
 	/**
 	 * infected but not necessarily infectious.
 	 */
 	default boolean isInfected() {
-		return getViralLoad() > this.getConfig().getInfectiousnessCutoff() / 10;  
+		return getViralLoad() > this.getInfectiousnessCutoff() / 10;  
 	}
 	
 	default double getNormalisedSeverity() {
@@ -66,7 +68,7 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 		// Overall modifiers are a number around 1:
 		// Double hostImmunity = immuneModifier;
 		
-		double virionsDx = this.getConfig().getInfectiousnessCutoff();
+		double virionsDx = this.getInfectiousnessCutoff();
 		int time = this.getTime();
 		double virionExposure = Conversions.scaleProbabilityByRR(virionsDx, virionDose);
 		

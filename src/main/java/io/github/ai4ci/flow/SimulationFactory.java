@@ -1,8 +1,5 @@
 package io.github.ai4ci.flow;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -16,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.util.Cloner;
 import io.github.ai4ci.util.PauseableThread;
 
 /**
@@ -96,40 +94,31 @@ public class SimulationFactory extends PauseableThread {
 					setupBuilder.setupOutbreak(urnBase);
 				}
 				
-				SimulationFactory.this.activity = "cloning model";
-				ExecutionBuilder builder2 = setupBuilder.copy();
-				
-				ExecutionConfiguration exCfg = executions.get(exec);
-				SimulationFactory.this.activity = "initialising model baseline: "+exCfg.getName()+":"+exCfg.getReplicate();
-				builder2.baselineModel(exCfg);
-				SimulationFactory.this.activity = "initialising model state: "+exCfg.getName()+":"+exCfg.getReplicate();
-				builder2.initialiseStatus(exCfg);
-				SimulationFactory.this.activity = "model ready: "+exCfg.getName()+":"+exCfg.getReplicate();
-				
-				count += 1;
-				
-				return builder2.build();
+				{
+					ExecutionBuilder builder2;
+					if (executions.size() > 1) {
+						SimulationFactory.this.activity = "cloning model";
+						builder2 = setupBuilder.copy(objSize);
+					} else {
+						builder2 = setupBuilder;
+					}
+					
+					ExecutionConfiguration exCfg = executions.get(exec);
+					SimulationFactory.this.activity = "initialising model baseline: "+exCfg.getName()+":"+exCfg.getReplicate();
+					builder2.baselineModel(exCfg);
+					SimulationFactory.this.activity = "initialising model state: "+exCfg.getName()+":"+exCfg.getReplicate();
+					builder2.initialiseStatus(exCfg);
+					SimulationFactory.this.activity = "model ready: "+exCfg.getName()+":"+exCfg.getReplicate();
+					
+					count += 1;
+					
+					return builder2.build();
+				}
 			}
 			
 		};
 	}
 	
-	private static long estimateSize(Object obj) {
-		long objSize = 0;
-		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(obj);
-			oos.close();
-			objSize = baos.size();
-			baos.close();
-			log.debug("Each simulation takes up about "+String.format("%1.2f", ((double) objSize)/(1024*1024*1024))+" Gb memory before running.");
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return objSize;
-	}
-
 	
 	
 	@Override
@@ -137,14 +126,25 @@ public class SimulationFactory extends PauseableThread {
 		// nothing to do here
 	}
 
+	public void unpause() {
+		if (!cacheFull()) super.unpause();
+	}
+	
+	public boolean cacheFull() {
+		return this.queue.size() >= this.cacheSize.get();
+	}
+	
 	@Override
 	public void doLoop() {
-		if (this.queue.size() >= this.cacheSize.get()) {
+		if (cacheFull()) {
 			this.pause();
 		} else {
 			Outbreak tmp = builder.next();
 			queue.add(tmp);
-			if (objSize == -1) objSize = estimateSize(tmp);
+			if (objSize == -1) {
+				objSize = Cloner.estimateSize(tmp);
+				log.debug("Each simulation takes up about "+String.format("%1.2f", ((double) objSize)/(1024*1024*1024))+" Gb memory before running.");
+			}
 			mon.notifyFactoryReady(this);
 		}
 		

@@ -1,43 +1,20 @@
 {
   "batchConfig" : {
-    "urnBase" : "default",
+    "urnBase" : "test-R0",
     "simulationDuration" : 200,
-    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "INTERNAL_STATE" ]
+    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "INTERNAL_STATE", "FINAL_STATE" ]
   },
   "setupConfig" : [ {
     "@type" : "watts-strogatz",
-    "name" : "setup",
+    "name" : "watts-strogatz",
     "modifications" : [ ],
     "default" : {
       "@type" : "watts-strogatz",
-      "name" : "setup",
-      "networkSize" : 10000,
-      "initialImports" : 5,
+      "name" : "watts-strogatz",
+      "networkSize" : 16384,
+      "initialImports" : 30,
       "networkRandomness" : 0.15,
       "networkConnectedness" : 100
-    }
-  }, {
-    "@type" : "age-stratified",
-    "name" : "age-stratified",
-    "modifications" : [ ],
-    "default" : {
-      "@type" : "age-stratified",
-      "name" : "age-stratified",
-      "initialImports" : 5,
-      "networkSize" : 10000,
-      "ageDistribution" : {
-        "minimum" : 0.0,
-        "maximum" : 120.0,
-        "x" : [ 18.0, 45.0, 65.0, 85.0 ],
-        "cumulativeProbability" : [ 0.1, 0.5, 0.75, 0.9 ]
-      },
-      "networkConnectedness" : 100,
-      "networkRandomness" : 0.1,
-      "oddsContactFromAgeDifference" : {
-        "x" : [ 0.0, 10.0, 25.0, 40.0, 60.0, 70.0 ],
-        "y" : [ 2.0, 0.5, 1.5, 0.5, 1.0, 0.5 ],
-        "link" : "LOG"
-      }
     }
   } ],
   "setupReplications" : 1,
@@ -46,11 +23,6 @@
     "asymptomaticFraction" : 0.5,
     "caseHospitalisationRate" : 0.05,
     "caseFatalityRate" : 0.01,
-    "contactProbability" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.5,
-      "dispersion" : 0.25
-    },
     "contactDetectedProbability" : 0.9,
     "complianceProbability" : {
       "type" : "UNIMODAL_BETA",
@@ -82,7 +54,7 @@
       },
       "peakToRecoveryDelay" : {
         "type" : "LOG_NORM",
-        "central" : 8.0,
+        "central" : 5.0,
         "dispersion" : 3.0
       },
       "approxPeakImmuneResponse" : {
@@ -106,13 +78,15 @@
       "sensitivity" : 0.9,
       "specificity" : 0.98,
       "meanTestDelay" : 0.0,
-      "sdTestDelay" : 0.0
+      "sdTestDelay" : 0.0,
+      "limitOfDetection" : 1.0
     }, {
       "testName" : "PCR",
       "sensitivity" : 0.8,
       "specificity" : 0.995,
       "meanTestDelay" : 3.0,
-      "sdTestDelay" : 1.0
+      "sdTestDelay" : 1.0,
+      "limitOfDetection" : 0.1
     } ],
     "symptomSensitivity" : {
       "type" : "UNIMODAL_BETA",
@@ -125,19 +99,47 @@
       "dispersion" : 0.1
     },
     "initialEstimateInfectionDuration" : 10.0,
+    "initialEstimateIncubationPeriod" : 4.0,
     "initialEstimateSymptomSensitivity" : 0.5,
     "initialEstimateSymptomSpecificity" : 0.95,
+    "riskModelSymptomKernel" : {
+      "kernel" : "DEFAULT_SYMPTOM_ONSET_KERNEL"
+    },
+    "riskModelTestKernel" : {
+      "kernel" : "DEFAULT_TEST_SAMPLE_KERNEL"
+    },
+    "riskModelContactsKernel" : {
+      "kernel" : "DEFAULT_CONTACT_KERNEL"
+    },
     "maximumSocialContactReduction" : {
       "type" : "UNIMODAL_BETA",
-      "central" : 0.2,
+      "central" : 0.25,
       "dispersion" : 0.1
     },
-    "defaultBehaviourModelName" : "ReactiveTestAndIsolate",
-    "defaultPolicyModelName" : "ReactiveLockdown",
-    "importationProbability" : 0.001,
+    "defaultBehaviourModelName" : "Test",
+    "defaultPolicyModelName" : "NoControl",
+    "complianceDeteriorationRate" : 0.02,
+    "complianceImprovementRate" : 0.01,
+    "organicRateOfMobilityChange" : 0.25,
+    "lockdownReleasePrevalenceTrigger" : 0.01,
+    "lockdownStartPrevalenceTrigger" : 0.05,
+    "importationProbability" : 0.0,
+    "smartAppRiskTrigger" : 0.05,
     "demographicAdjustment" : { },
-    "rO" : 2.5
+    "rO" : 1.75
   },
-  "facets" : [ ],
+  "facets" : [ {
+    "name" : "R",
+    "modifications" : [ {
+      "name" : "1.0",
+      "rO" : 1.0
+    }, {
+      "name" : "2.0",
+      "rO" : 2.0
+    }, {
+      "name" : "3.0",
+      "rO" : 3.0
+    } ]
+  } ],
   "executionReplications" : 1
 }

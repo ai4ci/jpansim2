@@ -15,9 +15,13 @@ import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.ThreadSafeArray;
 
+/**
+ * The main outbreak class is a mutable structure holding the state of the whole 
+ * simulation, including configuration, social network, etc.
+ */
 @Value.Modifiable
 @Data.Mutable
-public abstract class Outbreak implements Entity, HistoricalStateProvider<OutbreakHistory> {
+public abstract class Outbreak implements Entity, HistoricalStateProvider<OutbreakHistory>, Cloneable {
  
 	public abstract String getUrn();
 	public abstract ThreadSafeArray<Person> getPeople();

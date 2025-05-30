@@ -1,8 +1,12 @@
 package io.github.ai4ci.util;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -16,7 +20,7 @@ import io.github.ai4ci.config.PartialDemographicAdjustment;
 
 public class ReflectionUtils {
 
-	private static <X> Class<?> immutable(Class<X> clz) {
+	public static <X> Class<?> immutable(Class<X> clz) {
 		if (clz.getSimpleName().startsWith("Immutable")) return clz;
 		if (clz.getSimpleName().startsWith("Modifiable")) return clz;
 		Class<?> immClz;
@@ -38,6 +42,43 @@ public class ReflectionUtils {
 		} else {
 			return clz;
 		}
+	}
+	
+	public static <X> X initialise(String className, Class<?> clzInPackage, Object... params) {
+		String base = clzInPackage.getPackageName();
+		if (!className.startsWith(base)) className = base + "." + className;
+		try {
+			@SuppressWarnings("unchecked")
+			Class<X> riskModelClass = (Class<X>) Class.forName(className);
+			return ReflectionUtils.initialise(riskModelClass);
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static <X> X initialise(Class<X> clz, Object... params) {
+		Class<?>[] paramTypes = Arrays.stream(params).map(o -> o.getClass()).toArray(i -> new Class<?>[i]);
+		Throwable err = null;
+		for (Method m: clz.getMethods()) { 
+			if (clz.isAssignableFrom(m.getReturnType()) && 
+					Modifier.isStatic(m.getModifiers()) &&
+					Arrays.equals(m.getParameterTypes(),paramTypes)
+				) {
+				try {
+					return (X) m.invoke(null, params);
+				} catch (Exception e) {
+					if (e instanceof InvocationTargetException) {
+						e.getCause().printStackTrace();
+						err = e.getCause();
+					}
+					//didn;t work 
+				}
+			}
+		}
+		if (err == null) 
+			throw new RuntimeException("Cannot initialise "+clz.getCanonicalName()+": no static factory method found");
+		throw new RuntimeException("Cannot initialise "+clz.getCanonicalName()+": factory threw an exception: "+err.getLocalizedMessage(),err);
 	}
 	
 	/** 
@@ -185,4 +226,26 @@ public class ReflectionUtils {
 	private static String capitalize(String s, String prefix) {
         return prefix + s.substring(0, 1).toUpperCase() + s.substring(1);
     }
+	
+	/**
+	 * create a proxy for some interface that returns null for any invocation.
+	 */
+	@SuppressWarnings("unchecked")
+	public static <X> X nullProxy(Class<X> clz) {
+		return (X) Proxy.newProxyInstance(clz.getClassLoader(), new Class<?>[] {clz}, 
+			new InvocationHandler() {
+				@Override
+				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+					if (method.getReturnType().isPrimitive()) {
+						if (method.getReturnType().equals(Boolean.TYPE)) return false;
+						if (method.getReturnType().equals(Integer.TYPE)) return 0;
+						if (method.getReturnType().equals(Long.TYPE)) return 0L;
+						if (method.getReturnType().equals(Double.TYPE)) return Double.NaN;
+						if (method.getReturnType().equals(Float.TYPE)) return Float.NaN;
+					}
+					return null;
+				}
+			}
+		);
+	}
 }

@@ -147,6 +147,10 @@ public class ModelNav {
 	public static OutbreakBaseline modelBase(OutbreakTemporalState outbreakState) {
 		return outbreakState.getEntity().getBaseline();
 	}
+
+	public static OutbreakState outbreakState(PersonTemporalState hist) {
+		return hist.getEntity().getOutbreak().getCurrentState();
+	}
 	
 	
 

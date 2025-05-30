@@ -24,7 +24,11 @@ public interface OutbreakFinalStateCSV extends CommonCSV.State {
 	long getCumulativeDeaths();
 	double getMaximumPrevalence();
 	long getMaximumIncidence();
+	long getTimeToMaximumIncidence();
 	long getMaximumHospitalBurden();
+	
+	double getCumulativeMobilityDecrease();
+	double getCumulativeComplianceDecrease();
 	
 //	default String header() {
 //		return CommonCSV.super.header()+",incidence,cumulativeInfections,infectedCount,"+

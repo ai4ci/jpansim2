@@ -9,7 +9,6 @@ import org.immutables.value.Value;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ImmutableTestParameters;
 import io.github.ai4ci.config.TestParameters;
-import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ShallowList;
 import io.github.ai4ci.util.Sampler;
 
@@ -27,6 +26,7 @@ public interface TestResult extends Serializable {
 				.setSpecificity(0.98)
 				.setMeanTestDelay(0.0)
 				.setSdTestDelay(0.0)
+				.setLimitOfDetection(1D)
 			), 
 		
 		PCR (ImmutableTestParameters.builder()
@@ -34,6 +34,7 @@ public interface TestResult extends Serializable {
 				.setSpecificity(0.995)
 				.setMeanTestDelay(3.0)
 				.setSdTestDelay(1.0)
+				.setLimitOfDetection(0.1)
 			)
 		;
 		private TestParameters params;
@@ -127,7 +128,7 @@ public interface TestResult extends Serializable {
 //	}
 	
 	@Value.Derived default public boolean getFinalObservedResult() {
-		return (getViralLoadSample() > 1);
+		return (getViralLoadSample() > getTestParams().getLimitOfDetection());
 	}
 	
 //	// what is the probability given a particular result that the person
@@ -162,17 +163,15 @@ public interface TestResult extends Serializable {
 		}
 	}
 	
+	/**
+	 * The log likelihood ratio N days after the test was taken.
+	 */
+	default double logLikelihoodRatio(int delay) {
+		if (this.getDelay() > delay) return 0;
+		return trueLogLikelihoodRatio();
+	};
 	
 	
-	default double adjustedLogLikelihoodRatio(int day, int limit) {
-		// Test result not known yet
-		if (day < getTime()+getDelay()) return 0;
-		return Conversions.waneLogOdds(
-				logLikelihoodRatio(day, limit), 
-				day - getTime(), 
-				limit);
-		// Test has become irrelevant 
-	}
 	
 	default public boolean isResultCurrent(long day, long recoveryTime) {
 		return day >= getTime() && day < getTime() + recoveryTime;
@@ -205,5 +204,6 @@ public interface TestResult extends Serializable {
 					);
 				});
 	}
+	
 	
 }

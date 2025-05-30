@@ -1,6 +1,7 @@
 package io.github.ai4ci.config;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,6 +21,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 
 import io.github.ai4ci.abm.behaviour.NonCompliant;
 import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
+import io.github.ai4ci.abm.behaviour.SmartAgentLFTTesting;
 import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
 import io.github.ai4ci.abm.behaviour.Test;
 import io.github.ai4ci.abm.policy.NoControl;
@@ -58,6 +60,10 @@ public enum ExampleConfig {
 						.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
 						.build(),
 						PartialExecutionConfiguration.builder()
+						.setName("smart-agent-lft")
+						.setDefaultBehaviourModelName(SmartAgentLFTTesting.class.getSimpleName())
+						.build(),
+						PartialExecutionConfiguration.builder()
 						.setName("reactive-test")
 						.setDefaultBehaviourModelName(ReactiveTestAndIsolate.class.getSimpleName())
 						.build(),
@@ -84,8 +90,8 @@ public enum ExampleConfig {
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.withDefaultBehaviourModelName(Test.class.getSimpleName())
 						.withImportationProbability(0D) //.001D)
-						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
-						// .withInHostConfiguration(StochasticModel.DEFAULT)
+//						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
+//						// .withInHostConfiguration(StochasticModel.DEFAULT)
 						)
 				.withExecutionReplications(1)
 				.withFacet(
@@ -184,8 +190,10 @@ public enum ExampleConfig {
 
 		Arrays.stream(ExampleConfig.values()).forEach((a) -> {
 			try {
-				System.out.println(directory.resolve(a.name+".json"));
-				a.config.writeConfig(directory.resolve(a.name+".json"));
+				Files.createDirectories(directory.resolve(a.name));
+				Path tmp = directory.resolve(a.name).resolve("config.json");
+				System.out.println(tmp);
+				a.config.writeConfig(tmp);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -193,30 +201,6 @@ public enum ExampleConfig {
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-//		{
-//			final SubclassesResolver resolver = new SubclassesResolverImpl()
-//					.withPackagesToScan(Arrays.asList(
-//							"io.github.ai4ci"
-//							));
-//			JsonSchemaConfig config = JsonSchemaConfig.vanillaJsonSchemaDraft4().withJsonSchemaDraft(JsonSchemaDraft.DRAFT_07);
-//			config = config.withSubclassesResolver( resolver );
-//
-//			// If using JsonSchema to generate HTML5 GUI:
-//			JsonSchemaGenerator html5 = new JsonSchemaGenerator(objectMapper, JsonSchemaConfig.html5EnabledSchema() );
-//
-//			// If you want to configure it manually:
-//			// JsonSchemaConfig config = JsonSchemaConfig.create(...);
-//			// JsonSchemaGenerator generator = new JsonSchemaGenerator(objectMapper, config);
-//
-//			JsonSchemaGenerator jsonSchemaGenerator = new JsonSchemaGenerator(objectMapper, config);
-//
-//			JsonNode jsonSchema = jsonSchemaGenerator.generateJsonSchema(ImmutableExperimentConfiguration.class);
-//			objectMapper.writeValue(directory.resolve("schema2.json").toFile(), jsonSchema);
-//
-//			JsonNode jsonHtml = html5.generateJsonSchema(ImmutableExperimentConfiguration.class);
-//			objectMapper.writeValue(directory.resolve("schema2.html").toFile(), jsonHtml);
-//		}
 
 		{
 			JacksonModule module = new JacksonModule();

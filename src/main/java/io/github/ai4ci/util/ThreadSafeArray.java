@@ -10,7 +10,7 @@ import java.util.stream.Stream;
 /**
  * A write once read many times list like data structure. This allows
  * multi-threaded writing to the array and multi-threaded reading and 
- * assumes they happen in different phases.  
+ * largely assumes they happen in different phases.  
  * @param <X> the array type
  */
 public class ThreadSafeArray<X> implements Serializable {
@@ -26,8 +26,10 @@ public class ThreadSafeArray<X> implements Serializable {
 	
 	@SuppressWarnings("unchecked")
 	public ThreadSafeArray(Class<X> type, int size) {
-		this.data = (X[]) Array.newInstance(type, size);
-		this.pointer = new AtomicInteger(0);
+		synchronized(this) {
+			this.pointer = new AtomicInteger(0);
+			this.data = (X[]) Array.newInstance(type, size);
+		}
 	}
 	
 	public int put(X value) {

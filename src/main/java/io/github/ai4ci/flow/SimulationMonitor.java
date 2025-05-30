@@ -26,7 +26,6 @@ public class SimulationMonitor implements Runnable {
 	
 	SimulationFactory factory;
 	StateExporter exporter;
-	SimulationExecutor executor;
 	
 	int duration;
 	
@@ -88,7 +87,7 @@ public class SimulationMonitor implements Runnable {
 					factory.pause();
 					log.warn("Low memory. Throttling factory production. Memory: "+freeMemG());
 				} else {
-					// This will only be successful if the 
+					// This will only be successful if the cache is not already full;
 					factory.unpause();
 				}
 				

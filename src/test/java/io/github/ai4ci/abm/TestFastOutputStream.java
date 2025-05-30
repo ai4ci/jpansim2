@@ -8,9 +8,11 @@ import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.util.FastWriteOnlyOutputStream;
 
+@SuppressWarnings("deprecation")
 class TestFastOutputStream {
 
 	@Test
+	@Deprecated
 	void test() throws IOException {
 		
 		Path tmp = Paths.get("/tmp/test");

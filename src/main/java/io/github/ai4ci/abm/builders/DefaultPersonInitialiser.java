@@ -50,6 +50,8 @@ public interface DefaultPersonInitialiser extends DefaultInHostStochasticStateIn
 		return builder.build();
 	}
 	
+	
+
 	@SuppressWarnings("unchecked")
 	default <CFG extends InHostConfiguration> InHostModelState<CFG> initialiseInHostModel(CFG config, ExecutionConfiguration execConfig, Optional<PersonDemographic> person, Sampler rng, int time) {
 		if (config instanceof PhenomenologicalModel) return (InHostModelState<CFG>) initialiseInHostModel((PhenomenologicalModel) config, execConfig, person, rng, time);

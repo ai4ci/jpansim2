@@ -11,24 +11,24 @@ import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 
 @Value.Immutable
+/**
+ * A contact between two people. A contact is always associated with a 
+ * {@link PersonHistory} which tells you when it happened. There are a lot
+ * of contacts recorded so this is optimised for small storage. and contains
+ * the bare minimum. Participants in the contact are resolved by id.
+ * 
+ * @see Exposure
+ */
 public interface Contact extends Serializable {
-
-	/**
-	 * The joint transmissibility of both participants defines the intensity of
-	 * the contact. This in turn modifies the dose of the exposure. This is in 
-	 * the context of a known contact, which is known to also be a transmission
-	 * event.  
-	 * @return
-	 */
 	
+	/** Was a contact detected by a smart agent */
 	boolean isDetected();
 	int getParticipant1Id();
 	int getParticipant2Id();
 	
 //	/**
 //	 * The strength of the contact is at the moment defined as the probability 
-//	 * of the contact occuring.
-//	 * @return
+//	 * of the contact occurring.
 //	 */
 //	double getProximityDuration();
 	
@@ -49,6 +49,11 @@ public interface Contact extends Serializable {
 		int id = getParticipant(one.getEntity().getId());
 		return one.getEntity().getOutbreak().getPersonById(id).flatMap(p -> p.getCurrentHistory()).get();
 	}
+	
+	default PersonState getParticipantState(PersonTemporalState one) {
+		int id = getParticipant(one.getEntity().getId());
+		return one.getEntity().getOutbreak().getPersonById(id).map(p -> p.getCurrentState()).get();
+	};
 	
 	public static PersonStateContacts contactNetwork(Outbreak outbreak) {
 		//Do the contact network here? and pass it as a parameter to the
@@ -142,6 +147,7 @@ public interface Contact extends Serializable {
 						.build()
 				);
 	}
+	
 	
 
 }

@@ -36,13 +36,13 @@ public interface DemographicAdjustment {
 	
 	public static PartialDemographicAdjustment AGE_DEFAULT =
 			PartialDemographicAdjustment.builder()
-			.setContactProbability(
-					ImmutableEmpiricalFunction.builder()
-						.setX(0,5,15,25,45,75)
-						.setY(2,1,1.5,1.25,0.8,1.2)
-						.setLink(Link.LOG)
-						.build()	
-				)
+//			.setContactProbability(
+//					ImmutableEmpiricalFunction.builder()
+//						.setX(0,5,15,25,45,75)
+//						.setY(2,1,1.5,1.25,0.8,1.2)
+//						.setLink(Link.LOG)
+//						.build()	
+//				)
 			.setAppUseProbability(FixedValueFunction.ofOne())
 			.setComplianceProbability(FixedValueFunction.ofOne())
 			.setMaximumSocialContactReduction(FixedValueFunction.ofOne())
@@ -87,8 +87,9 @@ public interface DemographicAdjustment {
 		}
 	}
 	
+	/** Age dependent values in the general execution configuration */
 	public static interface Execution<DIST,NUMERIC> {
-		@Scale(ScaleType.ODDS) DIST getContactProbability();
+		// @Scale(ScaleType.ODDS) DIST getContactProbability();
 		@Scale(ScaleType.ODDS) NUMERIC getAsymptomaticFraction();
 		@Scale(ScaleType.ODDS) NUMERIC getCaseHospitalisationRate();
 		@Scale(ScaleType.ODDS) NUMERIC getCaseFatalityRate();
@@ -97,12 +98,14 @@ public interface DemographicAdjustment {
 		@Scale(ScaleType.ODDS) DIST getMaximumSocialContactReduction();
 	} 
 	
+	/** Age dependent values in the in host phenomenological model configuration */
 	public static interface Phenomenological<DIST,NUMERIC> {
 		@Scale(ScaleType.FACTOR) DIST getIncubationPeriod();
 		@Scale(ScaleType.FACTOR) DIST getPeakToRecoveryDelay();
 		@Scale(ScaleType.FACTOR) DIST getImmuneWaningHalfLife();
 	}
 	
+	/** Age dependent values in the in host markov model configuration */
 	public static interface Markov<DIST,NUMERIC> {
 		@Scale(ScaleType.FACTOR) DIST getIncubationPeriod();
 		@Scale(ScaleType.FACTOR) DIST getImmuneWaningHalfLife();

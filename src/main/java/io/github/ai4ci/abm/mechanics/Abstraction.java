@@ -162,12 +162,14 @@ public interface Abstraction {
 		
 		public List<H> getHistory();
 		
+		/** Gets a history entry for N days in the past if such an entry exists */
 		public default Optional<H> getHistory(int delay) {
 			if (delay < 0) return Optional.empty();
 			if (this.getHistory().size() <= delay) return Optional.empty();
 			return Optional.of(this.getHistory().get(delay));
 		}
 		
+		/** Gets a history entry for simulation day N if such an entry exists */
 		public default Optional<H> getHistoryEntry(int time) {
 			if (getHistory().size() == 0) return Optional.empty();
 			int currentTime = getHistory().get(0).getTime();

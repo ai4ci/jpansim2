@@ -18,7 +18,11 @@ public interface DefaultPersonBaseliner {
 		person.getStateMachine().init(configuration.getDefaultBehaviourModel());
 		
 		builder
-			.setMobilityBaseline(	Math.sqrt( configuration.getContactProbability().sample(rng) ) )
+			.setMobilityBaseline(
+					// Uniform mobility
+					rng.nextDouble()
+					// Math.sqrt( configuration.getContactProbability().sample(rng) ) 
+			)
 			.setTransmissibilityModifier(	rng.gamma(1, 0.1) )
 			.setComplianceBaseline( configuration.getComplianceProbability().sample(rng))
 			.setAppUseProbability( configuration.getAppUseProbability().sample(rng))

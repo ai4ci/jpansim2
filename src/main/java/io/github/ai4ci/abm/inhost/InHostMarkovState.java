@@ -12,19 +12,19 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 
-	MarkovStateModel getConfig();
-	Integer getTime();
+	// MarkovStateModel getConfig();
+	int getTime();
 	
 	// these next 3 are here because there is no easy way to access them within
 	// the top level experiment configuration outside of the config stage so
 	// we have to copy them. 
-	Double getInfectionCaseRate();
-	Double getInfectionHospitalisationRate();
-	Double getInfectionFatalityRate();
+	double getInfectionCaseRate();
+	double getInfectionHospitalisationRate();
+	double getInfectionFatalityRate();
 	
 	DiseaseState getDiseaseState();
 	SymptomState getSymptomState();
-	InHostMarkovStateMachine getMachine();
+	@Value.Redacted InHostMarkovStateMachine getMachine();
 	
 	public static enum DiseaseState {
 		SUSCEPTIBLE, EXPOSED, INFECTIOUS, IMMUNE

@@ -8,15 +8,19 @@ import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.factory.Mappers;
 
+/** Generated mapping from current state to history entries. This copies 
+ * information that is needed for any stateful inspection of the model such as
+ * changes in infection state. 
+ */
 @Mapper(
 		nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS,
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class HistoryMapper {
-	
+	 
 	// N.B. must be in same directory as data otherwise generated code
 	// does not import properly
-	 
+	
 	public static HistoryMapper MAPPER = Mappers.getMapper( HistoryMapper.class );
 	
 	@Mapping( target = "todaysContacts", expression = "java(new Contact[0])")
@@ -25,41 +29,21 @@ public abstract class HistoryMapper {
 	public abstract PersonHistory createHistory(PersonState currentState);
 	
 	
-	@Mapping( target = "previous", expression = "java(currentHistory(currentState, 1))")
 	public abstract OutbreakHistory createHistory(OutbreakState currentState);
-	
-//	@Mapping( target = "personId", source = "entity.id")
-//	abstract PersonHistoryReference createReference(PersonState history);
 	
 	public Integer personStateId( PersonState source ) {
 		return source.getEntity().getId();
 	};
 	
+	@Deprecated
 	public Optional<PersonHistory> currentHistory( PersonState currentState, int offset) {
 		int time = currentState.getTime()-offset;
 		return currentState.getEntity().getHistoryEntry( time );
 	};
 	
-	
+	@Deprecated
 	public Optional<OutbreakHistory> currentHistory( OutbreakState currentState, int offset) {
 		int time = currentState.getTime()-offset;
 		return currentState.getEntity().getHistoryEntry( time );
 	};
-	
-//	@BeanMapping(mappingControl = DeepClone.class, resultType = ModifiablePerson.class)
-//	@Mapping( target = "nextHistory", expression = "java(person.super().getNextHistory())")
-//	@Mapping( target = "nextState", expression = "java(person.super().getNextState())")
-//    public abstract Person clonePerson(Person person) ;
-//	
-//	@BeanMapping(mappingControl = DeepClone.class, resultType = ModifiableOutbreak.class)
-//    public abstract Outbreak cloneOutbreak(Outbreak person) ;
-//	
-//	public StateMachine map(StateMachine input) {
-//		return SerializationUtils.clone(input);
-//	};
-//	
-//	public BehaviourState map(BehaviourState input) {
-//		return input;
-//	};
-	
 }

@@ -30,10 +30,12 @@ import io.github.ai4ci.util.DelayDistribution;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class CSVMapper {
-	 
+	
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
 	
 	@Mapping(target= "personId", source="entity.id")
+	@Mapping(target="incidentInfection", source="yesterday.incidentInfection")
+	@Mapping(target="logOddsInfectiousToday", source="riskModel.logOddsInfectiousToday")
 	public abstract ImmutablePersonStateCSV toCSV(PersonState state);
 	
 	public abstract ImmutableOutbreakCSV toCSV(OutbreakState state);

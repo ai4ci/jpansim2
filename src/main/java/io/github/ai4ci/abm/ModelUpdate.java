@@ -11,6 +11,14 @@ import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakStateUpdater;
 import io.github.ai4ci.abm.mechanics.ModelOperation.PersonStateUpdater;
 import io.github.ai4ci.util.ModelNav;
 
+/**
+ * Functions updating the model states ({@link OutbreakState} and {@link PersonState})
+ * during the update cycle. This is where time dependent comparisons can be made.
+ * These model update functions happen after the current state is mapped across
+ * and the behaviour or policy state machines are updated. This means that they 
+ * can see the new behaviour state but nothing else will have changed. This is 
+ * where time dependent functions can be applied
+ */
 public class ModelUpdate {
 
 	static Logger log = LoggerFactory.getLogger(ModelUpdate.class);
@@ -39,6 +47,7 @@ public class ModelUpdate {
 				(builder, person, rng) -> {
 					//PersonBaseline baseline = person.getBaseline();
 					//PersonState current = person.getCurrentState();
+					
 				
 			})
 		),

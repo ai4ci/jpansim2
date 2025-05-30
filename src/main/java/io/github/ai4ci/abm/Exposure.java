@@ -3,6 +3,12 @@ package io.github.ai4ci.abm;
 import org.immutables.value.Value;
 
 @Value.Immutable
+/**
+ * This is an extension of a contact but involving an infectious individual
+ * who successfully transmitted a dose of virus to an exposee. This is 
+ * held in the {@link PersonHistory} of the exposee, which holds the time 
+ * and other details of the exposure. 
+ */
 public interface Exposure {
 	
 	double getExposure();

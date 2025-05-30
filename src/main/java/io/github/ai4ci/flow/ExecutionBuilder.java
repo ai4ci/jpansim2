@@ -1,6 +1,5 @@
 package io.github.ai4ci.flow;
 
-import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +14,7 @@ import io.github.ai4ci.abm.builders.BuilderFactory;
 import io.github.ai4ci.abm.mechanics.AbstractModelBuilder;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.util.Cloner;
 import io.github.ai4ci.util.Sampler;
 
 public class ExecutionBuilder {
@@ -55,11 +55,15 @@ public class ExecutionBuilder {
 	ModifiableOutbreak outbreak;
 	AbstractModelBuilder modelBuilder;
 	
-	public ExecutionBuilder copy() {
+	public ExecutionBuilder copy(long estSize) {
 		ExecutionBuilder tmp = new ExecutionBuilder(
 				this.setupConfig
-	);
-		tmp.outbreak = SerializationUtils.clone(outbreak);
+				);
+		if (estSize < 0) {
+			tmp.outbreak = Cloner.copy(outbreak);
+		} else {
+			tmp.outbreak = Cloner.copy(outbreak, estSize);
+		}
 		return tmp;
 	}
 	

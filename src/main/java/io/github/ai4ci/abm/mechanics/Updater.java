@@ -177,7 +177,43 @@ public class Updater {
 		}
 	}
 	
-	
+	/**
+	 * Switches in a new state for a model by building the next state and 
+	 * setting the current state to the new state. Makes sure that the agents
+	 * state are all also updated before updating the model state, and record 
+	 * the new state in the model history. This means the model history is always
+	 * up to date with the current model state.
+	 * 
+	 * <br> N.B. This is where the limit in person history length is implemented.
+	 */
+	private void switchHistory(Outbreak outbreak) {
+		int limit = (int) Math.max(
+				outbreak.getBaseline().getSymptomDuration(),
+				outbreak.getBaseline().getInfectiveDuration()
+		) * 2;
+		if (outbreak instanceof ModifiableOutbreak) {
+			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
+			m.getPeople()
+				.parallelStream()
+				.forEach(person -> {
+					if (person instanceof ModifiablePerson) {
+						ModifiablePerson p = (ModifiablePerson) person;
+						synchronized(p) {
+							List<PersonHistory> tmp = p.getHistory();
+							tmp.add(0, p.getNextHistory().toOptional().get().build());
+							while (tmp.size() > limit) {
+								tmp.remove(limit);
+							}
+							p.setNextHistory( p.getNextHistory().clear());
+						}
+					}
+				});
+			synchronized(m) {
+				m.getHistory().add(0, m.getNextHistory().toOptional().get().build());
+				m.setNextHistory( m.getNextHistory().clear());
+			}
+		}
+	}
 	
 	
 	
@@ -246,11 +282,13 @@ public class Updater {
 			m.getStateMachine().performStateUpdate(nextState, person.getCurrentState(), sampler);
 			
 			nextState
-				// Update the viral load model.
-				// This requires an up to date history for the exposures.
+				// Update the viral load model and the risk models.
+				// These requires an up to date history for the exposures.
+				// 
 				.setInHostModel(m.getCurrentState().getInHostModel().update(person, sampler))
+				.setRiskModel(m.getCurrentState().getRiskModel().update())
 				;
-			
+				
 			
 			
 			// update nextState...
@@ -264,43 +302,7 @@ public class Updater {
 		}
 	}
 	
-	/**
-	 * Switches in a new state for a model by building the next state and 
-	 * setting the current state to the new state. Makes sure that the agents
-	 * state are all also updated before updating the model state, and record 
-	 * the new state in the model history. This means the model history is always
-	 * up to date with the current model state.
-	 * 
-	 * <br> N.B. This is where the limit in person history length is implemented.
-	 */
-	private void switchHistory(Outbreak outbreak) {
-		int limit = (int) Math.max(
-				outbreak.getBaseline().getSymptomDuration(),
-				outbreak.getBaseline().getInfectiveDuration()
-		) * 2;
-		if (outbreak instanceof ModifiableOutbreak) {
-			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
-			m.getPeople()
-				.parallelStream()
-				.forEach(person -> {
-					if (person instanceof ModifiablePerson) {
-						ModifiablePerson p = (ModifiablePerson) person;
-						synchronized(p) {
-							List<PersonHistory> tmp = p.getHistory();
-							tmp.add(0, p.getNextHistory().toOptional().get().build());
-							while (tmp.size() > limit) {
-								tmp.remove(limit);
-							}
-							p.setNextHistory( p.getNextHistory().clear());
-						}
-					}
-				});
-			synchronized(m) {
-				m.getHistory().add(0, m.getNextHistory().toOptional().get().build());
-				m.setNextHistory( m.getNextHistory().clear());
-			}
-		}
-	}
+
 	
 	
 	/**

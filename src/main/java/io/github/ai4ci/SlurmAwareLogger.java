@@ -1,5 +1,7 @@
 package io.github.ai4ci;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.logging.log4j.Level;
@@ -49,9 +51,16 @@ public class SlurmAwareLogger {
         
         if (!cfg.getBatchConfig().isSlurmBatch()) {
         
-        	// File Appender if 
+        	// File Appender only if SLURM not running otherwise console output
+        	// is directed to file by SLURM
         	
 	        String logFileName = batchDirectory.resolve("jpansim2.log").toString();
+	        try {
+				Files.deleteIfExists(batchDirectory.resolve("jpansim2.log"));
+			} catch (IOException e) {
+				System.out.println("Problem deleting old log files: "+e.getMessage());
+			}
+	        
 	        FileAppender fileAppender = FileAppender.newBuilder()
 	                .withFileName(logFileName)
 	                .setName("FileAppender")

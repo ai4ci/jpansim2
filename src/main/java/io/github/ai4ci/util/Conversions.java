@@ -118,6 +118,10 @@ public class Conversions {
 		return probabilityFromOdds(Math.exp(logOdds));
 	}
 	
+	public static double multiplyLogit(double logOdds1, double logOdds2) {
+		return logit(expit(logOdds1)*expit(logOdds2));
+	}
+	
 	public static double waneLogOdds(double logOdds, double period, double maxPeriod) {
 		if (period < 0) return 0;
 		if (period > maxPeriod) return 0;

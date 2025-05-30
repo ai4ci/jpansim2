@@ -24,7 +24,10 @@ public interface DefaultInHostStochasticStateInitialiser {
 		
 		return ImmutableInHostStochasticState.builder()
 				.setTime(time)
-				.setConfig(configuration)
+				.setBaselineViralInfectionRate(configuration.getBaselineViralInfectionRate())
+				.setBaselineViralReplicationRate(configuration.getBaselineViralReplicationRate())
+				.setVirionsDiseaseCutoff(configuration.getVirionsDiseaseCutoff())
+				// .setConfig(configuration)
 				.setTargets(configuration.getTargetCellCount())
 				.setTargetSusceptible(configuration.getTargetCellCount())
 				.setTargetExposed(0)

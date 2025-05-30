@@ -29,9 +29,13 @@ public interface PersonStateCSV extends CommonCSV.State {
 	double getNormalisedViralLoad();
 	double getContactExposure();
 	double getPresumedLocalPrevalence();
+	double getTrueLocalPrevalence();
 	double getProbabilityInfectiousToday();
+	double getLogOddsInfectiousToday();
 	long getContactCount();
 	long getExposureCount();
+	
+	boolean isIncidentInfection();
 	
 //	default String header() {
 //		return CSVUtil.headers(this.getClass());

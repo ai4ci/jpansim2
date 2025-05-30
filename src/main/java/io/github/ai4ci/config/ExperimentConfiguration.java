@@ -11,6 +11,7 @@ import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -186,6 +187,7 @@ public interface ExperimentConfiguration {
 	static ExperimentConfiguration readConfig(Path file) throws StreamWriteException, DatabindException, IOException {
 		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
+		om.enable(JsonParser.Feature.ALLOW_COMMENTS);
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
 		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(file.toFile());

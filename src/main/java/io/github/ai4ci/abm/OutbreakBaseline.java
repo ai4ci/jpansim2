@@ -7,6 +7,11 @@ import org.immutables.value.Value;
 import io.github.ai4ci.abm.mechanics.StateMachine.PolicyState;
 
 @Value.Immutable
+/** 
+ * Simulation wide parameters that do not change over the course of the 
+ * simulation. Many of these are calibrated from the initial configuration of 
+ * the model.
+ */
 public interface OutbreakBaseline extends Serializable {
 
 	// Simulation baseline viral factors
@@ -15,9 +20,14 @@ public interface OutbreakBaseline extends Serializable {
 	 * This value is a scale factor for the viral load to make a 
 	 * probability that a transmission will occur given a particular
 	 * viral load.  
-	 * @return
 	 */
 	double getViralLoadTransmissibilityProbabilityFactor();
+	
+	/**
+	 * Used in calibration of risk models, to help determine the information
+	 * value of a contact's risk. 
+	 */
+	double getExpectedContactsPerPersonPerDay();
 
 	/**
 	 * Calibrated from the infection case ratio this gives a simulation
@@ -58,7 +68,16 @@ public interface OutbreakBaseline extends Serializable {
 	
 	PolicyState getDefaultPolicyState();
 	
+	/**
+	 * Calibrated from the 95% quantile of the infectivity profile of the in host
+	 * model run over a set of unadjusted parameters
+	 */
 	int getInfectiveDuration();
+	
+	/**
+	 * Calibrated from the 95% quantile of the severity profile of the in host
+	 * model run over a set of unadjusted parameters
+	 */
 	int getSymptomDuration();
 	
 	

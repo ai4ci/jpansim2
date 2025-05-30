@@ -143,6 +143,29 @@
         }
       }
     },
+    "ImmutableRiskKernelInBuilt" : {
+      "type" : "object",
+      "properties" : {
+        "kernel" : {
+          "type" : "string",
+          "enum" : [ "DEFAULT_SYMPTOM_ONSET_KERNEL", "DEFAULT_TEST_SAMPLE_KERNEL", "DEFAULT_CONTACT_KERNEL" ]
+        }
+      }
+    },
+    "ImmutableRiskKernelProvided" : {
+      "type" : "object",
+      "properties" : {
+        "density" : {
+          "type" : "array",
+          "items" : {
+            "type" : "number"
+          }
+        },
+        "offset" : {
+          "type" : "integer"
+        }
+      }
+    },
     "ImmutableSimpleDistribution" : {
       "type" : "object",
       "properties" : {
@@ -242,13 +265,6 @@
           } ]
         },
         "complianceProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "contactProbability" : {
           "anyOf" : [ {
             "$ref" : "#/definitions/ImmutableEmpiricalFunction"
           }, {
@@ -454,7 +470,7 @@
           "type" : "array",
           "items" : {
             "type" : "string",
-            "enum" : [ "SUMMARY", "INTERNAL_STATE", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS" ]
+            "enum" : [ "SUMMARY", "INTERNAL_STATE", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE" ]
           }
         },
         "simulationDuration" : {
@@ -490,6 +506,12 @@
         "caseHospitalisationRate" : {
           "type" : "number"
         },
+        "complianceDeteriorationRate" : {
+          "type" : "number"
+        },
+        "complianceImprovementRate" : {
+          "type" : "number"
+        },
         "complianceProbability" : {
           "anyOf" : [ {
             "$ref" : "#/definitions/ImmutableSimpleDistribution"
@@ -499,13 +521,6 @@
         },
         "contactDetectedProbability" : {
           "type" : "number"
-        },
-        "contactProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
         },
         "defaultBehaviourModelName" : {
           "type" : "string"
@@ -534,6 +549,9 @@
             "$ref" : "#/definitions/PartialMarkovStateModel"
           } ]
         },
+        "initialEstimateIncubationPeriod" : {
+          "type" : "number"
+        },
         "initialEstimateInfectionDuration" : {
           "type" : "number"
         },
@@ -541,6 +559,12 @@
           "type" : "number"
         },
         "initialEstimateSymptomSpecificity" : {
+          "type" : "number"
+        },
+        "lockdownReleasePrevalenceTrigger" : {
+          "type" : "number"
+        },
+        "lockdownStartPrevalenceTrigger" : {
           "type" : "number"
         },
         "maximumSocialContactReduction" : {
@@ -552,6 +576,33 @@
         },
         "name" : {
           "type" : "string"
+        },
+        "organicRateOfMobilityChange" : {
+          "type" : "number"
+        },
+        "riskModelContactsKernel" : {
+          "anyOf" : [ {
+            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+          }, {
+            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+          } ]
+        },
+        "riskModelSymptomKernel" : {
+          "anyOf" : [ {
+            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+          }, {
+            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+          } ]
+        },
+        "riskModelTestKernel" : {
+          "anyOf" : [ {
+            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+          }, {
+            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+          } ]
+        },
+        "smartAppRiskTrigger" : {
+          "type" : "number"
         },
         "symptomSensitivity" : {
           "anyOf" : [ {
@@ -604,6 +655,12 @@
                 "caseHospitalisationRate" : {
                   "type" : "number"
                 },
+                "complianceDeteriorationRate" : {
+                  "type" : "number"
+                },
+                "complianceImprovementRate" : {
+                  "type" : "number"
+                },
                 "complianceProbability" : {
                   "anyOf" : [ {
                     "$ref" : "#/definitions/ImmutableSimpleDistribution"
@@ -613,13 +670,6 @@
                 },
                 "contactDetectedProbability" : {
                   "type" : "number"
-                },
-                "contactProbability" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
                 },
                 "defaultBehaviourModelName" : {
                   "type" : "string"
@@ -648,6 +698,9 @@
                     "$ref" : "#/definitions/PartialMarkovStateModel"
                   } ]
                 },
+                "initialEstimateIncubationPeriod" : {
+                  "type" : "number"
+                },
                 "initialEstimateInfectionDuration" : {
                   "type" : "number"
                 },
@@ -655,6 +708,12 @@
                   "type" : "number"
                 },
                 "initialEstimateSymptomSpecificity" : {
+                  "type" : "number"
+                },
+                "lockdownReleasePrevalenceTrigger" : {
+                  "type" : "number"
+                },
+                "lockdownStartPrevalenceTrigger" : {
                   "type" : "number"
                 },
                 "maximumSocialContactReduction" : {
@@ -666,6 +725,33 @@
                 },
                 "name" : {
                   "type" : "string"
+                },
+                "organicRateOfMobilityChange" : {
+                  "type" : "number"
+                },
+                "riskModelContactsKernel" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+                  }, {
+                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+                  } ]
+                },
+                "riskModelSymptomKernel" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+                  }, {
+                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+                  } ]
+                },
+                "riskModelTestKernel" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
+                  }, {
+                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
+                  } ]
+                },
+                "smartAppRiskTrigger" : {
+                  "type" : "number"
                 },
                 "symptomSensitivity" : {
                   "anyOf" : [ {

@@ -20,6 +20,7 @@ public interface OutbreakCSV extends CommonCSV.State {
 	}
 	
 	long getIncidence();
+	double getPrevalence();
 	long getCumulativeInfections(); 
 	long getCumulativeDeaths();
 	long getHospitalisedCount(); 

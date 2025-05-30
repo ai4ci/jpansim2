@@ -54,7 +54,7 @@ public interface DefaultInHostMarkovStateInitialiser {
 		
 		return ImmutableInHostMarkovState.builder()
 				.setTime(time)
-				.setConfig(configuration)
+				// .setConfig(configuration)
 				.setInfectionCaseRate(execConfig.getInfectionCaseRate())
 				.setInfectionHospitalisationRate(execConfig.getInfectionHospitalisationRate())
 				.setInfectionFatalityRate(execConfig.getInfectionFatalityRate())
