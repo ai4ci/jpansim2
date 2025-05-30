@@ -21,7 +21,7 @@ jobs:
           cache: 'maven'
       - run: mvn clean compile package -DskipTests
       - run: mkdir staging; for old in target/*-jar-with-dependencies.jar; do new=$(echo $old | sed -e 's|target\/\(.*\)-jar-with-dependencies.jar|staging\/\1.jar|g'); cp "$old" "$new"; done
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: Package
           path: staging
