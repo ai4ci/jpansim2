@@ -4,6 +4,9 @@ import java.io.Serializable;
 
 import org.jgrapht.graph.DefaultWeightedEdge;
 
+/**
+ * A weighted network edge.
+ */
 public class SocialRelationship extends DefaultWeightedEdge implements Serializable {
 	/**
 	 * The significance of the relationship. This is a probability / quantile

@@ -42,7 +42,8 @@ public abstract class PauseableThread extends Thread {
 	}
 	
 	/**
-	 * Threads can pause themselves but will never unpause (unless halting).
+	 * Threads can pause themselves but will never unpause (unless halting). If 
+	 * the thread is complete this does nothing.
 	 */
 	public void pause() {
 		if (!isComplete()) pause = true;
@@ -50,8 +51,8 @@ public abstract class PauseableThread extends Thread {
 	
 	/**
 	 * Non blocking unpause a thread. Nothing happens if the thread is not 
-	 * paused. Otherwise the thread will resume executing doLoop() repeatedly,
-	 * until isComplete() is true.
+	 * paused. Otherwise the thread will be woken up and resume executing 
+	 * doLoop() repeatedly, until isComplete() is true, or told to halt.
 	 */
 	public void unpause() {
 		this.pause = false;
@@ -102,9 +103,8 @@ public abstract class PauseableThread extends Thread {
 	 */
 	public abstract void doLoop();
 	/**
-	 * Signify the thread loop is complete and proceed to shutdown. This will 
-	 * not get called if the thread is paused.
-	 * @return
+	 * Signify the thread loop is complete and proceed to shutdown. This is
+	 * checked even if the thread is paused.
 	 */
 	public abstract boolean isComplete();
 	/**

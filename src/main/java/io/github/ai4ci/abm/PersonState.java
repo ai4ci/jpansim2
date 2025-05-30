@@ -17,6 +17,14 @@ import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ReflectionUtils;
 import io.github.ai4ci.util.Sampler;
 
+/**
+ * The person's current state is updated in each round of the simulation. It 
+ * holds data on transmission, mobility, compliance, app use, and transient 
+ * values such as exposure to virus and immunisation doses. It also holds the 
+ * in host viral load model which is also updated on each round of simulation.
+ * The current state also includes a risk model which analyses current observed
+ * data about the patient's history.
+ */
 @Value.Immutable
 public interface PersonState extends PersonTemporalState {
 

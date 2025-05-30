@@ -12,6 +12,13 @@ import org.immutables.value.Value;
 
 import io.github.ai4ci.util.ModelNav;
 
+/**
+ * Historical patient data relevant to the ongoing simulation. Some of this is copied 
+ * from the patients state, and some is updated by patient behaviour. Notably
+ * this is where contacts, and testing is stored as the history of both are
+ * needed. The simulation stores enough history for an individual to inform the
+ * current state (in terms of 
+ */
 @Value.Immutable
 public interface PersonHistory extends PersonTemporalState {
 	

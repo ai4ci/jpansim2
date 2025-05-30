@@ -22,6 +22,28 @@ import java.io.ObjectOutputStream;
  */
 public class Cloner {
 
+	public static class MockOutputStream extends OutputStream {
+
+		protected long size = 0;
+		
+		@Override
+		public void write(int b) throws IOException {
+			size +=1;
+		}
+		
+		public long size() {
+			return size;
+		}
+		
+		public final void write(byte b[]) {
+			size += b.length;
+		}
+
+		public final void write(byte b[], int off, int len) {
+			size += len;
+		}
+	}
+	
 	/**
 	 * ByteArrayOutputStream implementation that doesn't synchronize methods
 	 * and doesn't copy the data on toByteArray().
@@ -196,8 +218,8 @@ public class Cloner {
 	public static long estimateSize(Object obj) {
 		long objSize = 0;
 		try {
-			FastByteArrayOutputStream baos = 
-					new FastByteArrayOutputStream();
+			MockOutputStream baos = 
+					new MockOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream(baos);
 			oos.writeObject(obj);
 			oos.close();

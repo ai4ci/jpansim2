@@ -31,6 +31,8 @@ public @interface Data {
 	    toBuilder = "toBuilder",
 	    strictBuilder = false,
 	    underrideHashCode = "hash",
+	    underrideEquals = "equality",
+	    underrideToString = "print",
 	    strictModifiable = false,
 	    passAnnotations = {
 	    		// CsvColumn.class
@@ -60,6 +62,9 @@ public @interface Data {
 	    toBuilder = "toBuilder",
 	    strictBuilder = false,
 	    strictModifiable = false,
+		underrideHashCode = "hash",
+	    underrideEquals = "equality",
+	    underrideToString = "print",
 	    passAnnotations = {
 	    		// CsvColumn.class
 	    },
@@ -89,6 +94,9 @@ public @interface Data {
 	    typeImmutable = "Partial*",
 	    strictModifiable = false,
 	    depluralize = true, // enable feature
+		underrideHashCode = "hash",
+	    underrideEquals = "equality",
+	    underrideToString = "print",
 	    depluralizeDictionary = {"person:people"}, // specifying dictionary of exceptions
 	    validationMethod = ValidationMethod.NONE
 	    // builder = "new" //, // construct builder using 'new' instead of factory method

@@ -12,8 +12,10 @@ import io.github.ai4ci.util.ThreadSafeArray;
  * individual {@link io.github.ai4ci.abm.PersonHistory} entries in the model.
  */
 public class PersonStateContacts implements Serializable {
-	ThreadSafeArray<Contact>[] network;
-	ThreadSafeArray<Exposure>[] exposure;
+	volatile ThreadSafeArray<Contact>[] network;
+	volatile boolean[] networkWait;
+	volatile ThreadSafeArray<Exposure>[] exposure;
+	volatile boolean[] exposureWait;
 	int maxSize;
 	
 	@SuppressWarnings("unchecked")
@@ -23,17 +25,29 @@ public class PersonStateContacts implements Serializable {
 	 */
 	public PersonStateContacts(int nodes, int maxSize) {
 		network = new ThreadSafeArray[nodes];
+		networkWait = new boolean[nodes];
 		exposure = new ThreadSafeArray[nodes];
+		exposureWait = new boolean[nodes];
 		this.maxSize = maxSize;	
 	}
 	
-	public synchronized ThreadSafeArray<Contact> write(int i) {
-		if (network[i]==null) network[i] = new ThreadSafeArray<Contact>(Contact.class, maxSize);
+	public ThreadSafeArray<Contact> write(int i) {
+		while (networkWait[i]) Thread.onSpinWait();
+		if (network[i] == null) {
+			networkWait[i] = true;
+			network[i] = new ThreadSafeArray<Contact>(Contact.class, maxSize);
+			networkWait[i] = false;
+		}
 		return network[i];
 	}
 	
-	public synchronized ThreadSafeArray<Exposure> writeExp(int i) {
-		if (exposure[i]==null) exposure[i] = new ThreadSafeArray<Exposure>(Exposure.class, maxSize);
+	public ThreadSafeArray<Exposure> writeExp(int i) {
+		while (exposureWait[i]) Thread.onSpinWait();
+		if (exposure[i]==null) { 
+			exposureWait[i]=true;
+			exposure[i] = new ThreadSafeArray<Exposure>(Exposure.class, maxSize);
+			exposureWait[i]=false;
+		}
 		return exposure[i];
 	}
 	

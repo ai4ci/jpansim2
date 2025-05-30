@@ -13,6 +13,9 @@ import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.HistogramDistribution;
 
+/**
+ * Various utilities to calibrate model to real world observations
+ */
 public class Calibration {
 
 	static Logger log = LoggerFactory.getLogger(Calibration.class);

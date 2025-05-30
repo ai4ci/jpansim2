@@ -38,7 +38,7 @@ JPanSim2 command line options.
  -o,--output <output>       The path to the output directory. Defaults to
                             the current working directory.
 N.B. Slurm support: batch commands must be continuous and start at 1
-e.g. sbatch --array=1-32
+e.g. sbatch --array=1-32 slurm.sh
 ```
 
 The simulation expects a json configuration file, with path supplied as a parameter or
@@ -62,7 +62,18 @@ replicated to allow for the effect of randomness. This can result in many
 environments in a given experiment. Each environment is constructed once and re-used
 for each simulation execution. The setup of environments can be parallelised 
 across SLURM nodes, in which case the outputs of each node will be in a numbered
-sub-directory in the output directory.
+sub-directory in the output directory. A sample slurm script is provided. This 
+is expected to be called with an `sbatch` command and will use multiple nodes 
+for each setup, if there are more than one configured, and the number of nodes
+is given by an `--array=1-10` parameter. e.g.
+
+```
+cd simulation
+# e.g. there must be a config.yml in the simulation directory.
+sbatch --array=1-32 ~/slurm.sh
+# e.g. the slurm script is in the user home directory on the 
+# cluster
+```
 
 Each environment then has a set of simulations executed on it. Each execution
 may have different outbreak parameters or population behaviour configured (as

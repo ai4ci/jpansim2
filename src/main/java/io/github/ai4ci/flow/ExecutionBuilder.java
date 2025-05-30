@@ -48,7 +48,7 @@ public class ExecutionBuilder {
 	) {
 		this.setupConfig = setupConfig;
 		this.modelBuilder = BuilderFactory.builderFrom(setupConfig);
-		this.outbreak = ModifiableOutbreak.createOutbreakStub();
+		this.outbreak = Outbreak.createOutbreakStub();
 	}
 	
 	SetupConfiguration setupConfig;

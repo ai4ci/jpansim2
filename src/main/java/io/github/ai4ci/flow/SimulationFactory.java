@@ -96,7 +96,17 @@ public class SimulationFactory extends PauseableThread {
 				
 				{
 					ExecutionBuilder builder2;
-					if (executions.size() > 1) {
+					if (execSize > 1) {
+						if (objSize == -1) {
+							SimulationFactory.this.activity = "sizing model";
+							try {
+								objSize = Cloner.estimateSize(setupBuilder.outbreak);
+								log.info("Each simulation takes up about "+String.format("%1.0f", ((double) objSize)/(1024*1024))+"Mb before configuration.");
+							} catch (Exception e) {
+								log.error("Could't establish initial simulation size. It is possibly too big to be cloned.");
+								objSize = 20*1024*1024;
+							}
+						}
 						SimulationFactory.this.activity = "cloning model";
 						builder2 = setupBuilder.copy(objSize);
 					} else {
@@ -141,10 +151,6 @@ public class SimulationFactory extends PauseableThread {
 		} else {
 			Outbreak tmp = builder.next();
 			queue.add(tmp);
-			if (objSize == -1) {
-				objSize = Cloner.estimateSize(tmp);
-				log.debug("Each simulation takes up about "+String.format("%1.2f", ((double) objSize)/(1024*1024*1024))+" Gb memory before running.");
-			}
 			mon.notifyFactoryReady(this);
 		}
 		
