@@ -21,8 +21,9 @@ public interface BatchConfiguration {
 				Exporters.DEMOGRAPHICS,
 				Exporters.SUMMARY,
 				Exporters.INFECTIVITY_PROFILE,
-				Exporters.INTERNAL_STATE,
-				Exporters.FINAL_STATE
+				Exporters.FINAL_STATE,
+				Exporters.BEHAVIOUR,
+				Exporters.CONTACT_COUNTS
 			)
 			.build();
 
@@ -79,7 +80,7 @@ public interface BatchConfiguration {
 				Exporters.DEMOGRAPHICS,
 				Exporters.SUMMARY,
 				Exporters.INFECTIVITY_PROFILE,
-				Exporters.INTERNAL_STATE,
+				Exporters.LINELIST,
 				Exporters.FINAL_STATE
 		};
 	};

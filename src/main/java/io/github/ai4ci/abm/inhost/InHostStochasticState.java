@@ -52,8 +52,8 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	 * @return
 	 */
 	default double getNormalisedViralLoad() {
-		double tmp = ((double) getVirionsProduced()) / (double) this.getVirionsDiseaseCutoff();
-		return tmp < 1 ? 0 : tmp;
+		double tmp = Conversions.rateRatio( (double) getVirionsProduced(), (double) this.getVirionsDiseaseCutoff());
+		return tmp;
 	}
 	
 	/** 

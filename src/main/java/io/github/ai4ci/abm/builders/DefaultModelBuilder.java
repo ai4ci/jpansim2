@@ -19,7 +19,7 @@ public class DefaultModelBuilder extends AbstractModelBuilder implements
 
 	@Override
 	public ModifiableOutbreak setupOutbreak(ModifiableOutbreak outbreak, SetupConfiguration config, Sampler sampler) {
-		return DefaultNetworkSetup.super.setupOutbreak(outbreak, (WattsStrogatzConfiguration) config, sampler);
+		return DefaultNetworkSetup.super.setupOutbreak(outbreak, config, sampler);
 	}
 
 	@Override

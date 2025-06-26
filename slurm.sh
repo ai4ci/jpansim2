@@ -31,4 +31,4 @@ export JAVA_OPTS="-Xms4g -Xmx150g"
 ## Then connect add JMX connection and use localhost:9999
 
 ## Launch with correct CPU binding
-srun java $JAVA_OPTS -jar ~/bin/jpansim2-0.1.3-jar-with-dependencies.jar
+srun java $JAVA_OPTS -jar ~/bin/jpansim2-0.2.1-jar-with-dependencies.jar

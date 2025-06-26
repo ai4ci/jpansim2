@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.Calibration;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.inhost.InHostModelState;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
@@ -34,6 +35,24 @@ public interface InHostConfiguration extends Serializable {
 
 	static final double LIMIT = 0.999;
 
+	
+	
+	private static double[][] transmissionFromLoad(double[][] viralLoad, double transmissionParameter) {
+		int samples = viralLoad.length;
+		int duration = viralLoad[0].length;
+		double[][] trans = new double[samples][duration];
+		for (int n = 0; n < samples; n++) {
+			for (int i = 0; i < duration; i++) {
+				trans[n][i] = 
+						OutbreakBaseline.transmissibilityFromViralLoad(	
+								viralLoad[n][i],
+								transmissionParameter
+						);
+			}
+		}
+		return trans;
+	}
+	
 	/**
 	 * Infectivity profile assumes a contact has occurred and it is the conditional
 	 * probability of transmission on that day versus any other particular day. This
@@ -50,38 +69,44 @@ public interface InHostConfiguration extends Serializable {
 	 * of generation time, as people with multiple exposures eventually get
 	 * infected. This would tend to make the GT look shorter than the infectious
 	 * period.
+	 * 
+	 * The infectivity profile is the calibrated transmission probability for 
+	 * the average case conditioned on a transmission occurring. Although this 
+	 * is calculated it is not really used internally, except to calculate an
+	 * estimate of $R_t$, and to define the true length of the infective period. 
+	 *
 	 */
-	public static ImmutableDelayDistribution getInfectivityProfile(InHostConfiguration config,
-			ExecutionConfiguration execConfig, int samples, int duration) {
-		Sampler rng = Sampler.getSampler();
-		double[] infectivity = new double[duration];
-		for (int n = 0; n <= samples; n++) {
-
-			InHostModelState<?> state = InHostModelState.test(config, execConfig, rng);
-			for (int i = 0; i < duration; i++) {
-				state = state.update(rng, i == 0 ? 1D : 0D, // viralExposure
-						0);
-				infectivity[i] = infectivity[i] + state.getNormalisedViralLoad();
+	public static DelayDistribution getInfectivityProfile(
+			ExecutionConfiguration execConfig,
+			double transmissionParameter,
+			int samples, int duration) {
+		return getInfectivityProfile(
+				getViralLoadProfile(execConfig, samples, duration),
+				transmissionParameter
+		);
+	}
+	
+	public static DelayDistribution getInfectivityProfile(
+			double[][] viralLoad,
+			double transmissionParameter
+		) {
+		
+		int samples = viralLoad.length;
+		int duration = viralLoad[0].length;
+		
+		double[][] trans = transmissionFromLoad(viralLoad,transmissionParameter);
+		// Sample (1st dimension: samples wise ) average to get transmission probability array
+		double[] meanTrans = new double[duration];
+		for (int i=0; i<duration; i++) {
+			for (int n = 0; n < samples; n++) {
+				meanTrans[i] += trans[n][i]/samples;
 			}
 		}
-		double[] cumulative = new double[duration];
-
-		for (int i = 0; i < duration; i++) {
-			infectivity[i] = infectivity[i] / samples;
-			cumulative[i] = infectivity[i] + (i == 0 ? 0 : cumulative[i - 1]);
-		}
-		int cutoff = 0;
-		double average = 0;
-		for (int i = 0; i < duration; i++) {
-			if (cumulative[i] / cumulative[duration - 1] > LIMIT) {
-				cutoff = i;
-				break;
-			}
-			average += infectivity[i] * i;
-		}
-		average = average / cutoff;
-		log.debug("Serial interval " + LIMIT + " limit: " + cutoff + "; mean duration: " + average);
-		return DelayDistribution.unnormalised(Arrays.copyOfRange(infectivity, 0, cutoff));
+		DelayDistribution tmp = DelayDistribution.unnormalised( 
+				DelayDistribution.trimTail(meanTrans, 1-LIMIT, false)
+				); 
+		log.debug("Serial interval " + LIMIT + " limit: " + tmp.size() + "; mean duration: " + tmp.expected());
+		return tmp;
 	}
 
 	/**
@@ -90,28 +115,27 @@ public interface InHostConfiguration extends Serializable {
 	 * transmission but this needs to be calibrated to get a population R0. The
 	 * connection between viral load and infectivity profile is actually a hazard
 	 * function.
+	 * @return an array with sample as first dimension and time and second dimension
 	 */
-	public static double[] getViralLoadProfile(InHostConfiguration config, ExecutionConfiguration execConfig,
+	public static double[][] getViralLoadProfile(ExecutionConfiguration execConfig,
 			int samples, int duration) {
+		//TODO: need to switch this to Stream<double[]> and calculate transmission
+		// from viral load for each profile seperately because the average tends
+		// to underrepresent when cut off of 1 is applied later. Interestingly 
+		// this probably is why it used to work as the cutoff was before averaging.
+		InHostConfiguration config = execConfig.getInHostConfiguration();
+		
 		Sampler rng = Sampler.getSampler();
-		double[] load = new double[duration];
-		int lastNonZero = 0;
-		for (int n = 0; n <= samples; n++) {
-
+		double[][] load = new double[samples][duration];
+		for (int n = 0; n < samples; n++) {
 			InHostModelState<?> state = InHostModelState.test(config, execConfig, rng);
 			for (int i = 0; i < duration; i++) {
 				state = state.update(rng, i == 1 ? 1D : 0D, // viralExposure
 						0);
-				load[i] = load[i] + state.getNormalisedViralLoad();
-				if (state.getNormalisedViralLoad() > 0)
-					lastNonZero = i;
+				load[n][i] = state.getNormalisedViralLoad();
 			}
 		}
-		double[] out = new double[lastNonZero + 1];
-		for (int i = 0; i <= lastNonZero; i++) {
-			out[i] = load[i] / samples;
-		}
-		return out;
+		return load;
 	}
 
 	/**
@@ -157,8 +181,9 @@ public interface InHostConfiguration extends Serializable {
 		return Calibration.inferSeverityCutoff(outbreak, configuration.getInfectionFatalityRate());
 	}
 
-	public static DelayDistribution getSeverityProfile(InHostConfiguration config, ExecutionConfiguration execConfig,
+	public static DelayDistribution getSeverityProfile(ExecutionConfiguration execConfig,
 			int samples, int duration) {
+		InHostConfiguration config = execConfig.getInHostConfiguration();
 		Sampler rng = Sampler.getSampler();
 		double[] symptom = new double[duration];
 		for (int n = 0; n <= samples; n++) {
@@ -191,5 +216,7 @@ public interface InHostConfiguration extends Serializable {
 		log.debug("Symptom distribution " + LIMIT + " limit: " + cutoff + "; mean duration: " + average);
 		return DelayDistribution.unnormalised(Arrays.copyOfRange(symptom, 0, cutoff));
 	}
+
+	
 
 }

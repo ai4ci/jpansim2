@@ -1,10 +1,10 @@
 package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Exposure;
-import io.github.ai4ci.util.ThreadSafeArray;
 
 /**
  * This is a temporary data structure that gets generated during the update
@@ -12,11 +12,10 @@ import io.github.ai4ci.util.ThreadSafeArray;
  * individual {@link io.github.ai4ci.abm.PersonHistory} entries in the model.
  */
 public class PersonStateContacts implements Serializable {
-	volatile ThreadSafeArray<Contact>[] network;
-	volatile boolean[] networkWait;
-	volatile ThreadSafeArray<Exposure>[] exposure;
-	volatile boolean[] exposureWait;
-	int maxSize;
+	//volatile ThreadSafeArray<Contact>[] network;
+	ConcurrentSkipListMap<Integer,Contact>[] network;
+	//volatile ThreadSafeArray<Exposure>[] exposure;
+	ConcurrentSkipListMap<Integer,Exposure>[] exposure;
 	
 	@SuppressWarnings("unchecked")
 	/** nodes is essentially the number of people in the model. Max size is the
@@ -24,40 +23,48 @@ public class PersonStateContacts implements Serializable {
 	 * create a data structure 2*nodes*maxSize big.
 	 */
 	public PersonStateContacts(int nodes, int maxSize) {
-		network = new ThreadSafeArray[nodes];
-		networkWait = new boolean[nodes];
-		exposure = new ThreadSafeArray[nodes];
-		exposureWait = new boolean[nodes];
-		this.maxSize = maxSize;	
+		network = new ConcurrentSkipListMap[nodes]; //ThreadSafeArray[nodes];
+		exposure = new ConcurrentSkipListMap[nodes]; //new ThreadSafeArray[nodes];
+		
+		for (int i=0; i<nodes; i++) {
+			network[i] = //new ThreadSafeArray<Contact>(Contact.class,maxSize);
+					new ConcurrentSkipListMap<Integer,Contact>();
+			exposure[i] = //ThreadSafeArray.empty(Exposure.class);
+					new ConcurrentSkipListMap<Integer,Exposure>();
+		}
 	}
 	
-	public ThreadSafeArray<Contact> write(int i) {
-		while (networkWait[i]) Thread.onSpinWait();
-		if (network[i] == null) {
-			networkWait[i] = true;
-			network[i] = new ThreadSafeArray<Contact>(Contact.class, maxSize);
-			networkWait[i] = false;
-		}
+	public ConcurrentSkipListMap<Integer,Contact> write(int i) {
 		return network[i];
 	}
 	
-	public ThreadSafeArray<Exposure> writeExp(int i) {
-		while (exposureWait[i]) Thread.onSpinWait();
-		if (exposure[i]==null) { 
-			exposureWait[i]=true;
-			exposure[i] = new ThreadSafeArray<Exposure>(Exposure.class, maxSize);
-			exposureWait[i]=false;
-		}
+	public ConcurrentSkipListMap<Integer, Exposure> writeExp(int i) {
 		return exposure[i];
 	}
 	
-	public ThreadSafeArray<Contact> get(int i) {
-		if (network[i]==null) return ThreadSafeArray.empty(Contact.class);
-		return network[i];
+//	public Contact[][] finaliseContacts() {
+//		Contact[][] out = new Contact[network.length][];
+//		IntStream.range(0, network.length).parallel().forEach(
+//			// i -> out[i] = network[i].finish()
+//			i -> out[i] = network[i].values().toArray(j -> new Contact[j])
+//		);
+//		return out;
+//	}
+//	
+//	public Exposure[][] finaliseExposures() {
+//		Exposure[][] out = new Exposure[exposure.length][];
+//		IntStream.range(0, exposure.length).parallel().forEach(
+//			//i -> out[i] = exposure[i].finish()
+//			i -> out[i] = exposure[i].values().toArray(j -> new Exposure[j])
+//		);
+//		return out;
+//	}
+
+	public Contact[] getContactsForId(Integer ref) {
+		return network[ref].values().toArray(j -> new Contact[j]);
 	}
 	
-	public ThreadSafeArray<Exposure> getExp(int i) {
-		if (exposure[i]==null) return ThreadSafeArray.empty(Exposure.class);
-		return exposure[i];
+	public Exposure[] getExposuresForId(Integer ref) {
+		return exposure[ref].values().toArray(j -> new Exposure[j]);
 	}
 }

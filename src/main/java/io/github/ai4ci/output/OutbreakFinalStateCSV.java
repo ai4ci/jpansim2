@@ -7,9 +7,10 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.CSVWriter;
 
 @Value.Immutable
-@Export(stage = Stage.FINISH, value = "final-state.csv", size = 64, selector = OutbreakFinalStateCSV.Selector.class)
+@Export(stage = Stage.FINISH, value = "final-state.csv", size = 64, selector = OutbreakFinalStateCSV.Selector.class, writer=CSVWriter.class)
 public interface OutbreakFinalStateCSV extends CommonCSV.State {
 
 	static class Selector implements Export.Selector {
@@ -30,24 +31,4 @@ public interface OutbreakFinalStateCSV extends CommonCSV.State {
 	double getCumulativeMobilityDecrease();
 	double getCumulativeComplianceDecrease();
 	
-//	default String header() {
-//		return CommonCSV.super.header()+",incidence,cumulativeInfections,infectedCount,"+
-//			"symptomaticCount,averageMobility,averageViralLoad,averageCompliance,testPositives,testNegatives,presumedTestPositivePrevalence,rtEffective,policy";
-//	}
-//	
-//	default String row() {
-//		return CommonCSV.super.row()+","+csvFrom(
-//			this.getIncidence(),
-//			this.getCumulativeInfections(),
-//			this.getInfectedCount(),
-//			this.getSymptomaticCount(),
-//			this.getAverageMobility(),
-//			this.getAverageViralLoad(),
-//			this.getTestPositives(),
-//			this.getTestNegatives(),
-//			this.getPresumedTestPositivePrevalence(),
-//			this.getRtEffective(),
-//			this.getPolicy()
-//		);
-//	}
 }

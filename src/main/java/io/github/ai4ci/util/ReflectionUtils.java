@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
@@ -17,6 +18,7 @@ import io.github.ai4ci.abm.mechanics.Abstraction.SimpleFunction;
 import io.github.ai4ci.config.DemographicAdjustment.Scale;
 import io.github.ai4ci.config.DemographicAdjustment.ScaleType;
 import io.github.ai4ci.config.PartialDemographicAdjustment;
+import io.github.ai4ci.flow.CSVWriter.Writeable;
 
 public class ReflectionUtils {
 
@@ -248,4 +250,6 @@ public class ReflectionUtils {
 			}
 		);
 	}
+
+
 }

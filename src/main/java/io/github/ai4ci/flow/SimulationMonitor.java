@@ -30,6 +30,7 @@ public class SimulationMonitor implements Runnable {
 	int duration;
 	
 	Object trigger = new Object();
+	volatile private boolean halt = false;
 	
 	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory) throws IOException {
 		this.exporter = config.exporter(baseDirectory);
@@ -79,6 +80,8 @@ public class SimulationMonitor implements Runnable {
 			long abortTime = Long.MAX_VALUE;
 			
 			while (!factory.finished() || isRunning(executor)) {
+				
+				if (halt) break;
 				
 				int checkAgainInMs = 1000;
 				// long memLimit = factory.getSimulationSize().orElse(0);
@@ -162,7 +165,7 @@ public class SimulationMonitor implements Runnable {
 				}
 				waitForEvent(checkAgainInMs);
 			}
-			
+			exporter.finaliseAll();
 			while (!exporter.allWaiting()) {
 				log.info("Waiting for output to complete...");
 				Thread.sleep(1000);
@@ -190,6 +193,11 @@ public class SimulationMonitor implements Runnable {
 	protected void notifyFactoryReady(SimulationFactory factory) {
 		log.info("Build complete: "+factory.status());
 		synchronized(this.trigger) {this.trigger.notifyAll();}
+	}
+
+	public void handle(Exception e) {
+		halt = true;
+		e.printStackTrace();
 	};
 	
 	

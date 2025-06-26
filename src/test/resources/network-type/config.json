@@ -1,0 +1,176 @@
+{
+  "batchConfig" : {
+    "urnBase" : "networks",
+    "simulationDuration" : 200,
+    "exporters" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
+  },
+  "setupConfig" : [ {
+    "modifications" : [ ],
+    "default" : {
+      "name" : "erdos-reyni",
+      "initialImports" : 30,
+      "network" : {
+        "@type" : "erdos-reyni",
+        "networkSize" : 16384,
+        "networkDegree" : 100
+      },
+      "demographics" : { }
+    }
+  }, {
+    "modifications" : [ ],
+    "default" : {
+      "name" : "watts-strogatz",
+      "initialImports" : 30,
+      "network" : {
+        "@type" : "watts-strogatz",
+        "networkSize" : 16384,
+        "networkDegree" : 100,
+        "networkRandomness" : 0.15
+      },
+      "demographics" : { }
+    }
+  }, {
+    "modifications" : [ ],
+    "default" : {
+      "name" : "barabasi-albert",
+      "initialImports" : 30,
+      "network" : {
+        "@type" : "barabasi-albert",
+        "networkSize" : 16384,
+        "networkDegree" : 100
+      },
+      "demographics" : { }
+    }
+  } ],
+  "setupReplications" : 1,
+  "executionConfig" : {
+    "name" : "execution",
+    "r0" : 2.5,
+    "asymptomaticFraction" : 0.5,
+    "caseHospitalisationRate" : 0.05,
+    "caseFatalityRate" : 0.01,
+    "initialScreeningProbability" : 0.01,
+    "contactProbability" : {
+      "type" : "UNIFORM0",
+      "central" : 0.5
+    },
+    "contactDetectedProbability" : 0.9,
+    "complianceProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.99,
+      "dispersion" : 0.1
+    },
+    "appUseProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.97,
+      "dispersion" : 0.1
+    },
+    "inHostConfiguration" : {
+      "@type" : "phenomenological",
+      "infectiousnessCutoff" : 0.2,
+      "incubationPeriod" : {
+        "type" : "LOG_NORM",
+        "central" : 4.0,
+        "dispersion" : 2.0
+      },
+      "approxPeakViralLoad" : {
+        "type" : "UNIMODAL_BETA",
+        "central" : 0.5,
+        "dispersion" : 0.1
+      },
+      "incubationToPeakViralLoadDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 2.0,
+        "dispersion" : 1.0
+      },
+      "peakToRecoveryDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 6.0,
+        "dispersion" : 3.0
+      },
+      "approxPeakImmuneResponse" : {
+        "type" : "UNIMODAL_BETA",
+        "central" : 0.5,
+        "dispersion" : 0.1
+      },
+      "peakImmuneResponseDelay" : {
+        "type" : "LOG_NORM",
+        "central" : 20.0,
+        "dispersion" : 4.0
+      },
+      "immuneWaningHalfLife" : {
+        "type" : "LOG_NORM",
+        "central" : 300.0,
+        "dispersion" : 10.0
+      }
+    },
+    "availableTests" : [ {
+      "testName" : "LFT",
+      "sensitivity" : 0.9,
+      "specificity" : 0.98,
+      "meanTestDelay" : 0.0,
+      "sdTestDelay" : 0.0,
+      "limitOfDetection" : 1.0
+    }, {
+      "testName" : "PCR",
+      "sensitivity" : 0.8,
+      "specificity" : 0.995,
+      "meanTestDelay" : 3.0,
+      "sdTestDelay" : 1.0,
+      "limitOfDetection" : 0.1
+    } ],
+    "symptomSensitivity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.5,
+      "dispersion" : 0.1
+    },
+    "symptomSpecificity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.95,
+      "dispersion" : 0.1
+    },
+    "initialEstimateInfectionDuration" : 10.0,
+    "initialEstimateIncubationPeriod" : 4.0,
+    "initialEstimateSymptomSensitivity" : 0.5,
+    "initialEstimateSymptomSpecificity" : 0.95,
+    "riskModelSymptomKernel" : {
+      "kernel" : "DEFAULT_SYMPTOM_ONSET_KERNEL"
+    },
+    "riskModelTestKernel" : {
+      "kernel" : "DEFAULT_TEST_SAMPLE_KERNEL"
+    },
+    "riskModelContactsKernel" : {
+      "kernel" : "DEFAULT_CONTACT_KERNEL"
+    },
+    "maximumSocialContactReduction" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.25,
+      "dispersion" : 0.1
+    },
+    "defaultBehaviourModelName" : "NonCompliant",
+    "defaultPolicyModelName" : "NoControl",
+    "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+    "complianceDeteriorationRate" : 0.02,
+    "complianceImprovementRate" : 0.01,
+    "organicRateOfMobilityChange" : 0.25,
+    "lockdownReleaseTrigger" : 0.01,
+    "lockdownStartTrigger" : 0.05,
+    "importationProbability" : 0.0,
+    "smartAppRiskTrigger" : 0.05,
+    "demographicAdjustment" : { }
+  },
+  "facets" : [ {
+    "name" : "R",
+    "modifications" : [ {
+      "name" : "1.0",
+      "r0" : 1.0
+    }, {
+      "name" : "2.0",
+      "r0" : 2.0
+    }, {
+      "name" : "3.0",
+      "r0" : 3.0
+    } ]
+  } ],
+  "executionReplications" : 1
+}

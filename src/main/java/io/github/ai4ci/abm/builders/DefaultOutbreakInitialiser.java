@@ -17,7 +17,10 @@ public interface DefaultOutbreakInitialiser {
 			.setPresumedInfectiousPeriod( config.getInitialEstimateInfectionDuration().intValue() )
 			.setPresumedIncubationPeriod( config.getInitialEstimateIncubationPeriod().intValue() )
 			.setPresumedSymptomSensitivity( config.getInitialEstimateSymptomSensitivity() ) 
-			.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSpecificity() );
+			.setPresumedSymptomSpecificity( config.getInitialEstimateSymptomSpecificity() )
+			.setScreeningProbability( config.getInitialScreeningProbability() )
+			.setTriggerValue( config.getLockdownTriggerValue() )
+			;
 			
 			
 		return builder.build();

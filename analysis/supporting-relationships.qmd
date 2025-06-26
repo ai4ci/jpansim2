@@ -739,4 +739,224 @@ ggplot()+
   scale_y_continuous(trans="log1p")
 ```
 
+# Barbarasi albert network
 
+$$
+P(k) \sim k^{-3} \\
+P(k) = Ck^{-3} \\
+C = \frac{1}{\sum_0^n{k^{-3}}} \\
+\langle k \rangle =  C \sum_0^n k^{-2} = \frac{ \sum_0^n k^{-2} } {\sum_0^n k^{-3}} \\
+\langle k^2 \rangle =  C \sum_0^n k^{-1} = \frac{ \sum_0^n k^{-1} } {\sum_0^n k^{-3}} \\
+p_c = \frac{\langle k \rangle}{\langle k^2 \rangle - \langle k \rangle} \\
+$$
+
+```{r}
+
+
+
+```
+
+# Distrbiution of Euclidian distance on grid
+
+```{r}
+
+x=0:29
+y=0:29
+
+d=rep(0,(length(x)*length(y))^2)
+i=1
+for (x0 in x) {
+  for (y0 in y) {
+    for (x1 in x) {
+      for (y1 in y) {
+        if (x0 != x1 || y0 != y1) {
+          d[i] = sqrt((x1-x0)^2+(y1-y0)^2)
+          i = i+1
+        }
+      }
+    }
+  }
+}
+
+x0 = runif(100000)
+x1 = runif(100000)
+y0 = runif(100000)
+y1 = runif(100000)
+d = sqrt((x1-x0)^2+(y1-y0)^2)
+
+ggplot(tibble(d=d),aes(x=d))+geom_density()
+
+```
+# Percolation threshold
+
+* $\langle k \rangle$ mean of degree distribution
+* $p_c$ percolation threshold ($=\lambda_c$ the effective infection rate - for SIR
+model this is $\lambda = \frac{\beta}{\mu})$
+* $\beta$ S to I transition rate
+* $\mu$ I to R transition rate
+* $\Lambda_1$ is largest eigenvalue of adjacency matrix
+* $r_0$ is initial growth rate
+* $R_0$ is initial reproduction number (>1)
+
+$$
+\lambda_c = p_c = \frac{\langle k \rangle}{\langle k^2 \rangle - \langle k \rangle} \\
+\lambda_c = \frac{1}{\Lambda_1} \\
+r_0 = \beta  \frac{1}{\lambda_c} \\
+R_0 = 1 + \frac{r_0}{\mu} \\
+R_0 = 1 + \frac{\lambda}{\lambda_c} \\
+\lambda = \lambda_c(R_0-1) \\
+p_{I} = 1-e^{-\lambda_c(R_0-1)}
+$$
+
+
+* $P(contact_{ij})$: The probability of contact on any given day
+* $S_{ij}:$ The strength of a social network relationship between two individuals
+$i$ (index case / infector) and $j$ (secondary case / infectee). A number from 0
+(no probability of contact) to 1 (very close, e.g. family) in any given time
+frame.
+* $M_i(t)$: The mobility of an individual at any given number of days after index case infection
+* $V_i(t)$: the viral load of index case $i$ as a function of time. This is an 
+unbounded number greater than zero. A value of 1 is the threshold for 
+infectiousness. Above this threshold the higher the viral load the more probable
+the infection is.
+* $c$: A normalising constant that defines the relationship between viral load
+and transmission.
+
+
+$$
+P(contact_{ij}|t) = S_{ij} \times M_i(t) \times M_j(t) = k_{ij}\\
+
+P(transmission_{i \rightarrow j}|contact_{ij},t) = 
+     \begin{cases}
+       0 &V_i(t)<1\\
+       1-e^{-c(V_i(t)-1)} &V_i(t) \ge 1 \\
+     \end{cases} \\
+     
+P(transmission_{i \rightarrow j}|t) = \begin{cases}
+       0 &V_i(t)<1\\
+       k_{ij} (1-e^{-c(V_i(t)-1)}) &V_i(t) \ge 1 \\
+     \end{cases} \\
+    
+    
+
+$$
+
+
+The potential for transmission in this network is dependent on the expected 
+viral load. We calculate a viral load profile for an average set of people infected
+with an average infectious dose. The probability of transmission over all days is
+the inverse probability that no transmission occurs on any day.
+
+* $\omega_t = V_i(t)-1$: Expected infectious viral load at time t post infection 
+where viral load is larger that zero.
+* ${}^nC_k = \frac{n!}{k!(n-k)!}$
+
+$$
+\begin{align}
+1- P(transmission_{i \rightarrow j}) &= \prod_t \bigg(1-k_{ij} (1-e^{-c\omega_t}) \bigg) \\
+&= \prod_t \bigg((1-k_{ij}) + k_{ij}e^{-c\omega_t} \bigg) \\
+&= \sum_{\tau=0}^t {}^tC_\tau(1-k_{ij})^{t-\tau} k_{ij}^te^{-c\sum_{s=0}^\tau \omega_s} \\
+{}^tA_\tau = {}^tC_\tau(1-k_{ij})^{t-\tau} k_{ij}^t \\
+\Omega_s = \sum_s{\omega_s} \\
+1- P(transmission_{i \rightarrow j}) &= \sum_{\tau=0}^t {}^tA_\tau e^{-c\Omega_\tau} \\
+1- P(transmission_{i \rightarrow j}) &= \sum_{\tau=0}^t {}^tA_\tau  \sum_{n=0}^\infty \frac{(-c\Omega_\tau)^n}{n!} \\
+1- P(transmission_{i \rightarrow j}) &= \sum_{n=0}^\infty \sum_{\tau=0}^t   c^n \frac{ t! (1-k_{ij})^{t-\tau} k_{ij}^t  (-\Omega_\tau)^n}{\tau!(t-\tau)!n!} \\
+\end{align}
+$$
+
+
+
+
+
+
+If we look at the average number of transmissions
+across all possible infection states for the network, we imagine for each 
+possible link ($ij$), what is the probability of transmission, if the index case
+were infected at time 0. This is a transmission potential of the network.
+
+Absolutely! Here's a **summary of the key equations** in **LaTeX form**, ready for you to copy and paste into your documentation, paper, or code comments.
+
+---
+
+## 🧮 1. Precompute Viral Load Profile Coefficients
+
+For each viral load profile $ m = 0,\dots,99 $, compute:
+
+$$
+\begin{aligned}
+B_1^{(m)} &= \sum_{t: V^{(m)}(t) > 1} (V^{(m)}(t) - 1) \\
+B_2^{(m)} &= \sum_{t: V^{(m)}(t) > 1} (V^{(m)}(t) - 1)^2 \\
+B_3^{(m)} &= \sum_{t: V^{(m)}(t) > 1} (V^{(m)}(t) - 1)^3 \\
+B_4^{(m)} &= \sum_{t: V^{(m)}(t) > 1} (V^{(m)}(t) - 1)^4
+\end{aligned}
+$$
+
+---
+
+## 📈 2. Approximate Infectiousness for Profile $ m $
+
+$$
+A^{(m)}(c) \approx B_1^{(m)} c - \frac{B_2^{(m)}}{2} c^2 + \frac{B_3^{(m)}}{6} c^3 - \frac{B_4^{(m)}}{24} c^4
+$$
+
+---
+
+## 🔗 3. Compute Contact Strength
+
+$$
+k_{ij} = S_{ij} \cdot M_i \cdot M_j
+$$
+
+Where:
+- $ S_{ij} $: social tie strength between individuals $ i $ and $ j $
+- $ M_i, M_j $: mobility of individuals $ i $ and $ j $
+
+---
+
+## 📉 4. Taylor Approximation of Exponential
+
+$$
+e^{-k_{ij} A^{(m)}(c)} \approx 1 - x + \frac{x^2}{2} - \frac{x^3}{6} + \frac{x^4}{24}, \quad \text{where } x = k_{ij} A^{(m)}(c)
+$$
+
+---
+
+## 🎯 5. Transmission Probability for Pair $ (i,j) $
+
+$$
+P(\text{transmission}_{i \rightarrow j} \mid c) = \frac{1}{100} \sum_{m=1}^{100} \left[1 - e^{-k_{ij} A^{(m)}(c)}\right]
+$$
+
+Using the polynomial approximation:
+
+$$
+P(\text{transmission}_{i \rightarrow j} \mid c) \approx \frac{1}{100} \sum_{m=1}^{100} \left[c_1^{(m)} c + c_2^{(m)} c^2 + c_3^{(m)} c^3 + c_4^{(m)} c^4 \right]
+$$
+
+Where the coefficients $ c_n^{(m)} $ are derived from $ k_{ij} $ and $ B_n^{(m)} $
+
+---
+
+## 📊 6. Average Transmission Probability Over All Pairs
+
+$$
+\bar{P}(\text{transmission} \mid c) = \frac{1}{N_{ij}} \sum_{i,j} P(\text{transmission}_{i \rightarrow j} \mid c)
+$$
+
+Used to solve for $ c $ such that:
+
+$$
+\bar{P}(\text{transmission} \mid c) = R_0
+$$
+
+---
+
+## ✅ Final Notes
+
+These approximations allow you to:
+- Avoid repeated calls to `exp()`
+- Fully isolate $ c $
+- Precompute all terms depending only on viral load profiles
+- Evaluate transmission probability extremely fast during calibration or simulation
+
+Let me know if you'd like these equations formatted as a PDF or embedded in Markdown!

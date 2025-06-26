@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Optional;
 
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Person;
@@ -28,6 +30,8 @@ import io.github.ai4ci.util.ModelNav;
  */
 @Value.Immutable
 public interface RiskModel extends Serializable {
+	
+	public Logger log = LoggerFactory.getLogger(RiskModel.class);
 	
 	
 	// This is 1 here because the symptoms are only recorded if the person
@@ -97,15 +101,24 @@ public interface RiskModel extends Serializable {
 		return out;
 	}
 	
+	/**
+	 * Logic here is complex. We are updating what we know about the past given
+	 * the extra information that becomes available today. The old directLogOdds
+	 * array is 0..N days in the past from yesterday. We shift this one additional
+	 * day and set todays directLogOdds to 0 using copyOf
+	 */
 	private double[] updateDirectLogOdds(double[] old) {
-		double[] newer = copyOf(old);
-		Kernel symptoms = getSymptomKernel();
 		
 		// the old state accounts for information from symptoms up to last time 
 		// point and we can reuse that (since results are not updated in this model).
+		double[] newer = copyOf(old);
+		// Additional information from symptoms today:
+		Kernel symptoms = getSymptomKernel();
 		
-		// old symptoms inform new time point. the symptoms are relevant up
-		// to the size of the future part of the kernel. Todays value included here
+		
+		// old symptoms inform new time point (today). the symptoms are relevant up
+		// to the size of the future part of the kernel. Todays symptoms also included here
+		// This is all updating index 0 of the array
 		for (int i=0; i < symptoms.retrospectiveSize(); i++) {
 			Optional<PersonHistory> ph = this.getEntity().getHistory(i);
 			final double density = symptoms.getDensity(i);
@@ -116,7 +129,7 @@ public interface RiskModel extends Serializable {
 		
 		// todays symptom state informs past time points, todays results inform
 		// old time points up to past part of the kernel
-		
+		// this is updating indices 1..N of the array
 		{
 			Optional<PersonHistory> ph = this.getEntity().getCurrentHistory();
 			if (ph.isPresent()) {
@@ -154,7 +167,7 @@ public interface RiskModel extends Serializable {
 		{
 			Optional<PersonHistory> ph = this.getEntity().getCurrentHistory();
 			if (ph.isPresent()) {
-				for (TestResult tr: ph.get().getResults()) {
+				for (TestResult tr: ph.get().getTodaysResults()) {
 					// for a given test result delayed by 3 days with a kernel
 					// with max past size of 7 days
 					// a positive result influences everything up to the past size
@@ -181,7 +194,7 @@ public interface RiskModel extends Serializable {
 	 * in contacts of contacts. We are no so we do the simpler thing which is
 	 * look at recent contacts and get an estimate for today only.
 	 */
-	@Value.Derived default double getIndirectLogOdds() {
+	@Value.Lazy default double getIndirectLogOdds() {
 		// double[] newer = new double[getMaxLength()];
 		
 		Kernel contacts = getContactsKernel();
@@ -211,10 +224,14 @@ public interface RiskModel extends Serializable {
 			final double density = contacts.getDensity(i);
 			if (ph.isPresent()) {
 				for (Contact c: ph.get().getTodaysContacts()) {
-					if (c.isDetected()) {
-						logOdds += c.getParticipantState(ph.get()).getRiskModel().getDirectLogOddsInPast(i) * 
-							//c.getProximityDuration() *
-							density;
+					try {
+						if (c.isDetected()) {
+							logOdds += c.getParticipantState(ph.get()).getRiskModel().getDirectLogOddsInPast(i) * 
+								//c.getProximityDuration() *
+								density;
+						}
+					} catch (NullPointerException e) {
+						log.error("Persistent null pointer in contact network detected");
 					}
 				}
 			}

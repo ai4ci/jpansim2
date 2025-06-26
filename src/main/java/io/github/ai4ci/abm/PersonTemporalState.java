@@ -53,22 +53,25 @@ public interface PersonTemporalState extends TemporalState<Person> {
 	 */
 	double getContactExposure();
 	
-//	/**
-//	 * The log likelihood of disease based on the patient's symptoms at a given 
-//	 * point in time. 
-//	 */
-//	double getSymptomLogLikelihood();
-	
 	/**
 	 * An estimate of the local prevalence as estimated by the probability of 
 	 * infection in todays contacts, as might be calculated by a smart agent.
 	 */
 	double getPresumedLocalPrevalence(); 
 	
+	boolean isIncidentExposure();
+	boolean isIncidentInfection();
+	
+	/**
+	 * The infectious period as currently estimated, i.e. not the true value
+	 */
 	default int infPeriod() {
 		return incubPeriod() + ModelNav.modelState(this).getPresumedInfectiousPeriod();
 	}
 
+	/**
+	 * The incubation period as currently estimated, i.e. not the true value
+	 */
 	default int incubPeriod() {
 		return ModelNav.modelState(this).getPresumedIncubationPeriod();
 	}

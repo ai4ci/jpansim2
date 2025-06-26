@@ -1,0 +1,62 @@
+digraph G {
+    rankdir=TB; // Top to Bottom Layout
+    nodesep=0.8;
+
+    node [shape=box, style="rounded", fontname="Arial"];
+    edge [ arrowsize="0.75" fontname="Arial" labelfontname="Arial" labelfontsize="12" labeldistance=1.5 ];
+
+    // Subgraph for Behavior Model
+    subgraph cluster_behavior {
+        label = "Agent Behavior: ReactiveTestAndIsolate";
+        color = green;
+        style = filled;
+        fillcolor = "#f0fff0";
+
+        REACTIVE_PCR [
+            label = "monitor:\nfor symptoms\nbaseline mobility"
+        ];
+
+        AWAIT_DECISION [
+            label = "symptoms?" shape="diamond"
+        ];
+
+        AWAIT_PCR [
+            label = "seek PCR:\nwait for result\nreduce mobility"
+        ];
+
+        TEST_RESULT_DECISION [
+            label = "test result?" shape="diamond"
+        ];
+
+        SELF_ISOLATE [
+            label = "self isolate:\nreduce mobility\ndecrease compliance"
+        ];
+
+        ISOLATION_DECISION [
+            label = "finish isolation?" shape="diamond"
+        ];
+
+        EXIT_TO_DEFAULT [
+            label = "Exit to default behavior",
+            shape = plaintext
+        ];
+
+        // Edges within state machine
+        REACTIVE_PCR -> AWAIT_DECISION;
+
+        AWAIT_DECISION -> REACTIVE_PCR [taillabel="no"];
+        AWAIT_DECISION -> AWAIT_PCR [taillabel="yes"];
+
+        AWAIT_PCR -> TEST_RESULT_DECISION;
+
+        TEST_RESULT_DECISION -> AWAIT_PCR [label="pending"];
+        TEST_RESULT_DECISION -> SELF_ISOLATE [taillabel="positive"];
+        TEST_RESULT_DECISION -> REACTIVE_PCR [taillabel="negative"];
+
+        SELF_ISOLATE -> ISOLATION_DECISION;
+
+        ISOLATION_DECISION -> EXIT_TO_DEFAULT [label="yes - non compliant"];
+        ISOLATION_DECISION -> REACTIVE_PCR [label="yes - completed"];
+        ISOLATION_DECISION -> SELF_ISOLATE [label="no"];
+    }
+}

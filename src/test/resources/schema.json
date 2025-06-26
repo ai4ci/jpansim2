@@ -459,6 +459,10 @@
     },
     "TestParameters" : {
       "type" : "object"
+    },
+    "Value" : {
+      "type" : "string",
+      "enum" : [ "TEST_POSITIVITY", "SCREENING_TEST_POSITIVITY", "TEST_COUNT", "HOSPITAL_BURDEN" ]
     }
   },
   "type" : "object",
@@ -470,7 +474,7 @@
           "type" : "array",
           "items" : {
             "type" : "string",
-            "enum" : [ "SUMMARY", "INTERNAL_STATE", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE" ]
+            "enum" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
           }
         },
         "simulationDuration" : {
@@ -522,6 +526,13 @@
         "contactDetectedProbability" : {
           "type" : "number"
         },
+        "contactProbability" : {
+          "anyOf" : [ {
+            "$ref" : "#/definitions/ImmutableSimpleDistribution"
+          }, {
+            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
+          } ]
+        },
         "defaultBehaviourModelName" : {
           "type" : "string"
         },
@@ -561,11 +572,17 @@
         "initialEstimateSymptomSpecificity" : {
           "type" : "number"
         },
-        "lockdownReleasePrevalenceTrigger" : {
+        "initialScreeningProbability" : {
           "type" : "number"
         },
-        "lockdownStartPrevalenceTrigger" : {
+        "lockdownReleaseTrigger" : {
           "type" : "number"
+        },
+        "lockdownStartTrigger" : {
+          "type" : "number"
+        },
+        "lockdownTriggerValue" : {
+          "$ref" : "#/definitions/Value"
         },
         "maximumSocialContactReduction" : {
           "anyOf" : [ {
@@ -578,6 +595,9 @@
           "type" : "string"
         },
         "organicRateOfMobilityChange" : {
+          "type" : "number"
+        },
+        "r0" : {
           "type" : "number"
         },
         "riskModelContactsKernel" : {
@@ -671,6 +691,13 @@
                 "contactDetectedProbability" : {
                   "type" : "number"
                 },
+                "contactProbability" : {
+                  "anyOf" : [ {
+                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
+                  }, {
+                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
+                  } ]
+                },
                 "defaultBehaviourModelName" : {
                   "type" : "string"
                 },
@@ -710,11 +737,17 @@
                 "initialEstimateSymptomSpecificity" : {
                   "type" : "number"
                 },
-                "lockdownReleasePrevalenceTrigger" : {
+                "initialScreeningProbability" : {
                   "type" : "number"
                 },
-                "lockdownStartPrevalenceTrigger" : {
+                "lockdownReleaseTrigger" : {
                   "type" : "number"
+                },
+                "lockdownStartTrigger" : {
+                  "type" : "number"
+                },
+                "lockdownTriggerValue" : {
+                  "$ref" : "#/definitions/Value"
                 },
                 "maximumSocialContactReduction" : {
                   "anyOf" : [ {
@@ -727,6 +760,9 @@
                   "type" : "string"
                 },
                 "organicRateOfMobilityChange" : {
+                  "type" : "number"
+                },
+                "r0" : {
                   "type" : "number"
                 },
                 "riskModelContactsKernel" : {
@@ -779,77 +815,7 @@
     "setupConfig" : {
       "type" : "array",
       "items" : {
-        "anyOf" : [ {
-          "type" : "object",
-          "properties" : {
-            "modifications" : {
-              "type" : "array",
-              "items" : {
-                "type" : "object",
-                "properties" : {
-                  "initialImports" : {
-                    "type" : "integer"
-                  },
-                  "name" : {
-                    "type" : "string"
-                  },
-                  "networkConnectedness" : {
-                    "type" : "integer"
-                  },
-                  "networkRandomness" : {
-                    "type" : "number"
-                  },
-                  "networkSize" : {
-                    "type" : "integer"
-                  }
-                }
-              }
-            },
-            "name" : {
-              "type" : "string"
-            }
-          }
-        }, {
-          "type" : "object",
-          "properties" : {
-            "modifications" : {
-              "type" : "array",
-              "items" : {
-                "type" : "object",
-                "properties" : {
-                  "ageDistribution" : {
-                    "type" : "object"
-                  },
-                  "initialImports" : {
-                    "type" : "integer"
-                  },
-                  "name" : {
-                    "type" : "string"
-                  },
-                  "networkConnectedness" : {
-                    "type" : "integer"
-                  },
-                  "networkRandomness" : {
-                    "type" : "number"
-                  },
-                  "networkSize" : {
-                    "type" : "integer"
-                  },
-                  "oddsContactFromAgeDifference" : {
-                    "anyOf" : [ {
-                      "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-                    }, {
-                      "$ref" : "#/definitions/ImmutableFixedValueFunction"
-                    } ]
-                  }
-                }
-              }
-            },
-            "name" : {
-              "type" : "string"
-            }
-          }
-        } ]
+        "type" : "object"
       }
     },
     "setupReplications" : {

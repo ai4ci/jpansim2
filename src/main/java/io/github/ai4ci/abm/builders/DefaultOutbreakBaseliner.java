@@ -4,6 +4,7 @@ import io.github.ai4ci.abm.Calibration;
 import io.github.ai4ci.abm.ImmutableOutbreakBaseline;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.util.Sampler;
 
 public interface DefaultOutbreakBaseliner {
@@ -14,11 +15,16 @@ public interface DefaultOutbreakBaseliner {
 		ExecutionConfiguration configuration = outbreak.getExecutionConfiguration();
 	
 		//N.B. happens after people are baselined.., I think
-		
+		double parameter;
+		try {
+			parameter = Calibration.inferViralLoadTransmissionParameterQuick(outbreak, configuration.getR0());
+		} catch (Exception e) {
+			parameter = Calibration.inferViralLoadTransmissionParameter(outbreak, configuration.getR0());
+		}
 		builder
 			.setDefaultPolicyState( configuration.getDefaultPolicyModel() )
-			.setViralLoadTransmissibilityProbabilityFactor( 
-					Calibration.inferViralLoadTransmissionProbabilityFactor(outbreak, configuration.getRO()) 
+			.setViralLoadTransmissibilityParameter( 
+					parameter
 			)
 			.setExpectedContactsPerPersonPerDay(
 					Calibration.contactsPerPersonPerDay(outbreak)
@@ -32,8 +38,8 @@ public interface DefaultOutbreakBaseliner {
 			.setSeverityDeathCutoff(
 					configuration.getInHostConfiguration().getSeverityFatalityCutoff(outbreak, configuration)
 			)
-			.setInfectiveDuration(
-				(int) configuration.getInfectivityProfile().getQuantile(0.95)	
+			.setInfectivityProfile(
+				InHostConfiguration.getInfectivityProfile(configuration,parameter, 100, 100)
 			)
 			.setSymptomDuration(
 				(int) configuration.getSeverityProfile().getQuantile(0.95)

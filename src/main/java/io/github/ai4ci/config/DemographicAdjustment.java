@@ -15,9 +15,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.mechanics.Abstraction.SimpleFunction;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.EmpiricalFunction.Link;
 import io.github.ai4ci.util.FixedValueFunction;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
+import io.github.ai4ci.util.ImmutableMathematicalFunction;
+import io.github.ai4ci.util.LinkFunction;
 
 public interface DemographicAdjustment {
 	
@@ -36,30 +37,48 @@ public interface DemographicAdjustment {
 	
 	public static PartialDemographicAdjustment AGE_DEFAULT =
 			PartialDemographicAdjustment.builder()
-//			.setContactProbability(
-//					ImmutableEmpiricalFunction.builder()
-//						.setX(0,5,15,25,45,75)
-//						.setY(2,1,1.5,1.25,0.8,1.2)
-//						.setLink(Link.LOG)
-//						.build()	
-//				)
+			.setContactProbability(
+					ImmutableEmpiricalFunction.builder()
+						.setX(0,5,15,25,45,75)
+						.setY(2,1,1.5,1.25,0.8,1.2)
+						.setLink(LinkFunction.LOG)
+						.build()	
+				)
 			.setAppUseProbability(FixedValueFunction.ofOne())
 			.setComplianceProbability(FixedValueFunction.ofOne())
 			.setMaximumSocialContactReduction(FixedValueFunction.ofOne())
 			.setIncubationPeriod(FixedValueFunction.ofOne())
 			.setPeakToRecoveryDelay(
 					ImmutableEmpiricalFunction.builder()
-					.setX(0,5,15,25,45,65)
-					.setY(1,0.5,0.5,0.75,1,2)
-					.setLink(Link.LOG)
-					.build()
+						.setX(0,5,15,25,45,65)
+						.setY(1,0.5,0.5,0.75,1,2)
+						.setLink(LinkFunction.LOG)
+						.build()
 			)
 			.setImmuneWaningHalfLife(
 					ImmutableEmpiricalFunction.builder()
-					.setX(0,5,15,25,45,65,85)
-					.setY(1,2,2,1.5,1,0.5,0.25)
-					.setLink(Link.LOG)
-					.build()
+						.setX(0,5,15,25,45,65,85)
+						.setY(1,2,2,1.5,1,0.5,0.25)
+						.setLink(LinkFunction.LOG)
+						.build()
+			)
+			.setCaseHospitalisationRate(
+					ImmutableMathematicalFunction.builder()
+						// baseline 45, doubles every 15 years of age
+						.setFXExpression("exp((x-45)/15*lg(2))")
+						.build()
+			)
+			.setCaseFatalityRate(
+					ImmutableMathematicalFunction.builder()
+						// baseline 45, doubles every 10 years of age
+						.setFXExpression("exp((x-45)/10*lg(2))")
+						.build()
+			)
+			.setAsymptomaticFraction(
+					ImmutableMathematicalFunction.builder()
+						// baseline 45, doubles every 20 years of age (inverted)
+						.setFXExpression("exp((45-x)/20*lg(2))")
+						.build()
 			)
 			.build();
 			
@@ -93,6 +112,7 @@ public interface DemographicAdjustment {
 		@Scale(ScaleType.ODDS) NUMERIC getAsymptomaticFraction();
 		@Scale(ScaleType.ODDS) NUMERIC getCaseHospitalisationRate();
 		@Scale(ScaleType.ODDS) NUMERIC getCaseFatalityRate();
+		@Scale(ScaleType.ODDS) DIST getContactProbability();
 		@Scale(ScaleType.ODDS) DIST getComplianceProbability();
 		@Scale(ScaleType.ODDS) DIST getAppUseProbability();
 		@Scale(ScaleType.ODDS) DIST getMaximumSocialContactReduction();

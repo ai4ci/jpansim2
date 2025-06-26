@@ -1,0 +1,177 @@
+{
+  "batchConfig" : {
+    "urnBase" : "lockdown-compliance",
+    "simulationDuration" : 200,
+    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
+  },
+  "setupConfig" : [ {
+    "modifications" : [ ],
+    "default" : {
+      "name" : "default",
+      "initialImports" : 30,
+      "network" : {
+        "@type" : "erdos-reyni",
+        "networkSize" : 16384,
+        "networkDegree" : 100
+      },
+      "demographics" : { }
+    }
+  } ],
+  "setupReplications" : 1,
+  "executionConfig" : {
+    "name" : "execution",
+    "r0" : 1.75,
+    "asymptomaticFraction" : 0.5,
+    "caseHospitalisationRate" : 0.05,
+    "caseFatalityRate" : 0.01,
+    "initialScreeningProbability" : 0.01,
+    "contactProbability" : {
+      "type" : "UNIFORM0",
+      "central" : 0.5
+    },
+    "contactDetectedProbability" : 0.9,
+    "complianceProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.99,
+      "dispersion" : 0.1
+    },
+    "appUseProbability" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.97,
+      "dispersion" : 0.1
+    },
+    "inHostConfiguration" : {
+      "@type" : "markov",
+      "incubationPeriod" : {
+        "type" : "LOG_NORM",
+        "central" : 5.0,
+        "dispersion" : 2.0
+      },
+      "infectiousDuration" : {
+        "type" : "LOG_NORM",
+        "central" : 8.0,
+        "dispersion" : 3.0
+      },
+      "symptomDuration" : {
+        "type" : "LOG_NORM",
+        "central" : 5.0,
+        "dispersion" : 3.0
+      },
+      "immuneWaningHalfLife" : {
+        "type" : "LOG_NORM",
+        "central" : 300.0,
+        "dispersion" : 10.0
+      }
+    },
+    "availableTests" : [ {
+      "testName" : "LFT",
+      "sensitivity" : 0.9,
+      "specificity" : 0.98,
+      "meanTestDelay" : 0.0,
+      "sdTestDelay" : 0.0,
+      "limitOfDetection" : 1.0
+    }, {
+      "testName" : "PCR",
+      "sensitivity" : 0.8,
+      "specificity" : 0.995,
+      "meanTestDelay" : 3.0,
+      "sdTestDelay" : 1.0,
+      "limitOfDetection" : 0.1
+    } ],
+    "symptomSensitivity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.5,
+      "dispersion" : 0.1
+    },
+    "symptomSpecificity" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.95,
+      "dispersion" : 0.1
+    },
+    "initialEstimateInfectionDuration" : 10.0,
+    "initialEstimateIncubationPeriod" : 4.0,
+    "initialEstimateSymptomSensitivity" : 0.5,
+    "initialEstimateSymptomSpecificity" : 0.95,
+    "riskModelSymptomKernel" : {
+      "kernel" : "DEFAULT_SYMPTOM_ONSET_KERNEL"
+    },
+    "riskModelTestKernel" : {
+      "kernel" : "DEFAULT_TEST_SAMPLE_KERNEL"
+    },
+    "riskModelContactsKernel" : {
+      "kernel" : "DEFAULT_CONTACT_KERNEL"
+    },
+    "maximumSocialContactReduction" : {
+      "type" : "UNIMODAL_BETA",
+      "central" : 0.25,
+      "dispersion" : 0.1
+    },
+    "defaultBehaviourModelName" : "ReactiveTestAndIsolate",
+    "defaultPolicyModelName" : "ReactiveLockdown",
+    "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+    "complianceDeteriorationRate" : 0.02,
+    "complianceImprovementRate" : 0.01,
+    "organicRateOfMobilityChange" : 0.25,
+    "lockdownReleaseTrigger" : 0.01,
+    "lockdownStartTrigger" : 0.05,
+    "importationProbability" : 0.0,
+    "smartAppRiskTrigger" : 0.05,
+    "demographicAdjustment" : { }
+  },
+  "facets" : [ {
+    "name" : "trigger",
+    "modifications" : [ {
+      "name" : "none",
+      "defaultPolicyModelName" : "NoControl"
+    }, {
+      "name" : "5%-1%",
+      "initialScreeningProbability" : 0.01,
+      "defaultPolicyModelName" : "ReactiveLockdown",
+      "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+      "lockdownReleaseTrigger" : 0.01,
+      "lockdownStartTrigger" : 0.05
+    }, {
+      "name" : "10%-2%",
+      "initialScreeningProbability" : 0.01,
+      "defaultPolicyModelName" : "ReactiveLockdown",
+      "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+      "lockdownReleaseTrigger" : 0.02,
+      "lockdownStartTrigger" : 0.1
+    }, {
+      "name" : "15%-3%",
+      "initialScreeningProbability" : 0.01,
+      "defaultPolicyModelName" : "ReactiveLockdown",
+      "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+      "lockdownReleaseTrigger" : 0.03,
+      "lockdownStartTrigger" : 0.15
+    } ]
+  }, {
+    "name" : "isolation",
+    "modifications" : [ {
+      "name" : "none",
+      "maximumSocialContactReduction" : {
+        "type" : "POINT",
+        "central" : 1.0
+      }
+    }, {
+      "name" : "mild",
+      "maximumSocialContactReduction" : {
+        "type" : "POINT",
+        "central" : 0.75
+      }
+    }, {
+      "name" : "moderate",
+      "maximumSocialContactReduction" : {
+        "type" : "POINT",
+        "central" : 0.5
+      }
+    }, {
+      "name" : "severe",
+      "maximumSocialContactReduction" : {
+        "type" : "POINT",
+        "central" : 0.25
+      }
+    } ]
+  } ],
+  "executionReplications" : 1
+}

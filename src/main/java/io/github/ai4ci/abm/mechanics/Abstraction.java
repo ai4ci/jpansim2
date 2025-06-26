@@ -14,18 +14,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
-import io.github.ai4ci.util.ImmutableFixedValueFunction;
-import io.github.ai4ci.config.setup.PartialAgeStratifiedNetworkConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
+import io.github.ai4ci.config.inhost.PartialMarkovStateModel;
 import io.github.ai4ci.config.inhost.PartialPhenomenologicalModel;
 import io.github.ai4ci.config.inhost.PartialStochasticModel;
-import io.github.ai4ci.config.setup.PartialWattsStrogatzConfiguration;
-import io.github.ai4ci.util.EmpiricalFunction.Link;
+import io.github.ai4ci.config.setup.PartialSetupConfiguration;
 import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
+import io.github.ai4ci.util.ImmutableFixedValueFunction;
+import io.github.ai4ci.util.ImmutableMathematicalFunction;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ImmutableSimpleDistribution;
 import io.github.ai4ci.util.ImmutableTransformedDistribution;
+import io.github.ai4ci.util.LinkFunction;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ResampledDistribution;
 import io.github.ai4ci.util.Sampler;
@@ -34,13 +35,12 @@ import io.github.ai4ci.util.TransformedDistribution;
 public interface Abstraction {
 
 	@JsonTypeInfo(use = Id.DEDUCTION)
-	
 	@JsonSubTypes( {
-		@Type(PartialWattsStrogatzConfiguration.class), 
 		@Type(PartialExecutionConfiguration.class), 
-		@Type(PartialAgeStratifiedNetworkConfiguration.class),
 		@Type(PartialStochasticModel.class),
-		@Type(PartialPhenomenologicalModel.class)
+		@Type(PartialPhenomenologicalModel.class),
+		@Type(PartialMarkovStateModel.class),
+		@Type(PartialSetupConfiguration.class)
 	})
 	public interface Modification<X> {
 		@Value.NonAttribute X self();
@@ -49,7 +49,8 @@ public interface Abstraction {
 	@JsonTypeInfo(use = Id.DEDUCTION)
 	@JsonSubTypes( {
 		@Type(ImmutableEmpiricalFunction.class), 
-		@Type(ImmutableFixedValueFunction.class)
+		@Type(ImmutableFixedValueFunction.class),
+		@Type(ImmutableMathematicalFunction.class)
 	})
 	public interface SimpleFunction {
 		double value(double y);
@@ -103,7 +104,7 @@ public interface Abstraction {
 					.build();
 		};
 		
-		default TransformedDistribution transform(Link link) {
+		default TransformedDistribution transform(LinkFunction link) {
 			return transform(link.fn, link.invFn);
 		}
 		

@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.flow.CSVWriter;
+import io.github.ai4ci.flow.OutputWriter;
 
 @Inherited
 @Target(ElementType.TYPE)
@@ -26,5 +27,8 @@ public @interface Export {
 	Stage stage();
 	int size();
 	Class<? extends Selector> selector();
+	
+	@SuppressWarnings("rawtypes")
+	Class<? extends OutputWriter> writer();
 	
 }

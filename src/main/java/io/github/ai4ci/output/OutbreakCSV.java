@@ -7,9 +7,10 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.CSVWriter;
 
 @Value.Immutable
-@Export(stage = Stage.UPDATE, value = "summary.csv", size = 64, selector = OutbreakCSV.Selector.class)
+@Export(stage = Stage.UPDATE, value = "summary.csv", size = 64, selector = OutbreakCSV.Selector.class, writer=CSVWriter.class)
 public interface OutbreakCSV extends CommonCSV.State {
 
 	static class Selector implements Export.Selector {
@@ -23,36 +24,19 @@ public interface OutbreakCSV extends CommonCSV.State {
 	double getPrevalence();
 	long getCumulativeInfections(); 
 	long getCumulativeDeaths();
+	double getCumulativeMobilityDecrease();
 	long getHospitalisedCount(); 
 	long getInfectedCount();
 	long getSymptomaticCount();
 	double getAverageMobility();
 	double getAverageViralLoad();
+	double getAverageImmuneActivity();
 	double getAverageCompliance();
 	long getTestPositivesByResultDate();
 	long getTestNegativesByResultDate();
-	double getPresumedTestPositivePrevalence();
+	String getTriggerValue();
+	double getLockdownTrigger();
 	double getRtEffective();
 	String getPolicy();
 	
-//	default String header() {
-//		return CommonCSV.super.header()+",incidence,cumulativeInfections,infectedCount,"+
-//			"symptomaticCount,averageMobility,averageViralLoad,averageCompliance,testPositives,testNegatives,presumedTestPositivePrevalence,rtEffective,policy";
-//	}
-//	
-//	default String row() {
-//		return CommonCSV.super.row()+","+csvFrom(
-//			this.getIncidence(),
-//			this.getCumulativeInfections(),
-//			this.getInfectedCount(),
-//			this.getSymptomaticCount(),
-//			this.getAverageMobility(),
-//			this.getAverageViralLoad(),
-//			this.getTestPositives(),
-//			this.getTestNegatives(),
-//			this.getPresumedTestPositivePrevalence(),
-//			this.getRtEffective(),
-//			this.getPolicy()
-//		);
-//	}
 }

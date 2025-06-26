@@ -6,8 +6,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.statistics.distribution.NormalDistribution;
 
-@Deprecated
-public class Binomial extends MutablePair<Integer,Integer> {
+public class Binomial extends MutablePair<Long,Long> {
 	
 	public static class Confidence extends ImmutablePair<Double, Double> {
 
@@ -30,21 +29,21 @@ public class Binomial extends MutablePair<Integer,Integer> {
 	}
 	
 	private Binomial() {
-		super(0, 0);
+		super(0L, 0L);
 	}
 	
-	public int getNumerator() {
+	public long getNumerator() {
 		return this.getLeft();	}
 	
-	public int getDenominator() {
+	public long getDenominator() {
 		return this.getRight();	}
 	
 	
-	public Binomial(int num, int denom) {
+	public Binomial(long num, long denom) {
 		super(num,denom);
 	}
 	
-	public static Binomial of(int num, int denom) {
+	public static Binomial of(long num, long denom) {
 		return new Binomial(num,denom);
 	}
 	
@@ -68,6 +67,10 @@ public class Binomial extends MutablePair<Integer,Integer> {
 		return ((double) this.left)/((double) this.right);
 	}
 	
+	public double odds() {
+		return probability() / (1-probability());
+	}
+	
 	public double ratio() {
 		if ((this.right-this.left) == 0) return 0;
 		return ((double) this.left)/(this.right-this.left);
@@ -77,7 +80,7 @@ public class Binomial extends MutablePair<Integer,Integer> {
 		update(toAdd.getLeft(), toAdd.getRight());
 	}
 	
-	public void update(int num, int denom) {
+	public void update(long num, long denom) {
 		this.left += num;
 		this.right += denom;
 	}
@@ -85,7 +88,7 @@ public class Binomial extends MutablePair<Integer,Integer> {
 	public Confidence wilson(double interval) {
 		double z = NormalDistribution.of(0, 1).inverseCumulativeProbability(1-interval/2);
 		double p = probability();
-		int n = right;
+		long n = right;
 		double tmp = z/(2*n)*Math.sqrt(4*n*p*(1-p)+z*z);
 		double tmp2 = p+(z*z)/(2*n);
 		double tmp3 = 1/(1+(z*z)/n);
@@ -97,5 +100,13 @@ public class Binomial extends MutablePair<Integer,Integer> {
 	
 	public String toString() {
 		return String.format("%.1f %s (%d/%d)", probability()*100, wilson(0.05), this.left, this.right);
+	}
+	
+	public boolean confidentlyGreaterThan(double p, double conf) {
+		return this.wilson(conf).lower() > p;
+	}
+	
+	public boolean confidentlyLessThan(double p, double conf) {
+		return this.wilson(conf).upper() < p;
 	}
 }

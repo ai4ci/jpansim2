@@ -85,6 +85,9 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 	public static SimpleDistribution uniform0(Double upper) {
 		return of(Type.UNIFORM0, upper/2);
 	}
+	public static SimpleDistribution uniform() {
+		return of(Type.UNIFORM0, 1.0/2);
+	}
 	public static SimpleDistribution unimodalBeta(Double mean, Double sd) {
 		return of(Type.UNIMODAL_BETA, mean, sd);
 	}

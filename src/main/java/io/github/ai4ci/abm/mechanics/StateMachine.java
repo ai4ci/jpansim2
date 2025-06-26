@@ -23,6 +23,10 @@ public class StateMachine implements Serializable {
 		public default String name() {return "Policy";}
 	}
 	
+	public void prepareUpdate() {
+		this.context.resetFlags();
+	}
+	
 	public void performHistoryUpdate(ImmutablePersonHistory.Builder builder, PersonState person, Sampler rng) {
 		if (this.getState() instanceof BehaviourState) {
 			BehaviourState state = (BehaviourState) this.getState();
@@ -72,38 +76,6 @@ public class StateMachine implements Serializable {
 		this.context = ModifiableStateMachineContext.create().from(context);
 		this.currentState = defaultStateMachineState;
 	}
-
-//	public static State noop() {
-//		return new State() {
-//			@Override
-//			public State nextState(ImmutablePersonState.Builder builder, PersonState person, StateMachineContext context, Sampler rng) {
-//				return StateMachine.noop();
-//			}
-//		};
-//	}
-//	
-//	public static State noopThenDefault() {
-//		return new State() {
-//			@Override
-//			public State nextState(ImmutablePersonState.Builder builder, PersonState person, StateMachineContext context, Sampler rng) {
-//				return context.getBaselineState();
-//			}
-//		};
-//	}
-//	
-//	public static State delayThen(int delay, State nextState) {
-//		return new State() {
-//			int counter = delay;
-//			@Override
-//			public State nextState(ImmutablePersonState.Builder builder, PersonState person, StateMachineContext context, Sampler rng) {
-//				if (counter == 0) return nextState;
-//				counter -= 1;
-//				return this;
-//			}
-//		};
-//	}
-	
-
 	
 	private ModifiableStateMachineContext context;
 	private State<?,?,?,?> currentState;

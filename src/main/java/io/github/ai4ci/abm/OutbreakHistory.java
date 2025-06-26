@@ -26,10 +26,11 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 		return ModelNav.peopleHistory(this).mapToInt(ph -> ph.getMaxDelay()).max().orElse(0);
 	}
 	
-	/** The total test positives reported from this day, as reported on another
+	/** The total test positive people reported from this day, as reported on another
 	 *  day (typically in the future). This handles delay distribution of 
 	 *  test results and will tell us what is known about tests taken today on 
-	 *  day x.
+	 *  day X. Any positive value is counted as a test positive person on this
+	 *  day.
 	 */
 	default int getTestPositivesBySampleDate(int time) {
 		int lim = time - this.getTime();
@@ -38,14 +39,18 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	}
 	
 	/** The current state of knowledge about test positive results from samples
-	 * taken on this day */
+	 * taken on this day (potentially in the past). This is output as part of 
+	 * the delay distribution of tests, as it gives a positive test count for
+	 * a given day that increases in the future. (N.B. This looks over 
+	 * complicated and I question its utility, it is also misleading as it is 
+	 * a count of people with any positive test) */
 	default int getCurrentTestPositivesBySampleDate() {
 		return this.getTestPositivesBySampleDate(this.getEntity().getCurrentState().getTime());
 	}
 	
 	/**
-	 * The number of tests reported as positive on the day of testing is looking
-	 * forward through time until the result is available. The result is a forward
+	 * The number of people with tests reported as positive on the day of testing. 
+	 * looking forward through time until the result is available. The result is a forward
 	 * distribution of positive test counts indexed by delay. So first is the
 	 * tests with positive results available today, second is those with results 
 	 * tomorrow etc.  
@@ -62,12 +67,13 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 					).sum();
 			}).collect(Collectors.toList())
 			;
-	};
+	}
 	
 	/** The total test negatives reported from this day, as reported on another
 	 *  day (typically in the future). This handles delay distribution of 
 	 *  test results and will tell us what is known about tests taken today on 
-	 *  day x.
+	 *  day x. All tests taken on this day must be negative for the person to 
+	 *  count as a test negative.
 	 */
 	default int getTestNegativesBySampleDate(int time) {
 		int lim = time - this.getTime();
@@ -75,14 +81,15 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 		return getTestNegativesBySampleDate().stream().limit(lim).reduce(Integer::sum).orElse(0);
 	}
 	
-	/** The current state of knowledge about test negative results from this 
-	 * day */
+	/** The current state of knowledge about people with test negative results 
+	 * from this day (which is potentially in the past) as assessed at current
+	 * simulation time. */
 	default int getCurrentTestNegativesBySampleDate() {
 		return this.getTestNegativesBySampleDate(this.getEntity().getCurrentState().getTime());
 	}
 	
 	/**
-	 * The number of tests reported as positive on the given day 
+	 * The number of people with all tests reported as negative on the given day 
 	 * @see #getTestPositivesBySampleDate() for the logic here.
 	 */
 	@Value.Lazy default List<Integer> getTestNegativesBySampleDate() {
@@ -99,4 +106,5 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 			}).collect(Collectors.toList())
 			;
 	}
+	
 }

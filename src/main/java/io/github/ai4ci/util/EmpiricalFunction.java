@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.DoubleUnaryOperator;
 
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.immutables.value.Value;
@@ -20,23 +19,9 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @JsonDeserialize(as = ImmutableEmpiricalFunction.class)
 public interface EmpiricalFunction extends Serializable, Abstraction.SimpleFunction {
  
-	public static enum Link {
-		NONE (d->d, d->d), 
-		LOG (d -> Math.log(d), d -> Math.exp(d)), 
-		LOGIT (d -> Conversions.logit(d), d -> Conversions.expit(d));
-		
-		public DoubleUnaryOperator fn; 
-		public DoubleUnaryOperator invFn;
-		Link( DoubleUnaryOperator fn, DoubleUnaryOperator invFn) {
-			this.fn = fn;
-			this.invFn = invFn;
-		}
-		
-	}
-	
 	double[] getX();
 	double[] getY();
-	@Value.Default default Link getLink() {return Link.NONE;}
+	@Value.Default default LinkFunction getLink() {return LinkFunction.NONE;}
 	
 	private Map<Double,Double> getDataPoints() {
 		Map<Double,Double> tmp = new HashMap<>();

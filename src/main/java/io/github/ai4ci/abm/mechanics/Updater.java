@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Contact;
+import io.github.ai4ci.abm.Exposure;
 import io.github.ai4ci.abm.ImmutableOutbreakHistory;
 import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
@@ -109,7 +110,7 @@ public class Updater {
 						.from(MAPPER.createHistory(m.getCurrentState())))
 			);
 			
-			
+			m.getStateMachine().prepareUpdate();
 		}
 		
 		outbreak.getPeople().parallelStream().forEach(person -> {
@@ -133,6 +134,7 @@ public class Updater {
 					)
 				);
 				
+				p.getStateMachine().prepareUpdate();
 			}
 		});
 		
@@ -149,6 +151,8 @@ public class Updater {
 		if (outbreak instanceof ModifiableOutbreak) {
 			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
 			PersonStateContacts contactNetwork = Contact.contactNetwork(m);
+//			Contact[][] contacts = contactNetwork.finaliseContacts();
+//			Exposure[][] exposures = contactNetwork.finaliseExposures();
 			
 			// Update the next history entry with anything from the current 
 			Sampler sampler1 = Sampler.getSampler();
@@ -165,8 +169,8 @@ public class Updater {
 					
 					Integer ref = p.getId();
 					nextPersonHistory
-						.setTodaysContacts( contactNetwork.get(ref).finish() )
-						.setTodaysExposures( contactNetwork.getExp(ref).finish());
+						.setTodaysContacts( contactNetwork.getContactsForId(ref) )
+						.setTodaysExposures( contactNetwork.getExposuresForId(ref) );
 					
 					p.getStateMachine().performHistoryUpdate(nextPersonHistory, person.getCurrentState(), sampler);
 					

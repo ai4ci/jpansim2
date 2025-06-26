@@ -17,8 +17,16 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class DelayDistribution implements Serializable {
  
+	/**
+	 * The raw unnormalised numbers supporting the delay distribution. This 
+	 * might be counts, or probabilities.
+	 */
 	abstract public double[] getProfile();
 	
+	/**
+	 * The total of the unnormalised profile; this is used as a normalising 
+	 * constant, 
+	 */
 	@Value.Derived public double total() {
 		return DoubleStream.of(getProfile()).sum();
 	} 
@@ -41,7 +49,7 @@ public abstract class DelayDistribution implements Serializable {
 	};
 	
 	/**
-	 * the conditional probability density - which will sum to 1
+	 * the conditional probability density - which will sum to 1.
 	 */
 	@Value.Derived
 	public double[] condDensity() {
@@ -170,7 +178,7 @@ public abstract class DelayDistribution implements Serializable {
 	
 	public static ImmutableDelayDistribution unnormalised(double... profile) {
 		return ImmutableDelayDistribution.builder()
-			.setProfile(profile)
+			.setProfile(trimZeros(profile))
 			.setPAffected(1)
 			.build();
 	}
@@ -230,4 +238,27 @@ public abstract class DelayDistribution implements Serializable {
 //		}
 //		return fromPDF(density);
 //	}
+	
+	public static double[] trimTail(double[] x, double epsilon, boolean absolute) {
+		double total = 0;
+		for (int i=0; i<x.length; i++) total += x[i];
+		double limit = absolute ? total - epsilon : total * (1-epsilon);
+		for (int i=x.length-1; i>=0; i--) {
+			total -= x[i];
+			if (total < limit) {
+				return Arrays.copyOf(x, i+1);
+			}
+		}
+		return new double[0];
+	}
+	
+	public static double[] trimZeros(double[] x) {
+		int i = x.length;
+		if (x[i-1]>0) return x;
+		while (i>0) {
+			if (x[i-1] > 0) return Arrays.copyOf(x, i);
+			i = i-1;
+		}
+		return new double[0];
+	}
 }

@@ -5,12 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.immutables.value.Value;
-
-import io.github.ai4ci.util.ModelNav;
 
 /**
  * Historical patient data relevant to the ongoing simulation. Some of this is copied 
@@ -28,6 +25,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 * internally to the model immediately, but not necessarily observed).
 	 */
 	List<TestResult> getTodaysTests();
+	// TestResult[] getTodaysTests(); // cannot do because builder is added to incrementally
 	
 	/**
 	 * A list of contacts made in this time period and their weight from
@@ -44,6 +42,8 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	Exposure[] getTodaysExposures();
 	
+	// HISTORY NAVIGATION:
+	
 	default Optional<PersonHistory> getPrevious() {
 		return this.getEntity().getHistoryEntry(this.getTime()-1);
 	};
@@ -58,7 +58,6 @@ public interface PersonHistory extends PersonTemporalState {
 				Stream.of(this),
 				this.getPrevious(limit-1));
 	};
-	
 	
 	/**
 	 * For a new infection this finds the contact with maximal viral exposure 
@@ -118,60 +117,6 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * Is this person newly exposed on this day? defined as the first time a non zero
-	 * exposure is recorded within one infectious period.
-	 * @return
-	 */
-	@Value.Lazy default boolean isIncidentExposure() {
-		return isIncident(
-			ph -> ph.getContactExposure() > 0,
-			ModelNav.modelBase(this).getInfectiveDuration()
-		);
-	}
-	
-	/**
-	 * Is this person newly infectious on this day.
-	 * @return
-	 */
-	@Value.Lazy default boolean isIncidentInfection() {
-		return isIncident(
-			ph -> ph.isInfectious(),
-			ModelNav.modelBase(this).getInfectiveDuration()
-		);
-	}
-	
-	/**
-	 * Is this person newly needing hospitalisation on this day, or is this part of 
-	 * the same infection episode (as defined by the average duration of 
-	 * symptoms.
-	 * @return
-	 */
-	@Value.Lazy default boolean isIncidentHospitalisation() {
-		return isIncident(
-			ph -> ph.isRequiringHospitalisation(),
-			ModelNav.modelBase(this).getSymptomDuration()
-		);
-	}
-	
-	
-	private boolean isIncident(Predicate<PersonHistory> test, int limit) {
-		if (!test.test(this)) return false;
-		if (getPrevious().isPresent()) {
-			if (!getPrevious().get().isRecently(
-				test,
-				limit
-			)) return true;
-		}
-		return false;
-	}
-	
-	private boolean isRecently(Predicate<PersonHistory> test, int limit) {
-		if (limit == 0) return false;
-		if (test.test(this)) return true;
-		return getPrevious().map(p -> p.isRecently(test, limit-1)).orElse(Boolean.FALSE);
-	}
-	
-	/**
 	 * Find the infectee's state at the start of last episode of exposure to virus,
 	 * I.e. the first in a run of exposures, which are separated by less that 
 	 * one infectious period. 
@@ -181,6 +126,10 @@ public interface PersonHistory extends PersonTemporalState {
 		return this.getPrevious().flatMap(p -> p.getLastExposure());
 	}
 	
+	/**
+	 * A set of all the tests for this patient taken in the last N days. This
+	 * includes tests of all statuses
+	 */
 	default Stream<TestResult> getHistoricalTests(int limit) {
 		if (limit == 0) return this.getTodaysTests().stream();
 		return Stream.concat(
@@ -190,7 +139,9 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * All the tests done in the last presumed infectious period
+	 * All the tests done in the last presumed infectious period. Relies on the
+	 * best available assumption of the infectious period, and is an observed 
+	 * quantity;
 	 */
 	default Stream<TestResult> getStillRelevantTests() {
 		return this.getHistoricalTests(infPeriod());
@@ -201,13 +152,19 @@ public interface PersonHistory extends PersonTemporalState {
 	 * generate a result on this day, regardless of when they were taken. This does look
 	 * backwards over all possibly relevant tests, there is possibility that some
 	 * tests that take a very long time to process compared to the infectious period
-	 * will not get picked up by this logic and we may have to revisit
+	 * will not get picked up by this. As such this is an observed quantity.
 	 */
 	@Value.Lazy
-	default List<TestResult> getResults() {
-		return this.getStillRelevantTests().filter(r -> r.isResultToday(this.getTime())).collect(Collectors.toList());
-	};
+	default List<TestResult> getTodaysResults() {
+		return this.getStillRelevantTests()
+			.filter(r -> r.isResultToday(this.getTime()))
+			.collect(Collectors.toList());
+	}
 	
+	/**
+	 * All the contacts in the last X days. This is regardless of whether they
+	 * were observed and is a modelled quantity. 
+	 */
 	default Stream<Contact> getHistoricalContacts(int limit) {
 		if (limit == 0) return Arrays.stream(this.getTodaysContacts());
 		return Stream.concat(
@@ -217,43 +174,21 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * All the contacts in the last presumed infectious period
+	 * All the contacts in the last presumed infectious period that were
+	 * detected. This is an observed quantity.
 	 */
-	default Stream<Contact> getStillRelevantContacts() {
-		return this.getHistoricalContacts(infPeriod());
+	default Stream<Contact> getStillRelevantDetectedContacts() {
+		return this.getHistoricalContacts(infPeriod()).filter(c -> c.isDetected());
 	}
 	
-//	/**
-//	 * On a day in the future what do the test results taken up to this day 
-//	 * tell us about the relative odds of a person being infected on this day
-//	 * now that we know the results. 
-//	 */
-//	default double getHistoricalTestLogLikelihood(int day, int limit) {
-//		return this.getHistoricalTests(limit)
-//			.mapToDouble(t -> t.logLikelihoodRatio(day, limit) )
-//			.sum();
-//	}
-//	
-//	/**
-//	 * The log-likelihood of an individual being infected at some point in the 
-//	 * past. We need this in the history because we need to know for a historical 
-//	 * contact what their log-liklihood was at the time of the contact
-//	 * @param day when are we interested in (i.e. usually the day of contact) 
-//	 * @param limit how long prior to the day are we interested in? so a test a 
-//	 * long time age is irrelevant.
-//	 */
-//	default double getDirectLogLikelihood(int day, int limit) {
-//		return 
-//				this.getSymptomLogLikelihood() +
-//				this.getHistoricalTestLogLikelihood(day, limit);
-//	}
-	
+	/**
+	 * Test results from tests taken today as assessed at some point in the
+	 * future. This is only tests that have results on day X.
+	 */
 	default Stream<TestResult> getResultsBySampleDate(int time) {
 		int lim = time - this.getTime();
 		if (lim < 0) return Stream.empty();
-		if (lim >= this.getMaxDelay()) return this.getTodaysTests().stream();
-		List<List<TestResult>> tmp = getResultsBySampleDate();
-		return tmp.stream().limit(lim).flatMap(l -> l.stream());
+		return this.getTodaysTests().stream().filter(tr -> tr.isResultAvailable(time));
 	}
 	
 	/**
@@ -267,23 +202,21 @@ public interface PersonHistory extends PersonTemporalState {
 	}
 	
 	/**
-	 * The list of tests taken on this day, indexed by the delay until the results 
-	 * are available.
+	 * Tests that an event has happened at least once in the last N days
 	 */
-	@Value.Lazy default List<List<TestResult>> getResultsBySampleDate() {
-		return 
-			IntStream.range(0, getMaxDelay()).mapToObj(delay -> 
-						this.getTodaysTests().stream().filter(tr -> tr.getDelay() == delay).collect(Collectors.toList())
-			)
-			.collect(Collectors.toList());
+	default boolean isRecently(Predicate<PersonTemporalState> test, int limit) {
+		if (limit == 0) return test.test(this);
+		if (test.test(this)) return true;
+		return getPrevious().map(p -> p.isRecently(test, limit-1)).orElse(Boolean.FALSE);
 	}
-
-//	/**
-//	 * An estimate of the person's infectiousness on this day based on test, symptoms
-//	 * and contacts, as might be calculated by a smart agent.
-//	 */
-//	default double getProbabilityInfectiousToday() {
-//		return this.getRiskModel().getProbabilityInfectiousToday();
-//	};
+	
+	/**
+	 * Tests that an event has happened every day in the last N days
+	 */
+	default boolean isContinuously(Predicate<PersonTemporalState> test, int limit) {
+		if (limit == 0) return test.test(this);
+		if (!test.test(this)) return false;
+		return getPrevious().map(p -> p.isContinuously(test, limit-1)).orElse(Boolean.FALSE);
+	}
 	
 }

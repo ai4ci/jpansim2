@@ -28,4 +28,12 @@ public class Ephemeral<T> implements Serializable {
 		return Optional.ofNullable(value);
 	}
 
+	public T get() {
+		return toOptional().get();
+	}
+	
+	public boolean isPresent() {
+		return toOptional().isPresent();
+	}
+
 }

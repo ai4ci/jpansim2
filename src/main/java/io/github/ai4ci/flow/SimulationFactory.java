@@ -149,9 +149,14 @@ public class SimulationFactory extends PauseableThread {
 		if (cacheFull()) {
 			this.pause();
 		} else {
-			Outbreak tmp = builder.next();
-			queue.add(tmp);
-			mon.notifyFactoryReady(this);
+			try {
+				Outbreak tmp = builder.next();
+				queue.add(tmp);
+				mon.notifyFactoryReady(this);
+			} catch (Exception e) {
+				mon.handle(e);
+				this.halt();
+			}
 		}
 		
 	}

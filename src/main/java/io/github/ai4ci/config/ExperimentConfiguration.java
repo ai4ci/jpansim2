@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,8 +25,8 @@ import com.google.common.io.Files;
 import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
 import io.github.ai4ci.config.ExperimentFacet.ExecutionFacet;
 import io.github.ai4ci.config.ExperimentFacet.SetupFacet;
+import io.github.ai4ci.config.setup.ImmutableSetupConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
-import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.StateExporter;
 import io.github.ai4ci.util.ReflectionUtils;
 
@@ -40,8 +41,7 @@ public interface ExperimentConfiguration {
 			.setBatchConfig(BatchConfiguration.DEFAULT)
 			.setSetupConfig(
 				List.of(
-					ImmutableWattsStrogatzFacet.builder().setDefault(WattsStrogatzConfiguration.DEFAULT).build()//,
-					//ImmutableAgeStratifiedNetworkFacet.builder().setDefault(AgeStratifiedNetworkConfiguration.DEFAULT).build()
+					SetupFacet.of(SetupConfiguration.DEFAULT)
 				)
 			)
 			.setExecutionConfig(
@@ -53,7 +53,7 @@ public interface ExperimentConfiguration {
 
 
 	ImmutableBatchConfiguration getBatchConfig();
-	List<SetupFacet<?>> getSetupConfig();
+	List<SetupFacet> getSetupConfig();
 	int getSetupReplications();
 	ImmutableExecutionConfiguration getExecutionConfig();
 	List<ImmutableExecutionFacet> getFacets();
@@ -70,6 +70,7 @@ public interface ExperimentConfiguration {
 		if (getBatchConfig().getBatchTotal() <= 1) return this.getSetup();
 
 		int size = this.getSetup().size();
+		if (size == 1) return this.getSetup();
 
 		// Handle SLURM parallelisation. Split list into N chunks based on number 
 		// of batches
@@ -77,11 +78,11 @@ public interface ExperimentConfiguration {
 
 		// This is going to be made up of a list of setups and replicates.
 		// each replicate is stand alone so we can just filter this list to 
-		// get to the list for this node.	
-		return this.getSetup().subList(
-				(getBatchConfig().getBatchNumber()-1) * chunkSize,
-				Math.min(getBatchConfig().getBatchNumber() * chunkSize, size)
-				);
+		// get to the list for this node.
+		int start = (getBatchConfig().getBatchNumber()-1) * chunkSize;
+		int end = Math.min(getBatchConfig().getBatchNumber() * chunkSize, size);
+		if (start >= size) return Collections.emptyList();
+		return this.getSetup().subList(start, end );
 
 	}
 
@@ -89,9 +90,9 @@ public interface ExperimentConfiguration {
 	default List<SetupConfiguration> getSetup() {
 
 		List<SetupConfiguration> tmp = new ArrayList<>();
-		List<SetupFacet<?>> setupCfg = getSetupConfig();
+		List<SetupFacet> setupCfg = getSetupConfig();
 
-		for (SetupFacet<?> facet: setupCfg) {
+		for (SetupFacet facet: setupCfg) {
 
 			SetupConfiguration base = facet.getDefault();
 			
@@ -104,11 +105,11 @@ public interface ExperimentConfiguration {
 					SetupConfiguration modified = (SetupConfiguration) 
 	//						ConfigMerger.INSTANCE
 	//						.mergeConfiguration(
-							ReflectionUtils.merge(
+							((ImmutableSetupConfiguration) ReflectionUtils.merge(
 									base, mod
-									)
+							))
 							.withName(
-									facet.getName()+":"+mod.self().getName()
+									facet.getDefault().getName()+":"+mod.self().getName()
 									);
 	
 					tmp.add(modified);
@@ -120,7 +121,7 @@ public interface ExperimentConfiguration {
 		List<SetupConfiguration> tmp2 = new ArrayList<>();
 		for (int i =0; i<this.getSetupReplications(); i++) {
 			for (SetupConfiguration b: tmp) {
-				tmp2.add((SetupConfiguration) b.withReplicate(i));
+				tmp2.add(((ImmutableSetupConfiguration) b).withReplicate(i));
 			}
 		}
 
@@ -135,8 +136,7 @@ public interface ExperimentConfiguration {
 		List<ImmutableExecutionConfiguration> out = new ArrayList<>();
 		out.add(base);
 		for (ExecutionFacet facet: getFacets()) {
-			//if (facet instanceof ExperimentFacet.SetupModification s) {
-
+			
 			String facetName = facet.getName();
 			List<ImmutableExecutionConfiguration> tmp = new ArrayList<>();
 
@@ -156,10 +156,10 @@ public interface ExperimentConfiguration {
 					});
 				}
 			}
-
 			out = tmp;
-			//}
+			
 		}
+		
 
 		List<ExecutionConfiguration> tmp = new ArrayList<>();
 		for (int i =0; i<this.getExecutionReplications(); i++) {
@@ -196,7 +196,9 @@ public interface ExperimentConfiguration {
 
 	default ImmutableExperimentConfiguration withSetupConfig(SetupConfiguration config) {
 		return ImmutableExperimentConfiguration.builder().from(this)
-				.setSetupConfig(List.of(SetupFacet.subtype(config)))
+				.setSetupConfig(
+						List.of(
+							ImmutableSetupFacet.builder().setDefault(config).build()))
 				.build();
 	}
 

@@ -19,9 +19,10 @@ import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.inhost.PartialPhenomenologicalModel;
-import io.github.ai4ci.config.setup.AgeStratifiedNetworkConfiguration;
+import io.github.ai4ci.config.setup.AgeStratifiedDemography;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.output.CSVMapper;
-import io.github.ai4ci.output.ImmutablePersonStateCSV;
+import io.github.ai4ci.output.ImmutableLineListCSV;
 import io.github.ai4ci.util.CSVUtil;
 import io.github.ai4ci.util.SimpleDistribution;
 
@@ -43,7 +44,10 @@ class TestJackson {
 		
 		ExperimentConfiguration tmp = 
 			ExperimentConfiguration.DEFAULT
-			.withSetupConfig(AgeStratifiedNetworkConfiguration.DEFAULT)
+			.withSetupConfig(
+				SetupConfiguration.DEFAULT
+					.withDemographics(AgeStratifiedDemography.DEFAULT)
+			)
 			.withFacet(
 				"behaviour",
 				PartialExecutionConfiguration.builder()
@@ -79,7 +83,7 @@ class TestJackson {
 	@Test
 	void testJacksonCSV() throws IOException {
 		
-		ImmutablePersonStateCSV tmp = CSVMapper.INSTANCE.toCSV(
+		ImmutableLineListCSV tmp = CSVMapper.INSTANCE.toCSV(
 			TestUtils.mockPersonState()	
 		);
 		
@@ -96,8 +100,10 @@ class TestJackson {
 //			  System.out.println(strW.toString());
 //		}
 		
-		System.out.println(CSVUtil.headers(tmp.getClass()));
-		System.out.println(CSVUtil.row(tmp));
+		CSVUtil<ImmutableLineListCSV> conv = new CSVUtil<ImmutableLineListCSV>(ImmutableLineListCSV.class);
+		
+		System.out.println(conv.headers());
+		System.out.println(conv.row(tmp));
 	}
 	
 

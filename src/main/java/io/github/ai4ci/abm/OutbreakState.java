@@ -1,10 +1,16 @@
 package io.github.ai4ci.abm;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.function.Predicate;
 
 import org.immutables.value.Value;
 
+import io.github.ai4ci.abm.TestResult.Indication;
 import io.github.ai4ci.abm.TestResult.Result;
+import io.github.ai4ci.abm.policy.Trigger;
+import io.github.ai4ci.util.Binomial;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ModelNav;
 
@@ -38,6 +44,12 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 * {@link PersonState#getAdjustedAppUseProbability()}
 	 */
 	double getContactDetectedProbability();
+	
+	/**
+	 * A probability that any randomly selected person in the model will get a 
+	 * screening test performed today.
+	 */
+	double getScreeningProbability();
 
 	/**
 	 * The estimate of the infectious period is important because it informs
@@ -65,6 +77,13 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	double getPresumedSymptomSensitivity();
 	
+	/** The value or statistic that is used to trigger lockdowns */
+	Trigger.Value getTriggerValue();
+	
+	default Binomial getLockdownTrigger() {
+		return this.getTriggerValue().select(this);
+	};
+	
 	@Value.Lazy
 	default double getAverageMobility() {
 		return ModelNav.peopleState(this).mapToDouble(p -> p.getAdjustedMobility()).average().orElse(1);
@@ -75,6 +94,11 @@ public interface OutbreakState extends OutbreakTemporalState {
 		return ModelNav.peopleState(this).mapToDouble(p -> p.getNormalisedViralLoad()).average().orElse(1);
 	};
 
+	@Value.Lazy
+	default double getAverageImmuneActivity() {
+		return ModelNav.peopleState(this).mapToDouble(p -> p.getImmuneActivity()).average().orElse(1);
+	};
+	
 	@Value.Lazy
 	default double getAverageCompliance() {
 		return ModelNav.peopleState(this).mapToDouble(p -> p.getAdjustedCompliance()).average().orElse(1);
@@ -101,28 +125,35 @@ public interface OutbreakState extends OutbreakTemporalState {
 
 	/**
 	 * Count of people with test positives in the results that become available
-	 * today.
+	 * today.The number of tests reported positive on the current simulation date.
+	 * This is reported on the date the test result is available (not when the test
+	 * was taken). N.B. largely only used for reporting now - questionable if useful
+	 * 
 	 */
 	@Value.Lazy
 	default long getTestPositivesByResultDate() {
 		return ModelNav.peopleCurrentHistory(this).mapToInt(p ->
 		// If any of a persons results are positive today
-		p.getResults().stream().map(t -> t.resultOnDay(this.getTime())).anyMatch(tr -> tr.equals(Result.POSITIVE)) ? 1
-				: 0).sum();
+			p.getTodaysResults().stream()
+				.map(t -> t.getFinalResult())
+				.anyMatch(tr -> tr.equals(Result.POSITIVE)) ? 1 : 0).sum();
 	};
 
 	/**
-	 * Count of people with test negatives in their results that become available
-	 * today
+	 * Count of people with test negatives in the results that become available
+	 * today. (Does not count people with no test results today). The number of
+	 * tests reported negative on the current simulation date. This is reported on
+	 * the date the test result is available (not when the test was taken).
+	 * N.B. largely only used for reporting now - questionable if useful
 	 */
 	@Value.Lazy
 	default long getTestNegativesByResultDate() {
 		return ModelNav.peopleCurrentHistory(this).mapToInt(p -> {// If any of a persons results are positive today
-			if (p.getResults().isEmpty())
-				return 0;
-			return p.getResults().stream().map(t -> t.resultOnDay(this.getTime()))
-					.allMatch(tr -> tr.equals(Result.NEGATIVE)) ? 1 : 0;
-		}).sum();
+			if (p.getTodaysResults().isEmpty()) return 0;
+			return p.getTodaysResults().stream()
+					.map(t -> t.getFinalResult())
+					.allMatch(tr -> tr.equals(Result.NEGATIVE)) ? 1 : 0;}
+		).sum();
 	};
 
 	@Override
@@ -152,7 +183,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getAdmissionIncidence() {
-		return ModelNav.peopleCurrentHistory(this).filter(p -> p.isIncidentHospitalisation()).count();
+		return ModelNav.peopleState(this).filter(p -> p.isIncidentHospitalisation()).count();
 	}
 
 	@Value.Lazy
@@ -198,7 +229,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getHospitalisedCount() {
-		return ModelNav.peopleState(this).filter(p -> p.isRequiringHospitalisation()).count();
+		return this.getHospitalisationRate().getNumerator();
 	}
 
 	@Value.Lazy
@@ -212,21 +243,82 @@ public interface OutbreakState extends OutbreakTemporalState {
 	}
 
 	/**
-	 * Sum of all the people who tested positive over the last infectious period.
-	 * This could potentially count people multiple times if they have multiple
-	 * tests. Testing protocols may prevent this from happening. This is one of the
-	 * key determinants of the {@link io.github.ai4ci.abm.policy.PolicyModel}
-	 * lockdown decision making.
+	 * All the people who tested positive over the last infectious period versus
+	 * all the non dead people. This is one of the key determinants of the 
+	 * {@link io.github.ai4ci.abm.policy.PolicyModel}
+	 * lockdown decision making, but may be somewhat biased by symptomatic testing
 	 */
 	@Value.Lazy
-	default double getPresumedTestPositivePrevalence() {
-		int period = this.getPresumedInfectiousPeriod();
-		long pos = ModelNav.history(this, period).mapToLong(p -> p.getTestPositivesByResultDate()).sum();
-		// long neg = ModelNav.history(this, period).mapToLong(p ->
-		// p.getTestNegatives()).sum();
-		// return ((double) pos)/((double) pos+neg);
-		return ((double) pos) / (this.getEntity().getSetupConfiguration().getNetworkSize() - this.getCumulativeDeaths());
+	default Binomial getPresumedTestPositivePrevalence() {
+		return getPresumedTestPositivity( t-> true, false);
+		// return ((double) pos) / (this.getEntity().getSetupConfiguration().getNetworkSize() - this.getCumulativeDeaths());
 	}
+	
+	/**
+	 * All the people who had at least one positive test over the last infectious 
+	 * period versus those that has tests that were all negative.
+	 * This is one of the key determinants of the {@link io.github.ai4ci.abm.policy.PolicyModel}
+	 * lockdown decision making, but is heavily biased by symptomatic testing
+	 */
+	@Value.Lazy
+	default Binomial getPresumedTestPositivity() {
+		return getPresumedTestPositivity( t-> true, true);
+	}
+		
+	/**
+	 * Count of people with at least one positive vs either all non dead or
+	 * all people who have a test result.
+	 * @param filter a predicate to select the type of test to look at (e.g. by indication
+	 * or by test type)
+	 * @param wesTested should the denominator include only people with tests done,
+	 * or everyone?
+	 */
+	default Binomial getPresumedTestPositivity(Predicate<TestResult> filter, boolean wasTested) {
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.map(p -> 
+				p.getStillRelevantTests()
+					.filter(tr -> tr.isResultAvailable(this.getTime()))
+					.filter(filter)
+					.map(tr -> tr.getFinalObservedResult())
+					.collect(Binomial.collectBinary())
+				// result of this is the Binomial of tests for an individual
+			).filter(
+				// exclude people that have had no tests
+				b -> wasTested ? b.getDenominator() != 0 : true
+			).map(
+				// any positive results will be collected in the numerator
+				// This is true = any positive tests; false = no positive tests
+				b -> b.getNumerator() > 0
+			).collect(
+				Binomial.collectBinary()
+			);
+	}
+	
+	/**
+	 * All the people who had at least one positive test over the last infectious 
+	 * period versus those that has tests that were all negative.
+	 * This is one of the key determinants of the {@link io.github.ai4ci.abm.policy.PolicyModel}
+	 * lockdown decision making, and excludes reactive / symptomatic testing
+	 * so is in theory unbiased.
+	 */
+	@Value.Lazy
+	default Binomial getScreeningTestPositivity() {
+		return getPresumedTestPositivity( t-> t.getIndication().equals(Indication.SCREENING), true);
+	}
+	
+	/**
+	 * Rate of all the people who are needing hospitalisation (excluding dead) 
+	 */
+	@Value.Lazy
+	default Binomial getHospitalisationRate() {
+		return ModelNav.peopleState(this)
+				.filter(p -> !p.isDead())
+				.map(p -> p.isRequiringHospitalisation())
+				.collect(Binomial.collectBinary());
+	}
+	
+	
 
 	/**
 	 * An estimate of the R_t value based on the renewal equation. This is not
@@ -239,7 +331,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 		long numerator = this.getIncidence();
 		// people with capability to infect today. (n.b. those infected today will
 		// have zero capability)
-		DelayDistribution dd = this.getEntity().getExecutionConfiguration().getInfectivityProfile();
+		DelayDistribution dd = this.getEntity().getBaseline().getInfectivityProfile();
 
 		double denominator = IntStream.range(0, (int) dd.size()).mapToDouble(
 				tau -> this.getEntity().getHistory(tau).map(oh -> oh.getIncidence()).orElse(0L) * dd.condDensity(tau))
@@ -251,9 +343,27 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Value.Lazy
 	default double getPrevalence() {
 		return ((double) this.getInfectedCount())
-				/ (ModelNav.modelSetup(this).getNetworkSize() - this.getCumulativeDeaths());
+				/ (this.getEntity().getPopulationSize() - this.getCumulativeDeaths());
 	};
 
+	
+	@Value.Lazy
+	default Map<String,Long> getBehaviourCounts() {
+		return ModelNav.people(this).map(p -> p.getCurrentState()).collect(
+				Collectors.groupingByConcurrent(ps -> ps.getBehaviour(), Collectors.counting())
+		);
+	}
+
+	@Value.Lazy
+	default Map<Long, Long> getContactCounts() {
+		return ModelNav.people(this).map(p -> p.getCurrentState()).collect(
+				Collectors.groupingByConcurrent(ps -> ps.getContactCount(), Collectors.counting())
+		);
+	}
+
+	
+
+	
 	
 
 }

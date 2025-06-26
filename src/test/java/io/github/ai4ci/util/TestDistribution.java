@@ -1,5 +1,6 @@
 package io.github.ai4ci.util;
 
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
@@ -85,5 +86,14 @@ class TestDistribution {
 		
 		IntStream.range(0, 80).mapToObj(i -> fn.value((double) i)+" "+fn2.value((double) i))
 		.forEach(System.out::println);
+	}
+	
+	@Test
+	void testEuclidian() {
+		var dist = ExoticDistributions.getEuclidianDistanceDistribution();
+		DoubleStream.iterate(0, d -> d<Math.sqrt(2), d->d+Math.sqrt(2)/100)
+			.map(d-> dist.getCDF().interpolate(d))
+			.forEach(System.out::println);
+		
 	}
 }

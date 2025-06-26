@@ -7,9 +7,10 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.DuckDBWriter;
 
 @Value.Immutable
-@Export(stage = Stage.START,value = "demog.csv",size = 16, selector = PersonDemographicsCSV.Selector.class)
+@Export(stage = Stage.START,value = "demog.duckdb",size = 16, selector = PersonDemographicsCSV.Selector.class, writer=DuckDBWriter.class)
 public interface PersonDemographicsCSV extends CommonCSV.Execution {
 	
 	static class Selector implements Export.Selector {
@@ -21,24 +22,13 @@ public interface PersonDemographicsCSV extends CommonCSV.Execution {
 	
 	int getId();
 	double getAge();
-	Double getMobilityBaseline();
-	Double getAppUseProbability();
-	Double getComplianceBaseline();
-	long getHilbertX();
-	long getHilbertY();
+	double getMobilityBaseline();
+	double getAppUseProbability();
+	double getComplianceBaseline();
+	double getLocationX();
+	double getLocationY();
 	
-//	default String header() {
-//		return CommonCSV.super.header()+"id,age,mobilityBaseline,appUseProbability,complianceBaseline";
-//	}
-//	
-//	default String row() {
-//		return CommonCSV.super.row()+","+csvFrom(
-//			this.getId(),
-//			this.getAge(),
-//			this.getMobilityBaseline(),
-//			this.getComplianceBaseline(),
-//			this.getAppUseProbability(),
-//			this.getComplianceBaseline()
-//		);
-//	}
+	// double getExpectedContactDegree();
+	
+
 }

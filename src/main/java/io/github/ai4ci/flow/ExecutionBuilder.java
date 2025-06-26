@@ -10,7 +10,7 @@ import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.abm.builders.BuilderFactory;
+import io.github.ai4ci.abm.builders.DefaultModelBuilder;
 import io.github.ai4ci.abm.mechanics.AbstractModelBuilder;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
@@ -47,7 +47,7 @@ public class ExecutionBuilder {
 			SetupConfiguration setupConfig
 	) {
 		this.setupConfig = setupConfig;
-		this.modelBuilder = BuilderFactory.builderFrom(setupConfig);
+		this.modelBuilder = new DefaultModelBuilder();
 		this.outbreak = Outbreak.createOutbreakStub();
 	}
 	

@@ -6,38 +6,26 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.Data.Partial;
+import io.github.ai4ci.abm.ImmutablePersonDemographic;
+import io.github.ai4ci.abm.ModifiablePerson;
+import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
-import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.abm.mechanics.Abstraction.SimpleFunction;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.EmpiricalFunction;
-import io.github.ai4ci.util.EmpiricalFunction.Link;
 import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
+import io.github.ai4ci.util.LinkFunction;
+import io.github.ai4ci.util.Sampler;
 
 @Value.Immutable
-@JsonSerialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
-@JsonDeserialize(as = ImmutableAgeStratifiedNetworkConfiguration.class)
-public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
+@JsonSerialize(as = ImmutableAgeStratifiedDemography.class)
+@JsonDeserialize(as = ImmutableAgeStratifiedDemography.class)
+public interface AgeStratifiedDemography extends LocationAwareDemography {
  
-	@Partial @Value.Immutable @SuppressWarnings("immutables")
-	@JsonSerialize(as = PartialAgeStratifiedNetworkConfiguration.class)
-	@JsonDeserialize(as = PartialAgeStratifiedNetworkConfiguration.class)
-	public interface _PartialAgeStratifiedNetworkConfiguration extends AgeStratifiedNetworkConfiguration, Abstraction.Modification<AgeStratifiedNetworkConfiguration> {
-		default _PartialAgeStratifiedNetworkConfiguration self() {return this;}
-	}
-	
-	public interface Builder extends SetupConfiguration.Builder {}
-	
-	public static ImmutableAgeStratifiedNetworkConfiguration DEFAULT = 
-			ImmutableAgeStratifiedNetworkConfiguration.builder()
-				.setInitialImports(30)
-				.setName("age-stratified")
-				.setNetworkSize(128*128)
-				.setNetworkRandomness(0.15)
-				.setNetworkConnectedness(100)
+	public static ImmutableAgeStratifiedDemography DEFAULT = 
+			ImmutableAgeStratifiedDemography.builder()
 				.setAgeDistribution(
 						ImmutableEmpiricalDistribution.builder()
 							.setMinimum(0)
@@ -50,16 +38,14 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 						ImmutableEmpiricalFunction.builder()
 							.setX(0,10,25,40,60,70)
 							.setY(2, 0.5,1.5,0.5,1,0.5)
-							.setLink(Link.LOG)
+							.setLink(LinkFunction.LOG)
 							.build()
 				)
+				.setContactProximityBias(2.0)
 				.build();
 	
 	EmpiricalDistribution getAgeDistribution();
-	int getNetworkConnectedness();
-	double getNetworkRandomness();
-	
-	Abstraction.SimpleFunction getOddsContactFromAgeDifference();
+	SimpleFunction getOddsContactFromAgeDifference();
 	
 	@JsonIgnore
 	@Value.Default default SimpleFunction getNormalisedOddsContactFromAgeDifference() {
@@ -87,6 +73,25 @@ public interface AgeStratifiedNetworkConfiguration extends SetupConfiguration {
 				p,
 				getNormalisedOddsContactFromAgeDifference().value(diff));
 	}
+	
+	
+	default ModifiablePerson createPersonStub(Outbreak outbreak) {
+		ModifiablePerson tmp = Person.createPersonStub(outbreak);
+		tmp.setDemographic(
+			ImmutablePersonDemographic.builder()
+				.from(tmp.getDemographic())
+				.setAge(this.getAgeDistribution().sample())
+				.build()
+		);
+		return tmp;
+	}
+	
+	default public double getRelationshipStrength(Person source, Person target, Sampler sampler) {
+		return this.adjustedProbabilityContact(
+				LocationAwareDemography.super.getRelationshipStrength(source,target,sampler), source, target
+			);
+	}
+	
 	
 
 }

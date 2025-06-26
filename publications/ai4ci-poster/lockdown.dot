@@ -1,0 +1,70 @@
+digraph G {
+    rankdir=TB; // Left to Right Layout
+    nodesep=0.8;
+
+    node [shape=box, style="rounded", fontname="Arial"];
+    edge [ arrowsize="0.75" fontname="Arial" labelfontname="Arial" labelfontsize="12" labeldistance=1.5 ];
+    // Policy Subgraph
+    subgraph cluster_policy {
+        label = "Policy: ReactiveLockdown";
+        color = blue;
+        style = filled;
+        fillcolor = "#e6f2ff";
+
+        MONITOR [
+            label = "monitor:\nrandom screening\ntrack positivity rate"
+        ];
+        LOCKDOWN [
+            label = "lockdown:\ncontinued screening\ntrigger population isolation"
+        ];
+        POLICY_DECISION [
+            label = "positivity ≥ upper\nthreshold" shape="diamond"
+        ];
+        RELEASE_DECISION [label="positivity ≤ low\nthreshold"  shape="diamond"];
+
+        MONITOR -> POLICY_DECISION;
+        POLICY_DECISION -> MONITOR [taillabel="no"];
+        POLICY_DECISION -> LOCKDOWN [taillabel="yes"];
+
+        LOCKDOWN -> RELEASE_DECISION;
+        RELEASE_DECISION -> LOCKDOWN [taillabel="no"];
+        RELEASE_DECISION:w -> MONITOR:w [taillabel="yes"];
+    }
+
+    // Agent Behavior Subgraph
+    subgraph cluster_behavior {
+        label = "Agent Behavior: LockdownIsolation";
+        color = green;
+        style = filled;
+        fillcolor = "#f0fff0";
+
+        ISOLATE [
+            label = "self isolate:\nstart lockdown\ndecrease mobility"
+        ];
+        WAIT [
+            label = "decrease mobility\ndecrease compliance"
+        ];
+        RELEASE [
+            label = "relax restrictions:\ntemporary mobility boost\nand gradually restore\nto baseline over 10 days"
+        ];
+        EXIT_TO_DEFAULT [
+            label = "Exit to prior behavior",
+            shape = plaintext
+        ];
+        WAIT_DECISION [
+			label = "comply with\nlockdown?"  shape="diamond"
+        ]
+
+        ISOLATE -> WAIT;
+
+        WAIT -> WAIT_DECISION;
+        WAIT_DECISION -> WAIT [taillabel="yes"];
+        WAIT_DECISION -> EXIT_TO_DEFAULT [taillabel="no"];
+
+        RELEASE -> EXIT_TO_DEFAULT;
+    }
+
+    // Connections between policy and agent behavior
+    LOCKDOWN -> ISOLATE [style=dashed, color=red, label="instruct people\nto isolate" splines=curved];
+    MONITOR -> RELEASE [style=dashed, color=red, label="release from\nisolation" splines=curved];
+}

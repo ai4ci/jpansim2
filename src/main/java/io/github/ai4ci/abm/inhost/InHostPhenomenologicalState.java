@@ -43,7 +43,7 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	
 	default double getNormalisedViralLoad() {
 		double tmp = Conversions.rateRatio( getViralLoad(), this.getInfectiousnessCutoff() );
-		return tmp < 1 ? 0 : tmp;
+		return tmp;
 	};
 	
 	

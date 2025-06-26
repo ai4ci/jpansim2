@@ -16,8 +16,8 @@ public abstract class AbstractModelBuilder {
 
 	public ModifiableOutbreak doSetupOutbreak(ModifiableOutbreak outbreak, SetupConfiguration config, Sampler sampler) {
 		if (config == null) throw new RuntimeException("Outbreak is not configured correctly for setup.");
-		outbreak.setPeople(new ThreadSafeArray<Person>(Person.class, config.getNetworkSize()));
 		outbreak.setSetupConfiguration( config );
+		outbreak.setPeople(new ThreadSafeArray<Person>(Person.class, outbreak.getPopulationSize()));
 		return setupOutbreak(outbreak,config,sampler);
 	}
 	

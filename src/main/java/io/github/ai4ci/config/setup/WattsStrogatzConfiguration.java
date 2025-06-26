@@ -1,39 +1,39 @@
 package io.github.ai4ci.config.setup;
 
 import org.immutables.value.Value;
+import org.jgrapht.generate.WattsStrogatzGraphGenerator;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import io.github.ai4ci.Data.Partial;
-import io.github.ai4ci.abm.mechanics.Abstraction;
+import io.github.ai4ci.abm.Person;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
 @JsonDeserialize(as = ImmutableWattsStrogatzConfiguration.class)
-public interface WattsStrogatzConfiguration extends SetupConfiguration {
+public interface WattsStrogatzConfiguration extends NetworkConfiguration {
 
-	public interface Builder extends SetupConfiguration.Builder {}
-	
 	ImmutableWattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration.builder()
-			.setName("watts-strogatz")
 			.setNetworkSize(128*128)
-			.setNetworkConnectedness(100)
+			.setNetworkDegree(100)
 			.setNetworkRandomness(0.15)
-			.setInitialImports(30)
 			.build();
 	
-	@Partial @Value.Immutable @SuppressWarnings("immutables")
-	@JsonSerialize(as = PartialWattsStrogatzConfiguration.class)
-	@JsonDeserialize(as = PartialWattsStrogatzConfiguration.class)
-	public interface _PartialWattsStrogatzConfiguration extends WattsStrogatzConfiguration, Abstraction.Modification<WattsStrogatzConfiguration> {
-		default _PartialWattsStrogatzConfiguration self() {return this;}
-	}
-	
-	/**
-	 * A measure of the randomness of the small world social network. This is 
-	 * a range from 0 to 1 where 0 is ordered and 1 is totally random.
-	 */
 	Double getNetworkRandomness();
-	Integer getNetworkConnectedness();
+	
+	
+	default void generateGraph(SimpleGraph<Person, DefaultEdge> socialNetwork) {
+		WattsStrogatzGraphGenerator<Person, DefaultEdge> gen = 
+				new WattsStrogatzGraphGenerator<Person, DefaultEdge>(
+						this.getNetworkSize(),
+						Math.min(
+							this.getNetworkDegree(),
+							this.getNetworkSize()
+						) / 2 * 2,
+						this.getNetworkRandomness()
+				);
+		gen.generateGraph(socialNetwork);
+	}
 }

@@ -112,7 +112,9 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 	
 	@Override
 	default double getNormalisedViralLoad() {
-		return this.getDiseaseState().equals(DiseaseState.INFECTIOUS) ? 1D : 0D;
+		if (this.getDiseaseState().equals(DiseaseState.INFECTIOUS)) return 1.5D;
+		if (this.getDiseaseState().equals(DiseaseState.EXPOSED)) return 0.5D;
+		return 0D;
 	}
 
 	@Override

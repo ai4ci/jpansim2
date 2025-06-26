@@ -28,7 +28,7 @@ public enum SmartAgentLFTTesting implements BehaviourModel, DefaultNoTesting {
 			if (isSymptomaticAndCompliant(person, 2) || isHighRiskOfInfectionAndCompliant(person, 
 						ModelNav.modelParam(person).getSmartAppRiskTrigger()
 					)  ) {
-				if (isLFTTestingAllowed(person)) doLFT(builder,person);
+				if (isLFTTestingAllowed(person)) doLFT(builder,person, context);
 			}
 			
 		}
@@ -53,14 +53,14 @@ public enum SmartAgentLFTTesting implements BehaviourModel, DefaultNoTesting {
 				PersonState person, StateMachineContext context, Sampler rng) {
 			
 			// Maybe put a delay in here otherwise it will be next day PCR.
-			if (isPCRTestingAllowed(person)) doPCR(builder,person);
+			if (isPCRTestingAllowed(person)) doPCR(builder,person, context);
 			
 		}
 
 		@Override
 		public BehaviourState nextState(ImmutablePersonState.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
-			if ( isTestedToday(person) ) { 
+			if ( context.isReactivelyTestedToday() ) { 
 				decreaseSociabilityIfCompliant(builder,person);
 				return AWAIT_PCR;
 			} else {
@@ -90,7 +90,7 @@ public enum SmartAgentLFTTesting implements BehaviourModel, DefaultNoTesting {
 				PersonState person, StateMachineContext context, Sampler rng) {
 			if (!person.isCompliant()) {
 				resetBehaviour(builder,person);
-				return NonCompliant.DEFAULT;
+				return Symptomatic.DEFAULT;
 			}
 			if (!person.isSymptomatic()) {
 				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod(),0.95)) {

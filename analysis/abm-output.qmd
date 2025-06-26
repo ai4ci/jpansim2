@@ -13,6 +13,8 @@ here::i_am("abm-output.qmd")
 library(tidyverse)
 library(gganimate)
 
+.gg_pedantic()
+
 # install.packages(
 #   c("odin","odin.dust","dust"),
 #   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
@@ -23,10 +25,16 @@ library(gganimate)
 
 
 ```{r}
-linelist = readr::read_csv("~/tmp/linelist.csv")
-summary = readr::read_csv("~/tmp/test1/summary.csv")
+
+behaviours = readr::read_csv("~/tmp/behaviours.csv")
+summary = readr::read_csv("~/tmp/summary.csv")
 demog = readr::read_csv("~/tmp/demog.csv")
 ```
+
+```{r}
+ggplot(behaviours,aes(x=time, y=count, fill=as.factor(behaviour),colour=as.factor(behaviour)))+geom_bar(stat="identity")+facet_wrap(~experimentName,scales = "free_y")
+```
+
 
 
 ```{r}

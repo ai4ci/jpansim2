@@ -34,9 +34,14 @@ public class SimulationExecutor extends PauseableThread {
 
 	@Override
 	public void doLoop() {
-		step += 1;
-		exporter.export(outbreak);
-		updater.update(outbreak);
+		try {
+			step += 1;
+			exporter.export(outbreak);
+			updater.update(outbreak);
+		} catch (Exception e) {
+			mon.handle(e);
+			this.halt();
+		}
 	}
 
 	@Override

@@ -4,35 +4,95 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.abm.behaviour.NonCompliant;
+import io.github.ai4ci.abm.policy.NoControl;
+import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
+import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
+import io.github.ai4ci.config.setup.PartialSetupConfiguration;
+import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.util.Conversions;
+import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ImmutableDelayDistribution;
 
 class TestCalibration {
-
+	
+	{
+		Configurator.initialize(new DefaultConfiguration());
+	    Configurator.setRootLevel(Level.INFO);
+	}
 	Outbreak out = TestUtils.mockOutbreak();
 	
 	@Test
 	void testR0() {
 		
-		System.out.println(Calibration.contactsPerPersonPerDay(out));
-		
-		double[] pTrans_0 = Calibration.inferTransmissionProbability(out, 1.0);
-		System.out.println("R0=1, trans="+Arrays.toString(pTrans_0));
 		
 		
+		Outbreak out2 = TestUtils.builder
+				.setSetupTweak(
+					PartialSetupConfiguration.builder()
+						.setNetwork(BarabasiAlbertConfiguration.DEFAULT
+								.withNetworkSize(500)
+								.withNetworkDegree(100)
+						)
+						.build())
+				.setExecutionTweak(
+					PartialExecutionConfiguration.builder()
+						.setR0(3.0)
+						.setDefaultPolicyModelName(NoControl.class.getSimpleName())
+						.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
+						.build()
+				)
+				.build().getOutbreak(); 
 		
-		double pTrans[] = Calibration.inferTransmissionProbability(out, 1.5);
-		System.out.println("R0=1.5, trans="+Arrays.toString(pTrans));
+		System.out.println("average social network degree: "+out2.getSocialNetwork().size()*2 / out2.getPopulationSize());
 		
-		System.out.println(Arrays.stream(pTrans).sum()*Calibration.contactsPerPersonPerDay(out));
+		System.out.println("contacts per day: "+Calibration.contactsPerPersonPerDay(out2));
+		System.out.println("max R0: "+Calibration.maxR0(out2));
+		System.out.println("average contact degree: "+Calibration.averageContactDegree(out2));
+		System.out.println("percolation: "+Calibration.percolationThreshold(out2));
+		System.out.println("inv percolation: "+1.0/Calibration.percolationThreshold(out2));
+		
+		
+		
+		
+		double param1 = Calibration.inferViralLoadTransmissionParameter(out2, 1.0);
+		double param15 = Calibration.inferViralLoadTransmissionParameter(out2, 1.5);
+		
+		double param15q = Calibration.inferViralLoadTransmissionParameterQuick(out2, 1.5);
+		
+		System.out.println(param15+"="+param15q);
+		
+		double[][] prof = out2.getExecutionConfiguration().getViralLoadProfile();
+		System.out.println(	InHostConfiguration.getInfectivityProfile(prof, param15));
+		
+		
+		DelayDistribution pTrans_0 = InHostConfiguration.getInfectivityProfile(prof, param1);
+		System.out.println("R0=1, param="+param1+", trans="+Arrays.toString(pTrans_0.getProfile()));
+		
+		
+		
+		DelayDistribution pTrans = InHostConfiguration.getInfectivityProfile(prof, param15); 
+		System.out.println("R0=1.5, param="+param15+", trans="+Arrays.toString(pTrans.getProfile()));
+		
+		System.out.println(
+				(1-Arrays.stream(pTrans.getProfile()).map(d -> 1-d).reduce((d1, d2)->d1*d2).getAsDouble())
+					*Calibration.contactsPerPersonPerDay(out2)
+			);
 		
 		assertThrows(RuntimeException.class, () -> {
-			double[] pTrans_2 = Calibration.inferTransmissionProbability(out, 1000);
-			System.out.println(pTrans_2);
+			double param1000 = Calibration.inferViralLoadTransmissionParameter(out2, 1000);
+			System.out.println(param1000);
 		});
+		
+		double param30 = Calibration.inferViralLoadTransmissionParameter(out2, prof, Calibration.maxR0(out2)-0.01);
+		DelayDistribution pTrans_3 = InHostConfiguration.getInfectivityProfile(prof, param30);
+		System.out.println("R0="+(Calibration.maxR0(out2)-0.01)+", param="+param30+", trans="+Arrays.toString(pTrans_3.getProfile()));
 	}
 
 	@Test
@@ -46,17 +106,14 @@ class TestCalibration {
 	
 	@Test
 	void testConversions() {
-		
-		ImmutableDelayDistribution dd = InHostConfiguration.getInfectivityProfile(
-				out.getExecutionConfiguration().getInHostConfiguration(),
-				out.getExecutionConfiguration(),
-				100, 100);
+		double param30 = Calibration.inferViralLoadTransmissionParameter(out, 2.0);
+		ImmutableDelayDistribution dd = (ImmutableDelayDistribution) InHostConfiguration.getInfectivityProfile(
+				out.getExecutionConfiguration(), param30, 100, 100);
 		dd = dd.withPAffected(0.4);
 		System.out.println(dd.totalHazard(0.2)+"\n");
 		
 		Arrays.stream(
 		InHostConfiguration.getViralLoadProfile(
-				out.getExecutionConfiguration().getInHostConfiguration(),
 				out.getExecutionConfiguration(),
 				100, 100)
 		).forEach(System.out::println);

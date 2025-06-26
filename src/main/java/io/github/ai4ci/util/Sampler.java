@@ -12,7 +12,7 @@ import org.apache.commons.statistics.distribution.PascalDistribution;
 import org.apache.commons.statistics.distribution.PoissonDistribution;
 
 import java.util.Optional;
-
+import java.util.Random;
 
 public class Sampler implements UniformRandomProvider {
 

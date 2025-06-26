@@ -11,19 +11,8 @@ public interface OutbreakTemporalState extends TemporalState<Outbreak>, Cloneabl
 	
 	long getInfectedCount();
 	long getIncidence();
-	/**
-	 * The number of tests reported positive on the current simulation date. This
-	 * is reported on the date the test result is available (not when the test
-	 * was taken). 
-	 */
-	long getTestPositivesByResultDate();
+	long getAdmissionIncidence();
 	
-	/**
-	 * The number of tests reported negative on the current simulation date. This
-	 * is reported on the date the test result is available (not when the test
-	 * was taken).
-	 */
-	long getTestNegativesByResultDate();
 	long getCumulativeInfections();
 	long getCumulativeAdmissions();
 	long getMaximumIncidence();

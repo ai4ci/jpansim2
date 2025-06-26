@@ -6,7 +6,7 @@
 
 	<groupId>io.github.ai4ci</groupId>
 	<artifactId>jpansim2</artifactId>
-	<version>0.2.0</version>
+	<version>0.2.5</version>
 	<!-- git commit ...; git tag vX.Y.Z; git push origin <dash><dash>tags -->
 	<packaging>jar</packaging>
 
@@ -42,7 +42,7 @@
 			<artifactId>log4j-slf4j-impl</artifactId>
 			<version>2.20.0</version>
 		</dependency>
-		
+
 		<!-- SYSTEM UTILS AND SIMILARITY CURVES -->
 		<dependency>
 			<groupId>com.github.davidmoten</groupId>
@@ -53,6 +53,16 @@
 			<groupId>com.github.oshi</groupId>
 			<artifactId>oshi-core</artifactId>
 			<version>6.8.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>1.2.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mariuszgromada.math</groupId>
+			<artifactId>MathParser.org-mXparser</artifactId>
+			<version>6.1.0</version>
 		</dependency>
 
 		<!-- APACHE COMMONS -->

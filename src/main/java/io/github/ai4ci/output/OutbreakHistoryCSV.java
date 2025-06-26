@@ -7,9 +7,10 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.CSVWriter;
 
 @Value.Immutable
-@Export(stage = Stage.UPDATE, value = "test-positivity.csv",size = 64*64, selector = OutbreakHistoryCSV.Selector.class)
+@Export(stage = Stage.UPDATE, value = "test-positivity.csv",size = 64*64, selector = OutbreakHistoryCSV.Selector.class, writer=CSVWriter.class)
 /**
  * A retrospective of test positives as determined on a given day. This view 
  * will demonstrate the right censoring of the test positivity and the difference
@@ -35,15 +36,5 @@ public interface OutbreakHistoryCSV extends CommonCSV.State {
 	//TODO: There are no reporting delays for death or admission.
 	//TODO: There is no time dependence in reporting delay at weekends
 	
-//	default String header() {
-//		return CommonCSV.super.header()+",observationTime,currentTestPositivesBySampleDate,currentTestNegativesBySampleDate";
-//	}
-//	
-//	default String row() {
-//		return CommonCSV.super.row()+","+csvFrom(
-//			this.getObservationTime(),
-//			this.getCurrentTestPositivesBySampleDate(),
-//			this.getCurrentTestNegativesBySampleDate()
-//		);
-//	}
+
 }

@@ -1,4 +1,4 @@
-package io.github.ai4ci.abm;
+package io.github.ai4ci.util;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,8 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import io.github.ai4ci.util.ThreadSafeBuffer;
 
 public class TestThreadSafeBuffer {
 

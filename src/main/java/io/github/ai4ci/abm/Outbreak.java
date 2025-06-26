@@ -4,17 +4,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.print.attribute.standard.MediaSize.Other;
-
 import org.immutables.value.Value;
 import org.jgrapht.graph.SimpleWeightedGraph;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.github.ai4ci.Data;
-import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.abm.mechanics.Abstraction.Entity;
 import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
+import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.util.Ephemeral;
@@ -40,8 +38,11 @@ public interface Outbreak extends Entity, HistoricalStateProvider<OutbreakHistor
 	OutbreakState getCurrentState();
 	List<OutbreakHistory> getHistory();
 	
-	SimpleWeightedGraph<Person, SocialRelationship> getSocialNetwork();
-	//public abstract NetworkBuilder<PersonHistory, PersonHistory.Infection> getInfections();
+	ThreadSafeArray<SocialRelationship> getSocialNetwork();
+	
+	default int getPopulationSize() {
+		return getSetupConfiguration().getNetwork().getNetworkSize();
+	}
 	
 	default Optional<Person> getPersonById(int id) {
 		if (id >= getPeople().size()) return Optional.empty(); 

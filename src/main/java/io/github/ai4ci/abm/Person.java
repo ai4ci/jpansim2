@@ -26,7 +26,7 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 		tmp.setNextHistory(Ephemeral.empty());
 		tmp.setNextState(Ephemeral.empty());
 		tmp.setStateMachine(StateMachine.stub());
-		tmp.setDemographic(PersonDemographic.DEFAULT);
+		tmp.setDemographic(PersonDemographic.stub(tmp));
 		return tmp;
 	}
 	
@@ -45,9 +45,7 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 
 	public abstract List<PersonHistory> getHistory();
 	
-	public long[] getHilbertCoordinates() {
-		return this.getOutbreak().getSetupConfiguration().getHilbertCoords(this.getId());
-	}
+	
 	
 	/**
 	 * Gets the first history item unless there is no history. If called during
@@ -61,8 +59,6 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	
 	public final int hashCode() {return super.hashCode();}
 	public final boolean equals(Object another) {return super.equals(another);}
-	
-
 	
 	public String toString() {
 		return getUrn();

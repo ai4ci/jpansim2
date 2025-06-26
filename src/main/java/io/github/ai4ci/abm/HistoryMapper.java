@@ -1,7 +1,5 @@
 package io.github.ai4ci.abm;
 
-import java.util.Optional;
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
@@ -17,7 +15,7 @@ import org.mapstruct.factory.Mappers;
 		nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 public abstract class HistoryMapper {
-	 
+	
 	// N.B. must be in same directory as data otherwise generated code
 	// does not import properly
 	
@@ -31,19 +29,9 @@ public abstract class HistoryMapper {
 	
 	public abstract OutbreakHistory createHistory(OutbreakState currentState);
 	
-	public Integer personStateId( PersonState source ) {
-		return source.getEntity().getId();
-	};
+//	public Integer personStateId( PersonState source ) {
+//		return source.getEntity().getId();
+//	};
 	
-	@Deprecated
-	public Optional<PersonHistory> currentHistory( PersonState currentState, int offset) {
-		int time = currentState.getTime()-offset;
-		return currentState.getEntity().getHistoryEntry( time );
-	};
 	
-	@Deprecated
-	public Optional<OutbreakHistory> currentHistory( OutbreakState currentState, int offset) {
-		int time = currentState.getTime()-offset;
-		return currentState.getEntity().getHistoryEntry( time );
-	};
 }

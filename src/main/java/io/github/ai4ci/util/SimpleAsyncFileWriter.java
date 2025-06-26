@@ -7,7 +7,7 @@ import java.util.concurrent.*;
 import io.github.ai4ci.flow.CSVWriter.Queue;
 
 @Deprecated
-public class SimpleAsyncFileWriter implements Queue {
+public class SimpleAsyncFileWriter implements Queue<String> {
     private final BlockingQueue<String> queue;
     private final Thread writerThread;
     private final BufferedOutputStream outputStream;

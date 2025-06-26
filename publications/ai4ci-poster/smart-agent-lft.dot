@@ -1,0 +1,83 @@
+digraph G {
+    rankdir=TB; // Top to Bottom Layout
+    splines=ortho;
+    nodesep=0.8;
+
+    node [shape=box, style="rounded", fontname="Arial"];
+    edge [ arrowsize="0.75" fontname="Arial" labelfontname="Arial" labelfontsize="12" labeldistance=1.5 ];
+
+    subgraph cluster_behavior {
+        label = "Agent Behavior: SmartAgentLFTTesting";
+        color = green;
+        style = filled;
+        fillcolor = "#f0fff0";
+
+        REACTIVE_LFT [
+            label = "monitor symptoms\nand risk exposure"
+        ];
+
+        TEST_DECISION [
+            label = "symptomatic or\nhigh-risk?" shape="diamond"
+        ];
+
+        CONSIDER_LFT [
+            label = "recent\nnegative\nLFT test?" shape="diamond"
+        ];
+
+        PERFORM_LFT [
+            label = "LFT test\nresult?" shape="diamond"
+        ];
+
+        REFLEX_PCR [
+            label = "recent\nnegative\nPCR test?" shape="diamond"
+        ];
+
+        AWAIT_PCR [
+            label = "reduce mobility\nwait for result"
+        ];
+
+        TEST_RESULT_DECISION [
+            label = "test result?" shape="diamond"
+        ];
+
+        SELF_ISOLATE [
+            label = "self isolate\nreduce mobility\nreduced compliance"
+        ];
+
+        ISOLATION_DECISION [
+            label = "finish\nisolation?" shape="diamond"
+        ];
+
+        EXIT_TO_DEFAULT [
+            label = "Exit to default behavior",
+            shape = plaintext
+        ];
+
+        // Edges within state machine
+        REACTIVE_LFT -> TEST_DECISION;
+
+        TEST_DECISION -> CONSIDER_LFT [taillabel="yes"];
+        TEST_DECISION -> REACTIVE_LFT [taillabel="no"];
+
+        CONSIDER_LFT -> REACTIVE_LFT [taillabel="yes"];
+        CONSIDER_LFT -> PERFORM_LFT [taillabel="no"];
+
+        PERFORM_LFT -> REACTIVE_LFT [taillabel="negative"];
+        PERFORM_LFT -> REFLEX_PCR [taillabel="positive"];
+
+        REFLEX_PCR -> AWAIT_PCR [taillabel="no - seek PCR"];
+        REFLEX_PCR -> REACTIVE_LFT [taillabel="yes"];
+
+        AWAIT_PCR -> TEST_RESULT_DECISION;
+
+        TEST_RESULT_DECISION -> AWAIT_PCR [taillabel="pending"];
+        TEST_RESULT_DECISION -> SELF_ISOLATE [taillabel="positive"];
+        TEST_RESULT_DECISION -> REACTIVE_LFT [taillabel="negative"];
+
+        SELF_ISOLATE -> ISOLATION_DECISION;
+
+        ISOLATION_DECISION -> REACTIVE_LFT [taillabel="yes\n(completed)"];
+        ISOLATION_DECISION -> EXIT_TO_DEFAULT [taillabel="yes\n(non compliant)"];
+        ISOLATION_DECISION -> SELF_ISOLATE [taillabel="no"];
+    }
+}

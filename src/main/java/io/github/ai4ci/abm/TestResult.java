@@ -19,6 +19,10 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 public interface TestResult extends Serializable {
 	
+	public static enum Indication {
+		REACTIVE, SCREENING
+	}
+	
 	public static enum Type { 
 		LFT (
 			ImmutableTestParameters.builder()
@@ -78,10 +82,15 @@ public interface TestResult extends Serializable {
 	public double getViralLoadTruth();
 	public long getTime();
 	public TestParameters getTestParams();
+	public Indication getIndication();
 	
 	@Value.Derived public default double getViralLoadSample() {
 		Sampler rng = Sampler.getSampler();
 		return getTestParams().applyNoise(this.getViralLoadTruth(), rng);
+	}
+	
+	default long getResultTime() {
+		return getTime()+getDelay();
 	}
 	
 	@Value.Derived public default long getDelay() {
@@ -92,10 +101,11 @@ public interface TestResult extends Serializable {
 		));
 	}
 	
-	private static TestResult build(double viralLoad, long time, TestParameters testParams) {
+	private static TestResult build(double viralLoad, long time, TestParameters testParams, Indication indication) {
 		return ImmutableTestResult.builder()
 			.setViralLoadTruth(viralLoad)
 			.setTestParams(testParams)
+			.setIndication(indication)
 			.setTime(time)
 			.build();
 	}
@@ -129,6 +139,11 @@ public interface TestResult extends Serializable {
 	
 	@Value.Derived default public boolean getFinalObservedResult() {
 		return (getViralLoadSample() > getTestParams().getLimitOfDetection());
+	}
+	
+	default public Result getFinalResult() {
+		if (getFinalObservedResult()) return Result.POSITIVE;
+		return Result.NEGATIVE;
 	}
 	
 //	// what is the probability given a particular result that the person
@@ -187,10 +202,11 @@ public interface TestResult extends Serializable {
 				testee.getEntity().getOutbreak().getExecutionConfiguration(),
 				testee.getNormalisedViralLoad(),
 				testee.getTime(),
-				type.name());
+				type.name(),
+				Indication.REACTIVE);
 	}
 	
-	private static Optional<TestResult> resultFrom(ExecutionConfiguration cfg, double viralLoad, int time, String type) {
+	private static Optional<TestResult> resultFrom(ExecutionConfiguration cfg, double viralLoad, int time, String type, Indication indication) {
 		
 		return cfg.getAvailableTests()
 				.stream()
@@ -200,10 +216,20 @@ public interface TestResult extends Serializable {
 					return TestResult.build(
 						viralLoad, // true test status as test is testing infectiousness 
 						time, // test date
-						params
+						params,
+						indication
 					);
 				});
 	}
+	static Optional<TestResult> screeningResultFrom(PersonTemporalState testee, Type type) {
+		return resultFrom(
+				testee.getEntity().getOutbreak().getExecutionConfiguration(),
+				testee.getNormalisedViralLoad(),
+				testee.getTime(),
+				type.name(),
+				Indication.SCREENING);
+	}
+	
 	
 	
 }

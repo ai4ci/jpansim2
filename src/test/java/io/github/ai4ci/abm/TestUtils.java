@@ -6,7 +6,8 @@ import org.immutables.value.Value;
 
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.PartialExecutionConfiguration;
-import io.github.ai4ci.config.setup.PartialWattsStrogatzConfiguration;
+import io.github.ai4ci.config.setup.PartialSetupConfiguration;
+import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.flow.ExecutionBuilder;
 import io.github.ai4ci.util.ReflectionUtils;
@@ -18,7 +19,7 @@ public interface TestUtils {
 		return ExecutionBuilder.buildExperiment(
 				//ConfigMerger.INSTANCE.mergeConfiguration(
 				ReflectionUtils.merge(
-						WattsStrogatzConfiguration.DEFAULT,
+						SetupConfiguration.DEFAULT,
 						getSetupTweak()
 				),
 				//ConfigMerger.INSTANCE.mergeConfiguration(
@@ -44,11 +45,15 @@ public interface TestUtils {
 		return getPerson().getCurrentState();
 	}
 	
-	@Value.Default default PartialWattsStrogatzConfiguration getSetupTweak() {
-		return PartialWattsStrogatzConfiguration.builder()
-			.setNetworkSize(1000)
-			.setNetworkConnectedness(30)
+	@Value.Default default PartialSetupConfiguration getSetupTweak() {
+		return PartialSetupConfiguration.builder()
 			.setInitialImports(50)
+			.setNetwork(
+				WattsStrogatzConfiguration.DEFAULT
+					.withNetworkSize(1000)
+					.withNetworkDegree(100)
+					.withNetworkRandomness(0.15)
+			)
 			.build();
 	};
 	
@@ -57,10 +62,11 @@ public interface TestUtils {
 			.build();
 	};
 	
-	public static ModifiableOutbreak instance = (ModifiableOutbreak) ImmutableTestUtils.builder().build().getOutbreak();
+	// public static ModifiableOutbreak instance = (ModifiableOutbreak) ImmutableTestUtils.builder().build().getOutbreak();
+	public static ImmutableTestUtils.Builder builder = ImmutableTestUtils.builder();
 	
 	public static ModifiableOutbreak mockOutbreak() {
-		return (ModifiableOutbreak) instance;
+		return (ModifiableOutbreak) ImmutableTestUtils.builder().build().getOutbreak();
 	}
 	
 	public static ModifiablePerson mockPerson() {

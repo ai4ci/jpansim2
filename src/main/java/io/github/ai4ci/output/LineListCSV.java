@@ -7,14 +7,15 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.DuckDBWriter;
 
 @Value.Immutable
-@Export(stage = Stage.UPDATE,value = "linelist.csv",size = 64*64, selector = PersonStateCSV.Selector.class)
-public interface PersonStateCSV extends CommonCSV.State {
+@Export(stage = Stage.UPDATE, value = "linelist.duckdb",size = 64*64, selector = LineListCSV.Selector.class, writer=DuckDBWriter.class)
+public interface LineListCSV extends CommonCSV.State {
 
 	static class Selector implements Export.Selector {
 		@Override
-		public Stream<PersonStateCSV> apply(Outbreak o) {
+		public Stream<LineListCSV> apply(Outbreak o) {
 			return o.getPeople().stream().map(p -> p.getCurrentState()).map(CSVMapper.INSTANCE::toCSV);
 		}
 	}
@@ -25,8 +26,12 @@ public interface PersonStateCSV extends CommonCSV.State {
 	boolean isSymptomatic();
 	boolean isRequiringHospitalisation();
 	boolean isDead();
+	boolean isIncidentHospitalisation();
+	boolean isIncidentInfection();
+	
 	double getNormalisedSeverity();
 	double getNormalisedViralLoad();
+	double getImmuneActivity();
 	double getContactExposure();
 	double getPresumedLocalPrevalence();
 	double getTrueLocalPrevalence();
@@ -35,7 +40,12 @@ public interface PersonStateCSV extends CommonCSV.State {
 	long getContactCount();
 	long getExposureCount();
 	
-	boolean isIncidentInfection();
+	double getAdjustedMobility();
+	double getAdjustedTransmissibility();
+	double getAdjustedCompliance();
+	double getAdjustedAppUseProbability();
+	
+	
 	
 //	default String header() {
 //		return CSVUtil.headers(this.getClass());

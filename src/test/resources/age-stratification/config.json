@@ -2,38 +2,45 @@
   "batchConfig" : {
     "urnBase" : "age-stratification",
     "simulationDuration" : 200,
-    "exporters" : [ "SUMMARY", "INTERNAL_STATE", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE" ]
+    "exporters" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
   },
   "setupConfig" : [ {
-    "@type" : "age-stratified",
-    "name" : "age-stratified",
     "modifications" : [ ],
     "default" : {
-      "@type" : "age-stratified",
-      "name" : "age-stratified",
-      "networkSize" : 16384,
+      "name" : "default",
       "initialImports" : 30,
-      "ageDistribution" : {
-        "minimum" : 0.0,
-        "maximum" : 120.0,
-        "x" : [ 18.0, 45.0, 65.0, 85.0 ],
-        "cumulativeProbability" : [ 0.1, 0.5, 0.75, 0.9 ]
+      "network" : {
+        "@type" : "erdos-reyni",
+        "networkSize" : 16384,
+        "networkDegree" : 100
       },
-      "networkConnectedness" : 100,
-      "networkRandomness" : 0.15,
-      "oddsContactFromAgeDifference" : {
-        "x" : [ 0.0, 10.0, 25.0, 40.0, 60.0, 70.0 ],
-        "y" : [ 2.0, 0.5, 1.5, 0.5, 1.0, 0.5 ],
-        "link" : "LOG"
+      "demographics" : {
+        "ageDistribution" : {
+          "minimum" : 0.0,
+          "maximum" : 120.0,
+          "x" : [ 18.0, 45.0, 65.0, 85.0 ],
+          "cumulativeProbability" : [ 0.1, 0.5, 0.75, 0.9 ]
+        },
+        "oddsContactFromAgeDifference" : {
+          "x" : [ 0.0, 10.0, 25.0, 40.0, 60.0, 70.0 ],
+          "y" : [ 2.0, 0.5, 1.5, 0.5, 1.0, 0.5 ],
+          "link" : "LOG"
+        }
       }
     }
   } ],
   "setupReplications" : 1,
   "executionConfig" : {
     "name" : "execution",
+    "r0" : 1.75,
     "asymptomaticFraction" : 0.5,
     "caseHospitalisationRate" : 0.05,
     "caseFatalityRate" : 0.01,
+    "initialScreeningProbability" : 0.01,
+    "contactProbability" : {
+      "type" : "UNIFORM0",
+      "central" : 0.5
+    },
     "contactDetectedProbability" : 0.9,
     "complianceProbability" : {
       "type" : "UNIMODAL_BETA",
@@ -50,7 +57,7 @@
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
         "type" : "LOG_NORM",
-        "central" : 5.0,
+        "central" : 4.0,
         "dispersion" : 2.0
       },
       "approxPeakViralLoad" : {
@@ -65,7 +72,7 @@
       },
       "peakToRecoveryDelay" : {
         "type" : "LOG_NORM",
-        "central" : 5.0,
+        "central" : 6.0,
         "dispersion" : 3.0
       },
       "approxPeakImmuneResponse" : {
@@ -129,11 +136,12 @@
     },
     "defaultBehaviourModelName" : "Test",
     "defaultPolicyModelName" : "NoControl",
+    "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
     "complianceDeteriorationRate" : 0.02,
     "complianceImprovementRate" : 0.01,
     "organicRateOfMobilityChange" : 0.25,
-    "lockdownReleasePrevalenceTrigger" : 0.01,
-    "lockdownStartPrevalenceTrigger" : 0.05,
+    "lockdownReleaseTrigger" : 0.01,
+    "lockdownStartTrigger" : 0.05,
     "importationProbability" : 0.0,
     "smartAppRiskTrigger" : 0.05,
     "demographicAdjustment" : {
@@ -159,8 +167,7 @@
         "y" : [ 1.0, 2.0, 2.0, 1.5, 1.0, 0.5, 0.25 ],
         "link" : "LOG"
       }
-    },
-    "rO" : 1.75
+    }
   },
   "facets" : [ ],
   "executionReplications" : 1

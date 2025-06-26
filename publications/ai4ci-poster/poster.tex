@@ -1,0 +1,200 @@
+\documentclass[a0,portrait]{a0poster}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{lipsum} % For placeholder text
+\usepackage[scaled]{helvet}
+\usepackage{fancyhdr}
+\renewcommand*\familydefault{\sfdefault}
+
+\usepackage{tikz}
+\usetikzlibrary{fadings}
+
+% Page setup
+\setlength{\paperwidth}{84.1cm}
+\setlength{\paperheight}{118.9cm}
+\usepackage[left=2cm,right=2cm,top=4cm,bottom=4cm]{geometry}
+
+% Define colors
+\definecolor{titlecolor}{RGB}{0,0,0}
+\definecolor{sectioncolor}{RGB}{255,255,255}
+\definecolor{backgroundtop}{RGB}{173,216,230} % Light Blue
+\definecolor{backgroundbottom}{RGB}{169,169,169} % Grey
+
+
+\fancypagestyle{plain}{%
+  \fancyhf{} % clear all header and footer fields
+  \fancyfoot[C]{
+    % Horizontal line after title
+    \noindent\makebox[\linewidth]{
+    \color{black}\rule{\dimexpr\paperwidth-4cm}{1pt}
+    }test
+  }
+}
+%activate the style:
+\pagestyle{plain}
+
+
+\pagestyle{plain}
+
+\begin{document}
+
+% Background gradient
+\begin{tikzpicture}[remember picture,overlay]
+\shade[top color=backgroundtop, bottom color=backgroundbottom]
+    (current page.north west) rectangle (current page.south east);
+\end{tikzpicture}
+
+% Title
+\begin{center}
+\textbf{\fontsize{40}{48}\selectfont AI4CI: Collective Intelligence in Agent-Based Modeling}\\[0.5cm]
+\textsf{\large Author Name$^1$, Co-Author Name$^2$, Institution Names}
+\end{center}
+
+% Horizontal line after title
+\noindent\makebox[\linewidth]{
+  \color{black}\rule{\dimexpr\paperwidth-4cm}{1pt}
+}
+
+\vspace{0.5cm}
+
+% Two column layout
+\begin{minipage}[t]{0.48\linewidth}
+\begin{center}
+\textbf{\Large \textsf{Background}}
+\end{center}
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\lipsum[1] \\
+}
+\\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{center}
+\textbf{\Large \textsf{Methods}}
+\end{center}
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\lipsum[2] \\
+}
+\\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{center}
+\textbf{\Large \textsf{Results}}
+\end{center}
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\lipsum[3] \\
+}
+\\
+\hline
+\end{tabular}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\linewidth}
+
+\begin{center}
+\textbf{\Large \textsf{Discussion}}
+\end{center}
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\lipsum[4] \\
+}
+\\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{center}
+\textbf{\Large \textsf{Next Steps}}
+\end{center}
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\lipsum[5] \\
+}
+\\
+\hline
+\end{tabular}
+
+\end{minipage}
+
+\vspace{2cm}
+
+% References with logos
+\begin{center}
+\textbf{\Large \textsf{References}}
+\end{center}
+
+\noindent\makebox[\linewidth]{
+\begin{tabular}{p{2cm} p{\dimexpr\linewidth-4cm} p{2cm}}
+\includegraphics[height=1.5cm]{example-image-a} &
+\begin{tabular}{|>{\columncolor{sectioncolor}}l|}
+\hline
+\\
+\parbox{0.9\linewidth}{
+\setlength{\leftskip}{10pt}
+\setlength{\rightskip}{10pt}
+\setlength{\parskip}{8pt}
+\footnotesize
+\begin{enumerate}
+    \item Author A. et al., "Paper Title", Journal Name, 2024.
+    \item Author B. et al., "Another Paper", Another Journal, 2023.
+\end{enumerate}
+}
+\\
+\hline
+\end{tabular} &
+\includegraphics[height=1.5cm]{example-image-b}
+\\
+\includegraphics[height=1.5cm]{example-image-c} &
+&
+\includegraphics[height=1.5cm]{example-image}
+\end{tabular}
+}
+
+
+
+\end{document}

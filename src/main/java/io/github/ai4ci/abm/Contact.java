@@ -4,11 +4,11 @@ import java.io.Serializable;
 import java.util.Optional;
 
 import org.immutables.value.Value;
-import org.jgrapht.graph.SimpleWeightedGraph;
 
 import io.github.ai4ci.abm.mechanics.PersonStateContacts;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
+import io.github.ai4ci.util.ThreadSafeArray;
 
 @Value.Immutable
 /**
@@ -32,12 +32,14 @@ public interface Contact extends Serializable {
 //	 */
 //	double getProximityDuration();
 	
+	/** Get the other participant in a contact */
 	default int getParticipant(int id) {
 		if (id == getParticipant1Id()) return getParticipant2Id(); 
 		if (id == getParticipant2Id()) return getParticipant1Id();
 		throw new RuntimeException("Not a participant");
 	}
 	
+	/** Get the other participant in a contact */
 	default PersonHistory getParticipant(PersonHistory one) {
 		int id = getParticipant(one.getEntity().getId());
 		int time = one.getTime();
@@ -45,11 +47,13 @@ public interface Contact extends Serializable {
 				.get();
 	}
 	
+	/** Get the other participant in a contact */
 	default PersonHistory getParticipant(PersonState one) {
 		int id = getParticipant(one.getEntity().getId());
 		return one.getEntity().getOutbreak().getPersonById(id).flatMap(p -> p.getCurrentHistory()).get();
 	}
 	
+	/** Get the other participant in a contact */
 	default PersonState getParticipantState(PersonTemporalState one) {
 		int id = getParticipant(one.getEntity().getId());
 		return one.getEntity().getOutbreak().getPersonById(id).map(p -> p.getCurrentState()).get();
@@ -58,18 +62,16 @@ public interface Contact extends Serializable {
 	public static PersonStateContacts contactNetwork(Outbreak outbreak) {
 		//Do the contact network here? and pass it as a parameter to the
 		//person updateState
-		SimpleWeightedGraph<Person, SocialRelationship> network = outbreak.getSocialNetwork();
+		ThreadSafeArray<SocialRelationship> network = outbreak.getSocialNetwork();
 		PersonStateContacts out = new PersonStateContacts(
-				network.vertexSet().size(),
-				network.vertexSet().stream()
-					.mapToInt(v -> network.outDegreeOf(v))
-					.max().getAsInt()
-				);
+				outbreak.getPeople().size(),
+				network.size() / outbreak.getPeople().size() * 4
+		);
 		
-		network.edgeSet().parallelStream().forEach(r -> {
+		network.parallelStream().forEach(r -> {
 			Sampler sampler = Sampler.getSampler();
-			PersonState one = network.getEdgeSource(r).getCurrentState();
-			PersonState two = network.getEdgeTarget(r).getCurrentState();
+			PersonState one = r.getSource(outbreak).getCurrentState();
+			PersonState two = r.getTarget(outbreak).getCurrentState();
 			
 			// TODO: contacts stratified by venue such as work or school  
 			// connectedness quantile is a proxy for the context of a contact
@@ -105,11 +107,11 @@ public interface Contact extends Serializable {
 					// .setProximityDuration(contactProbability)
 					.build();
 				
-				out.write(oneref).put(contact);
-				out.write(tworef).put(contact);
+				out.write(oneref).put(tworef,contact);
+				out.write(tworef).put(oneref,contact);
 				
-				asExposure(contact, one, two).ifPresent(e -> out.writeExp(oneref).put(e));
-				asExposure(contact, two, one).ifPresent(e -> out.writeExp(tworef).put(e));
+				asExposure(contact, one, two).ifPresent(e -> out.writeExp(oneref).put(tworef,e));
+				asExposure(contact, two, one).ifPresent(e -> out.writeExp(tworef).put(oneref,e));
 			}
 		});
 		
@@ -118,17 +120,21 @@ public interface Contact extends Serializable {
 
 	}
 	
-	public static Optional<Exposure> asExposure(Contact contact, PersonState ph, PersonState infector) {
+	/**
+	 * Is a contact an exposure? This is a directional relationship so is called
+	 * two times for each contact. 
+	 */
+	public static Optional<Exposure> asExposure(Contact contact, PersonState infectee, PersonState infector) {
 		
 		Sampler sampler = Sampler.getSampler();
 		
-		if (infector.getNormalisedViralLoad() == 0) return Optional.empty();
+		if (!infector.isInfectious()) return Optional.empty();
 		
-		// This is where transmission rate / probability plays a role.
+		// This is where transmission rate / susceptability plays a role.
 		double trans =   
 			Conversions.scaleProbabilityByOR(
 				infector.getAdjustedTransmissibility(),
-				ph.getSusceptibilityModifier()
+				infectee.getSusceptibilityModifier()
 			);
 		
 		boolean transmitted = sampler.bern(trans);
@@ -141,7 +147,11 @@ public interface Contact extends Serializable {
 						// probability of transmission or is this a stochastic 
 						// event? My belief is the latter. If it happens, the
 						// dose of virus is independent of how likely it was
-						// to happen
+						// to happen. Probability of transmission depends on
+						// whether contact coughs, dose depends on how much 
+						// virus they cough over you.
+						// See PersonState#getContactExposure for where this is
+						// picked up and fed into the in host model.
 						.setExposure(infector.getNormalisedViralLoad())
 						//.setTransmissionProbability(trans)
 						.build()

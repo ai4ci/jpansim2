@@ -64,12 +64,12 @@ public interface EmpiricalDistribution extends Abstraction.Distribution, Seriali
 	}
 	
 	@JsonIgnore
-	default SplineInterpolator getCDF() {
+	@Value.Lazy default SplineInterpolator getCDF() {
 		return SplineInterpolator.createMonotoneCubicSpline(this.getSortedX(), this.getY());
 	}
 	
 	@JsonIgnore
-	@Value.Derived default SplineInterpolator getQuantile() {
+	@Value.Lazy default SplineInterpolator getQuantile() {
 		return SplineInterpolator.createMonotoneCubicSpline(this.getY(), this.getSortedX());
 	}
 	

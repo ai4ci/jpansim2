@@ -1,7 +1,9 @@
 package io.github.ai4ci.abm.policy;
 
 import static io.github.ai4ci.abm.mechanics.StateUtils.branchPeopleTo;
+import static io.github.ai4ci.abm.mechanics.StateUtils.randomlyScreen;
 
+import io.github.ai4ci.abm.ImmutableOutbreakHistory;
 import io.github.ai4ci.abm.OutbreakState;
 import io.github.ai4ci.abm.behaviour.LockdownIsolation;
 import io.github.ai4ci.abm.ImmutableOutbreakState.Builder;
@@ -20,10 +22,17 @@ public enum ReactiveLockdown implements PolicyModel {
 	 * When test 
 	 */
 	MONITOR {
+		
+		public void updateHistory(ImmutableOutbreakHistory.Builder builder, 
+				OutbreakState current, StateMachineContext context, Sampler rng) {
+			randomlyScreen(current,rng);
+		}
+		
 		public PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,
 				Sampler rng) {
-			if (current.getPresumedTestPositivePrevalence() > 
-				ModelNav.modelParam(current).getLockdownStartPrevalenceTrigger()
+			if (current.getLockdownTrigger().confidentlyGreaterThan( 
+					ModelNav.modelParam(current).getLockdownStartTrigger(),
+					0.95)
 			) {
 				branchPeopleTo(current, LockdownIsolation.ISOLATE);
 				return LOCKDOWN;
@@ -33,11 +42,18 @@ public enum ReactiveLockdown implements PolicyModel {
 	},
 	
 	LOCKDOWN {
+		
+		public void updateHistory(ImmutableOutbreakHistory.Builder builder, 
+				OutbreakState current, StateMachineContext context, Sampler rng) {
+			randomlyScreen(current,rng);
+		}
+		
 		public PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,
 				Sampler rng) {
-			if (current.getPresumedTestPositivePrevalence() < 
-					ModelNav.modelParam(current).getLockdownReleasePrevalenceTrigger()
-					) {
+			if (current.getLockdownTrigger().confidentlyLessThan( 
+					ModelNav.modelParam(current).getLockdownReleaseTrigger(),
+					0.95)
+			) {
 				branchPeopleTo(current, LockdownIsolation.RELEASE);
 				return MONITOR;
 			}

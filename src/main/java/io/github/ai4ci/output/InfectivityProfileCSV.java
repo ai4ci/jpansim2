@@ -7,9 +7,10 @@ import org.immutables.value.Value;
 import io.github.ai4ci.Export;
 import io.github.ai4ci.Export.Stage;
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.flow.CSVWriter;
 
 @Value.Immutable
-@Export(stage = Stage.BASELINE,value = "ip.csv",size = 16, selector=InfectivityProfileCSV.Selector.class)
+@Export(stage = Stage.BASELINE,value = "ip.csv",size = 16, selector=InfectivityProfileCSV.Selector.class, writer=CSVWriter.class)
 public interface InfectivityProfileCSV extends CommonCSV.Model {
 
 	static class Selector implements Export.Selector {
@@ -22,15 +23,4 @@ public interface InfectivityProfileCSV extends CommonCSV.Model {
 	int getTau();
 	double getProbability();
 	
-//	default String header() {
-//		return "experiment,tau,probability";
-//	}
-//	
-//	default String row() {
-//		return csvFrom(
-//			this.getExperiment(),
-//			this.getTau(),
-//			this.getProbability()
-//		);
-//	}
 }

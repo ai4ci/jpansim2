@@ -8,28 +8,26 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class QueueWriter extends Thread implements CSVWriter.Queue {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class QueueWriter extends Thread implements CSVWriter.Queue<String> {
 		
+		static Logger log = LoggerFactory.getLogger(QueueWriter.class);
 		ConcurrentLinkedQueue<String> queue;
 		// ThreadSafeBuffer<String> queue;
-		OutputStream seqW;
+		private OutputStream seqW;
 		volatile boolean stop = false;
 		volatile boolean waiting = false;
 		private Object semaphore = new Object();
 		
-		public QueueWriter(File file, int size, String name, String headers) throws IOException {
+		public QueueWriter(File file, int size, String name) throws IOException {
 			long bs = Files.getFileStore(file.toPath().getRoot()).getBlockSize();
 			this.seqW = new BufferedOutputStream(new FileOutputStream(file), (int) (size*bs));
-			//this.seqW = new FastWriteOnlyOutputStream(file.toPath(), size);
-			try {
-				seqW.write(line(headers));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
 			this.queue = new ConcurrentLinkedQueue<String>();
 			this.setPriority(9);
 			this.setName(name);
-			this.setDaemon(true);
+			// this.setDaemon(true);
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				public void run() {
 					QueueWriter.this.halt();
@@ -41,12 +39,6 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 		}
 		
 		public void submit(String item) {
-			// this.queue.add(item.row());
-//			try {
-//				queue.offer(item.row(), Long.MAX_VALUE, TimeUnit.SECONDS);
-//			} catch (InterruptedException e) {
-//				throw new RuntimeException(e);
-//			}
 			if (queue.offer(item) && waiting) {
 				synchronized(semaphore) { semaphore.notifyAll(); };
 			}
@@ -62,13 +54,7 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 			try {
 				
 				while (!stop) {
-					while (this.queue.isEmpty()) {
-						// Thread.onSpinWait();
-//						try {
-//							Thread.sleep(1);
-//						} catch (InterruptedException e) {
-//							stop = true;
-//						}
+					while (!stop && this.queue.isEmpty()) {
 						try {
 							synchronized(semaphore) {
 								waiting = true;
@@ -86,30 +72,17 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 						this.seqW.flush();
 					}
 				}
-				
 				while (!this.queue.isEmpty()) {
 					seqW.write(line(queue.poll()));
 				}
 				this.seqW.flush();
 				this.seqW.close();
-				
+				log.info("Closed csv file: "+this.getName());
+				this.waiting = true;
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
-		
-//		public void purge() {
-//			synchronized(queue) {
-//				try {
-//					while (!this.queue.isEmpty()) {
-//						seqW.write(line(queue.poll()));
-//					}
-//					this.seqW.flush();
-//				} catch (IOException e) {
-//					throw new RuntimeException(e);
-//				}
-//			}
-//		}
 
 		public void flush() {
 			synchronized(seqW) {
@@ -127,9 +100,5 @@ public class QueueWriter extends Thread implements CSVWriter.Queue {
 		
 		public boolean isWaiting() {
 			return waiting;
-		}
-		
-		public String report() {
-			return waiting ? "empty" : "writing";
 		}
 	}

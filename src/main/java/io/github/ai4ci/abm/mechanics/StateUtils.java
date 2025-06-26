@@ -29,7 +29,7 @@ public class StateUtils {
 	public static interface DoesPCRIfSymptomatic extends StateMachine.BehaviourState {
 		default public void updateHistory(ImmutablePersonHistory.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
-			seekPcrIfSymptomatic(builder, person, 2);
+			seekPcrIfSymptomatic(builder, person, context, 2);
 		}
 	}
 	
@@ -172,16 +172,24 @@ public class StateUtils {
 	 * Seek a test if any symptoms (and compliant, and not recently tested)
 	 */
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
-			PersonState person) {
-		seekPcrIfSymptomatic(builder, person, 1);
+			PersonState person, StateMachineContext context) {
+		seekPcrIfSymptomatic(builder, person, context, 1);
 	}
 	
 	/**
 	 * do a PCR test.
 	 */
 	public static TestResult doPCR(ImmutablePersonHistory.Builder builder, 
-			PersonState person) {
+			PersonState person, StateMachineContext context) {
 		TestResult test = TestResult.resultFrom(person, Type.PCR).get();
+		builder.addTodaysTests(test);
+		context.setReactivelyTestedToday(true);
+		return test;
+	}
+	
+	public static TestResult screenPCR(ImmutablePersonHistory.Builder builder, 
+			PersonState person) {
+		TestResult test = TestResult.screeningResultFrom(person, Type.PCR).get();
 		builder.addTodaysTests(test);
 		return test;
 	}
@@ -190,9 +198,16 @@ public class StateUtils {
 	 * do a LFT test.
 	 */
 	public static TestResult doLFT(ImmutablePersonHistory.Builder builder, 
+			PersonState person, StateMachineContext context) {
+		TestResult test = TestResult.screeningResultFrom(person, Type.LFT).get();
+		builder.addTodaysTests(test);
+		context.setReactivelyTestedToday(true);
+		return test;
+	}
+	
+	public static TestResult screenLFT(ImmutablePersonHistory.Builder builder, 
 			PersonState person) {
 		TestResult test = TestResult.resultFrom(person, Type.LFT).get();
-		builder.addTodaysTests(test);
 		return test;
 	}
 	
@@ -204,9 +219,9 @@ public class StateUtils {
 	 * of the disease
 	 */
 	public static void seekPcrIfSymptomatic(ImmutablePersonHistory.Builder builder, 
-			PersonState person, int days) {
+			PersonState person, StateMachineContext context, int days) {
 		if (isSymptomaticAndCompliant(person, days) && isPCRTestingAllowed(person) ) {
-			doPCR(builder,person);
+			doPCR(builder, person, context);
 		}
 	}
 	
@@ -237,16 +252,6 @@ public class StateUtils {
 	 */
 	public static boolean isLFTTestingAllowed(PersonState person) {
 		return !person.isRecentlyTested(Type.LFT, 2) && person.isCompliant();
-	}
-	
-	/**
-	 * Only for use in nextState behaviour methods. Looks to see if a test was 
-	 * conducted on this day. 
-	 */
-	public static boolean isTestedToday(PersonState person) {
-		return ModelNav.history(person)
-				.map(h -> !h.getTodaysTests().isEmpty())
-				.orElse(Boolean.FALSE);
 	}
 	
 	/**
@@ -370,6 +375,24 @@ public class StateUtils {
 		};
 	}
 	
+	public static void randomlyScreen(OutbreakState current, Sampler rng) {
+		ModelNav.people(current)
+			.filter(p -> !p.getCurrentState().isDead())
+			.forEach( ps -> {
+				if (ps.getNextHistory().isPresent()) {
+					randomlyScreen(
+						ps.getNextHistory().get(),
+						ps.getCurrentState(), current.getScreeningProbability(), rng);
+				} else {
+					throw new RuntimeException("Tried to update screening after at wrong time in lifecycle");
+				}
+			});
+	}
+	
+	public static void randomlyScreen(ImmutablePersonHistory.Builder builder, PersonState ps, double screeningProbability, Sampler rng) {
+		if (rng.bern(screeningProbability)) screenPCR(builder,ps);
+	}
+
 	/**
 	 * {@link #branchPeopleTo(OutbreakState, BehaviourState, Predicate)}
 	 */
@@ -390,9 +413,7 @@ public class StateUtils {
 			.filter(filter)
 			.filter(p -> !p.getCurrentState().isDead())
 			.forEach( ps -> {
-				if (!ps.getCurrentState().isDead()) { //.getStateMachine().getState().equals(BehaviourModel.NonCompliant.DEAD))
-					ps.getStateMachine().forceTo(behaviour);
-				}
+				ps.getStateMachine().forceTo(behaviour);
 			}
 	);
 	}

@@ -2,6 +2,7 @@ package io.github.ai4ci.abm;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.immutables.value.Value;
@@ -14,7 +15,6 @@ import io.github.ai4ci.abm.riskmodel.RiskModel;
 import io.github.ai4ci.config.TestParameters;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.ModelNav;
-import io.github.ai4ci.util.ReflectionUtils;
 import io.github.ai4ci.util.Sampler;
 
 /**
@@ -43,7 +43,8 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * An odds ratio of transmission that modifies the baseline probability of
-	 * transmission to another person
+	 * transmission from this individual to another person. This is a target for
+	 * change by the behaviour model.
 	 */
 	@Value.Default
 	default double getTransmissibilityModifier() {
@@ -51,7 +52,8 @@ public interface PersonState extends PersonTemporalState {
 	}
 
 	/**
-	 * An odds ratio of mobility that modifies the baseline contact probability
+	 * An odds ratio of mobility that modifies the baseline contact probability. 
+	 * This is a target for change by the behaviour model.
 	 */
 	@Value.Default
 	default double getMobilityModifier() {
@@ -60,7 +62,8 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * An odds ratio of compliance that modifies the baseline compliance probability
-	 * that the person is going to follow guidance.
+	 * that the person is going to follow guidance. This is a target for change by the 
+	 * behaviour model.
 	 */
 	@Value.Default
 	default double getComplianceModifier() {
@@ -69,7 +72,12 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * An odds ratio of that modifies the baseline probability of transmission from
-	 * another person to this one
+	 * another person to this one. This is a target for change by the behaviour
+	 * model. This does not include permanent changes due to immunity (which is
+	 * handled by the in host state model). Is this really different from 
+	 * the transmissibility modifier? It allows asymmetry for protection if infector
+	 * is wearing a mask and infectee is not for example, or for intervention 
+	 * that blocks transmission onwards but not infection by others. 
 	 */
 	@Value.Default
 	default double getSusceptibilityModifier() {
@@ -87,7 +95,9 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * A viral exposure as a result of importation this may be the result of a time
-	 * varying function representing external drivers.
+	 * varying function representing external drivers. This is automatically zeroed
+	 * during update to make sure that it is not inherited from previous state. It 
+	 * is then 
 	 */
 	@Value.Default
 	default double getImportationExposure() {
@@ -107,8 +117,16 @@ public interface PersonState extends PersonTemporalState {
 	// TODO: Immunisation schedules and other time varying functions are not
 	// implemented: {@link ModelUpdate#IMMUNISATION_PROTOCOL}
 
+	/** The in-host state model is automatically updated during the update cycle
+	 * (after contacts and tests updated in history) by calling the 
+	 * InHostModelState.update() method
+	 */
 	InHostModelState<?> getInHostModel();
 	
+	/** The risk model is updated automatically by the Updater during the 
+	 * second phase, after tests and contacts have been updated (using the 
+	 * RiskModel.update()
+	 */
 	@Value.Default default RiskModel getRiskModel() {
 		return RiskModel.initialise(this.getEntity());
 	}
@@ -128,14 +146,54 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * Is the persons internal viral load above the threshold for potential
-	 * infectivity.
+	 * infectivity today? This is defined as having a non zero baseline for 
+	 * transmission. 
 	 */
 	@Value.Derived
 	default boolean isInfectious() {
 		if (this.isDead())
 			return false;
-		return getNormalisedViralLoad() > 0;
+		return 
+				ModelNav.modelBase(this).getTransmissibilityBaseline(
+					getNormalisedViralLoad()
+				) > 0;
 	}
+	
+	/**
+	 * Is this person newly exposed on this day? defined as the first time a non zero
+	 * exposure is recorded within one calibrated infectious period.
+	 */
+	@Value.Lazy default boolean isIncidentExposure() {
+		return isIncident(
+			ph -> ph.getContactExposure() > 0,
+			ModelNav.modelBase(this).getInfectiveDuration()
+		);
+	}
+	
+	/**
+	 * Is this person newly infectious on this day? This is truth and may not
+	 * be observed.
+	 */
+	@Value.Lazy default boolean isIncidentInfection() {
+		return isIncident(
+			ph -> ph.isInfectious(),
+			ModelNav.modelBase(this).getInfectiveDuration()
+		);
+	}
+	
+	/**
+	 * Is this person newly needing hospitalisation on this day, or is this part of 
+	 * the same hospitalisation episode (as defined by recent hospitalisation
+	 * within the average duration of symptoms). N.B. this duration should probably be
+	 * an estimated quantity but it is actually calibrated from the in host model. 
+	 */
+	@Value.Lazy default boolean isIncidentHospitalisation() {
+		return isIncident(
+			ph -> ph.isRequiringHospitalisation(),
+			ModelNav.modelBase(this).getSymptomDuration()
+		);
+	}
+	
 
 	/**
 	 * Is the persons in-host state above the calibrated threshold for exhibiting
@@ -177,6 +235,18 @@ public interface PersonState extends PersonTemporalState {
 			return true;
 		return getNormalisedSeverity() >= ModelNav.modelBase(this).getSeverityDeathCutoff();
 	}
+	
+	/** Did this person die on this time step. */
+	@Value.Lazy default boolean isIncidentDeath() {
+		if (!this.isDead()) return false;
+		if (ModelNav.history(this).map(ph -> ph.isDead()).orElse(Boolean.FALSE)) {
+			//was dead yesterday:
+			return false;
+		} else {
+			// was not dead yesterday
+			return true;
+		}
+	}
 
 	/**
 	 * The user has reported symptoms via the app. This means their symptom state
@@ -184,9 +254,8 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Derived
 	default boolean isReportedSymptomatic() {
-		// assume user is too lazy to lie about symptoms
-		if (!isSymptomatic())
-			return false;
+		// assume user is not going to lie about symptoms
+		if (!isSymptomatic()) return false;
 		return this.isUsingAppToday();
 		// TODO: Probability of test reporting for tests such as LFT
 		// some form of probablility of reporting LFT and symptoms.
@@ -200,7 +269,8 @@ public interface PersonState extends PersonTemporalState {
 
 	/** Is a person symptomatic for a number of days in a row */
 	default boolean isSymptomaticConsecutively(int days) {
-		return ModelNav.history(this, days).takeWhile(h -> h.isSymptomatic()).count() >= days;
+		if (days <=0 ) return false;
+		return isContinuation(h -> h.isSymptomatic(), days-1);
 	}
 
 	/**
@@ -210,11 +280,14 @@ public interface PersonState extends PersonTemporalState {
 	 * probability of contact.
 	 */
 	default double getAdjustedMobility() {
-		double tmp = Conversions.scaleProbabilityByOR(this.getEntity().getBaseline().getMobilityBaseline(),
-				this.getMobilityModifier());
+		double tmp = Conversions.scaleProbabilityByOR(
+				this.getEntity().getBaseline().getMobilityBaseline(),
+				this.getMobilityModifier()
+		);
 		return tmp;
 	};
 
+	/** Derived value for export.*/
 	default double getAbsoluteMobilityDecrease() {
 		return this.getEntity().getBaseline().getMobilityBaseline() - getAdjustedMobility();
 	}
@@ -233,16 +306,17 @@ public interface PersonState extends PersonTemporalState {
 	 * person. A lower value means less likely transmission. This is a combination
 	 * of several factors, the R0 and structure of the social network, the exogenous
 	 * factors such as weather, endogenous factors such as inherent susceptibility
-	 * due to age, and time varying behavioural factors such as mask wearing.
+	 * due to age, and time varying behavioural factors such as mask wearing. 
+	 * Plus and most importantly internal viral load
 	 */
 	default double getAdjustedTransmissibility() {
 		double tmp = Conversions.scaleProbabilityByOR(
 				ModelNav.modelBase(this).getTransmissibilityBaseline(this.getNormalisedViralLoad()),
-				ModelNav.modelState(this).getTransmissibilityModifier()
-						* ModelNav.baseline(this).getTransmissibilityModifier() * this.getTransmissibilityModifier());
+				ModelNav.modelState(this).getTransmissibilityModifier() // sim wide
+						* this.getTransmissibilityModifier()); // individual
 		return tmp;
 	};
-
+	
 	/**
 	 * A probability that a person is compliant to guidance on any give day.
 	 */
@@ -251,6 +325,7 @@ public interface PersonState extends PersonTemporalState {
 				this.getComplianceModifier());
 	};
 	
+	/** Derived value for export */
 	default double getAbsoluteComplianceDecrease() {
 		return this.getEntity().getBaseline().getComplianceBaseline() - getAdjustedCompliance();
 	}
@@ -259,7 +334,8 @@ public interface PersonState extends PersonTemporalState {
 	 * It determines if the most recent test regardless of whether there is a result
 	 * or it is still pending. This is how it needs to be for determining whether or
 	 * not to do another test and is used in the testing strategies. It is a bad
-	 * choice for anything else.
+	 * choice for anything else. If multiple tests were done recently this is
+	 * not particularly determininstic.
 	 */
 	default boolean isLastTestExactly(Result result) {
 		// This is looking at the day behind for test results
@@ -269,31 +345,23 @@ public interface PersonState extends PersonTemporalState {
 		return o.isPresent() && o.get().equals(result);
 	}
 
-	default boolean isCompliant(Sampler rng) {
-		return rng.uniform() < this.getAdjustedCompliance();
-	}
-
 	@Value.Derived
 	default boolean isCompliant() {
 		if (isDead())
 			return false;
 		Sampler rng = Sampler.getSampler();
-		return isCompliant(rng);
-	}
-
-	default boolean isUsingAppToday(Sampler rng) {
-		return rng.bern(this.getAdjustedAppUseProbability());
+		return rng.bern(this.getAdjustedCompliance());
 	}
 
 	@Value.Derived
 	default boolean isUsingAppToday() {
-		if (isDead())
-			return false;
+		if (isDead()) return false;
 		Sampler rng = Sampler.getSampler();
-		return isUsingAppToday(rng);
+		return rng.bern(this.getAdjustedAppUseProbability());
 	}
 
 	@Value.Lazy
+	/** This persons current behaviour as a String. Mostly for export. */
 	default String getBehaviour() {
 		return this.getEntity().getStateMachine().getState().getName();
 	}
@@ -309,13 +377,15 @@ public interface PersonState extends PersonTemporalState {
 	 * ridiculously large initial viral doses when uncontrolled exponential growth.
 	 * I could have done this in the getEposure() method of contact to control the
 	 * maximum amount one individual can expose another by.
-	 * 
-	 * @return
 	 */
 	@Value.Lazy
 	default double getContactExposure() {
-		return Math.min(MAX_EXPOSURE, ModelNav.history(this).stream()
-				.flatMap(ph -> Arrays.stream(ph.getTodaysExposures())).mapToDouble(p -> p.getExposure()).sum());
+		return Math.min(MAX_EXPOSURE, 
+				ModelNav.history(this).stream()
+				.flatMap(ph -> 
+					Arrays.stream(ph.getTodaysExposures()))
+						.mapToDouble(p -> p.getExposure())
+						.sum());
 	}
 
 	/** Exposure due to contact and importation */
@@ -324,15 +394,17 @@ public interface PersonState extends PersonTemporalState {
 	}
 
 	/**
+	 * Has the person had a test of type X in the (presumed) incubation period
+	 * and therefore another test may be unnecessary.
+	 */
+	default boolean isRecentlyTested(Type type) {
+		return isRecentlyTested(type,incubPeriod());
+	};
+	
+	/**
 	 * Looks at whether there are any tests of specified type within the last x
 	 * days.
 	 */
-	default boolean isRecentlyTested(Type type) {
-		return getRecentRuleOutTests().filter(t -> type.params().getTestName().equals(t.getTestParams().getTestName()))
-				.findFirst().isPresent();
-	};
-	
-
 	default boolean isRecentlyTested(Type type, int days) {
 		return ModelNav.history(this, days).flatMap(ph -> ph.getTodaysTests().stream())
 			.filter(t -> type.params().getTestName().equals(t.getTestParams().getTestName()))
@@ -346,15 +418,15 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy
 	default double getPresumedLocalPrevalence() {
-		double prev = getContactHistory().filter(c -> c.isDetected()).map(c -> c.getParticipantState(this))
+		double prev = getContactHistory()
+				.filter(c -> c.isDetected())
+				.map(c -> c.getParticipantState(this))
 				.mapToDouble(ph -> ph.getProbabilityInfectiousToday()).average().orElse(0D);
-		// The local prevalence
-		return prev != 0 ? prev :
-		// prev2 !=0 ? prev2 :
-				0.0001;
+		// The local prevalence will be problematic if it is zero
+		return prev != 0 ? prev : 0.0001;		
 	}
 	
-	/** How many people in this persons recent contacts are infectious 
+	/** How many people in this person's recent contacts are infectious 
 	 * regardless of whether on not the contact is detected. This integrates 
 	 * over approx one infectious period (0.95 quantile) so will be lagged.  
 	 */
@@ -364,145 +436,31 @@ public interface PersonState extends PersonTemporalState {
 				.mapToDouble(ph -> ph.isInfectious() ? 1.0 : 0.0).average().orElse(0D);
 	}
 
-//	@Value.Lazy default double getProbabilityImmuneToday() {
-//		
-//		double pImmuneYesterday = ModelNav.history(this).map(ph -> ph.getProbabilityImmuneToday()).orElse(0D);
-//		ModelNav.history(this).map(ph -> ph.isRecentlyInfectious(0))
-//		
-//	}
-
-//	/**
-//	 * Looks at the previous tests and identifies if there was a positive test
-//	 * result within the infectious period. This assumes a prior probability of
-//	 * disease = local prevalence and the likelihood of each observed test outcome.
-//	 */
-//	@Value.Lazy
-//	default double getProbabilityInfectiousToday() {
-//		return ModelNav.history(this).map(ph -> ph.getProbabilityInfectiousToday()).orElse(0D);
-
-//		double logOdds = Conversions.logit(this.getPresumedLocalPrevalence()) +
-//		// Conversions.logit(ModelNav.modelState(this).getPresumedTestPositivePrevalence())
-//		// +
-////				Conversions.logit((
-////						this.getPresumedLocalPrevalence()+
-////						ModelNav.modelState(this).getPresumedTestPositivePrevalence())/2.0) +
-//				getDirectLogLikelihood();
-//		// There are 2 sources of log odds. Hence the average is -log(2)
-//		return Conversions.expit(logOdds - Math.log(2));
-//	};
-
-//	/**
-//	 * the log likelihood of disease given the history of tests. The value of this
-//	 * will change in the future as more test results become available. We can't
-//	 * pre-calculate this, and there is little point anyway as it only is used
-//	 * directly for this individual at one point in time.
-//	 * 
-//	 * @return
-//	 */
-//	default double getTestLogLikelihood() {
-//		return this.getStillRelevantTests().mapToDouble(t -> t.logLikelihoodRatio(this.getTime(), infPeriod())).sum();
-//	}
-//
-//	/**
-//	 * The log likelihood of disease given the history of symptoms. Each day of
-//	 * symptoms in the presumed infectious period increases the chance the patient
-//	 * is identified as symptomatic. This quantity doesn't change over time so we
-//	 * can precalculate it (unlike the test log-liklihood which changes as 
-//	 * results become available).
-//	 */
-//	@Value.Derived
-//	default double getSymptomLogLikelihood() {
-//		return ModelNav.history(this, DAYS_OF_SYMPTOMS).mapToDouble(ph ->
-////				Conversions.wanLogOdds(
-////						sympLogLik(this, ph.isReportedSymptomatic()), 
-////						this.getTime() - ph.getTime(), 
-////						samples)
-//		symptomLogLik(this, ph.isReportedSymptomatic())).average().orElse(0);
-//		// .sum();
-//	}
-//
-//	private static double symptomLogLik(PersonState pers, boolean isKnownSymptomatic) {
-//		// At the moment this is not adjusted for the probability of app usage
-//		double sens = ModelNav.modelState(pers).getPresumedSymptomSensitivity();
-//		double spec = ModelNav.modelState(pers).getPresumedSymptomSpecificity();
-//		// Assume that the app only knows about positive symptoms, and not all
-//		// positive symptoms reported.
-//		return isKnownSymptomatic ?
-//		// Value of a symptom
-//				Math.log(sens / (1 - spec)) :
-//				// Value of a not reported symptom:
-//				Math.log((1 - sens) / (spec));
-//	}
-//
-//	/**
-//	 * The maximum log likelihood of disease given exposure to contacts, the logic
-//	 * here is that a contact that had some risk of being infected when the contact
-//	 * was made contributes to evidence that the subject is infected. On the other
-//	 * hand if no people in the contacts were infected then the probability of being
-//	 * infected is lower, but it only takes 1 positive. Therefore the log-liklihood
-//	 * max value for contacts is used. This is looking at all contacts over the
-//	 * infectious period
-//	 */
-//	default double getContactLogLikelihood() {
-//		return this.getContactHistory().filter(c -> c.isDetected()).mapToDouble(c ->
-//		// c.getProximityDuration() *
-//		c.getParticipant(this)
-//			.getDirectLogLikelihood(this.getTime(), infPeriod()))
-//			.max().orElse(0);
-//		// .average().orElse(0);
-//	}
-//
-//	/**
-//	 * The total log likelihood of disease is assembled from test results symptoms
-//	 * and inferred from the (direct) log-likelihood of contacts being
-//	 * 
-//	 * @return
-//	 */
-//	@Value.Lazy
-//	default double getTotalLogLikelihood() {
-//		double tests = getTestLogLikelihood();
-//		double symptoms = getSymptomLogLikelihood();
-//		double contacts = getContactLogLikelihood();
-//		return tests + symptoms + contacts;
-//	}
-//
-//	/**
-//	 * The log likelihood of infection as inferred from features of this individual
-//	 * only. Including at the moment test results and symptoms only. This does not
-//	 * include any probability inferred from contacts.
-//	 */
-//	@Value.Lazy
-//	default double getDirectLogLikelihood() {
-//		double tests = getTestLogLikelihood();
-//		double symptoms = getSymptomLogLikelihood();
-//		return tests + symptoms;
-//		// TODO: Assessment of individual direct risk of disease needs to account for known previous infection.
-//	}
-
 	/**
 	 * This is the risk that this individual is infectious today. This is the
 	 * risk calculated from observable data such as reported symptoms, test
 	 * results and detected contacts, as calculated by the risk model.
-	 * @return
 	 */
 	default double getProbabilityInfectiousToday() {
 		return this.getRiskModel().getProbabilityInfectiousToday();
 	};
 
 	/**
-	 * All the tests done in the last presumed infectious period
-	 * 
-	 * @return
+	 * All the tests done in the last presumed infectious period (including
+	 * those with pending results). These tests inform our view as to whether 
+	 * this person is currently infected, in a simplistic
+	 * way. E.g. if one of these is positive for example. This is a sequential
+	 * list reversed in history, with most recent first.
 	 */
 	default Stream<TestResult> getStillRelevantTests() {
 		return ModelNav.history(this, infPeriod()).flatMap(ph -> ph.getTodaysTests().stream());
 	}
+	
+	
 
 	/**
 	 * All the tests done in the last incubation period. The results here can rule
 	 * out doing another test.
-	 * 
-	 * @return
 	 */
 	default Stream<TestResult> getRecentRuleOutTests() {
 		return ModelNav.history(this, incubPeriod()).flatMap(ph -> ph.getTodaysTests().stream());
@@ -518,7 +476,7 @@ public interface PersonState extends PersonTemporalState {
 	}
 
 	/**
-	 * Most recent test with a result, so excluding pending results.
+	 * Most a single most recent test with a result, so excludes pending results.
 	 */
 	@Value.Lazy
 	default Optional<TestResult> getLastResult() {
@@ -548,23 +506,48 @@ public interface PersonState extends PersonTemporalState {
 
 	/**
 	 * A contact count for understanding the contact degree distribution. This is
-	 * the number of contacts made today
+	 * the true number of contacts made today, not observed.
 	 */
 	default long getContactCount() {
 		return ModelNav.history(this).map(m -> m.getTodaysContacts().length).orElse(0);
 	}
 
 	/**
-	 * A count of infectious contacts made today
+	 * A count of the true number infectious contacts made today
 	 */
 	default long getExposureCount() {
 		return ModelNav.history(this).map(m -> m.getTodaysExposures().length).orElse(0);
 	}
 	
-	/** use with extreme caution: prefer the Optional ModelNav version. 
-	 * This is only here for the CSV mapper. */
-	default PersonHistory getYesterday() {
-		return ModelNav.history(this).orElse(ReflectionUtils.nullProxy(PersonHistory.class));
+	/** 
+	 * Has an event happened for the first time within an exclusion period of 
+	 * X days (left censored at the beginning of the timeseries)? The event 
+	 * must be recorded in both PersonState and copied to 
+	 * PersonHistory (via being declared in PersonTemporalState) by the HistoryMapper.
+	 */
+	default boolean isIncident(Predicate<PersonTemporalState> test, int limit) {
+		if (limit <= 0) return test.test(this);
+		if (!test.test(this)) return false;
+		// This assumes that a positive at the start of the simulation is new. 
+		if (!this.getEntity().getCurrentHistory().isPresent()) return true;
+		if (this.getEntity().getCurrentHistory().get().isRecently(test, limit-1)) return false;
+		return true;
 	}
+	
+	/** Has the event happened continuously for at least X days. If there is
+	 * not enough time at the beginning of the time series this will be false
+	 */
+	default boolean isContinuation(Predicate<PersonTemporalState> test, int limit) {
+		if (limit < 0) return false;
+		if (limit == 0) return test.test(this);
+		if (!test.test(this)) return false;
+		if (!this.getEntity().getCurrentHistory().isPresent()) return false;
+		if (this.getEntity().getCurrentHistory().get().isRecently(test, limit-1)) return false;
+		return true;
+	}
+
+	default double getImmuneActivity() {
+		return this.getInHostModel().getImmuneActivity();
+	};
 
 }

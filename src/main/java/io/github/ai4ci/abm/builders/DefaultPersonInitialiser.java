@@ -28,7 +28,7 @@ public interface DefaultPersonInitialiser extends DefaultInHostStochasticStateIn
 		
 		SetupConfiguration configuration = person.getOutbreak().getSetupConfiguration();
 		// PersonBaseline baseline = person.getBaseline();
-		double limit = ((double) configuration.getInitialImports())/configuration.getNetworkSize();
+		double limit = ((double) configuration.getInitialImports())/configuration.getNetwork().getNetworkSize();
 		
 		builder
 			.setTransmissibilityModifier(1.0)

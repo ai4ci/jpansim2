@@ -50,20 +50,15 @@ public class TestViralLoadModel {
 	@Test
 	void testInfectivityProfile() {
 		
-		DelayDistribution dd = InHostConfiguration.getInfectivityProfile(
-				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
-				config.getOutbreak().getExecutionConfiguration(),
-				100, 100);
+		DelayDistribution dd = 	config.getOutbreak().getBaseline().getInfectivityProfile();
 		System.out.println(dd);
 		
-		double[] vl = InHostConfiguration.getViralLoadProfile(
-				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
+		double[][] vl = InHostConfiguration.getViralLoadProfile(
 				config.getOutbreak().getExecutionConfiguration(),
 				100, 100);
 		System.out.println(Arrays.toString(vl));
 		
 		DelayDistribution  v2 = InHostConfiguration.getSeverityProfile(
-				config.getOutbreak().getExecutionConfiguration().getInHostConfiguration(),
 				config.getOutbreak().getExecutionConfiguration(),
 				100, 100);
 		System.out.println(v2);
