@@ -13,6 +13,7 @@ class TestDistribution {
 			.setMaximum(120)
 			.setX(18,45,65,85)
 			.setCumulativeProbability(0.1,0.5,0.75,0.9)
+			.setLink(LinkFunction.LOG)
 			.build(); 
 	
 	@Test
@@ -37,6 +38,7 @@ class TestDistribution {
 				.setMaximum(120)
 				.setX(18,45,65,85)
 				.setCumulativeProbability(0.1,0.5,0.75,0.9)
+				.setLink(LinkFunction.LOG)
 				.build();
 		System.out.println(dist.getCentral());
 		System.out.println(dist.sample());
@@ -48,7 +50,9 @@ class TestDistribution {
 		IntStream.range(0, 10000).mapToDouble(i -> dist.sample()).average().ifPresent(System.out::println);
 		
 		RombergIntegrator tmp = new RombergIntegrator(0.0001, 0.0001, RombergIntegrator.DEFAULT_MIN_ITERATIONS_COUNT  ,RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT);
-		System.out.println("integral of density:\n"+tmp.integrate(1000, x -> dist.getDensity(x), 0, 120));
+		System.out.println("integral of density:\n"+tmp.integrate(100000, x -> dist.getDensity(x), 0, 120));
+		
+		System.out.println("integral of density:\n"+(dist.getCumulative(120)-dist.getCumulative(0)));
 		// System.out.println(IntStream.range(0, 120).mapToDouble(i -> dist.getDensity(i)).sum());
 	}
 	
@@ -65,7 +69,7 @@ class TestDistribution {
 		System.out.println(dist.getInterpolation().getMedian());
 		System.out.println(dist.getCumulative(2.5));
 		
-		IntStream.range(0, 10000).mapToDouble(i -> dist.getInterpolation().sample()).average().ifPresent(System.out::println);
+		IntStream.range(0, 100000).mapToDouble(i -> dist.getInterpolation().sample()).average().ifPresent(System.out::println);
 	}
 	
 	@Test
@@ -77,23 +81,29 @@ class TestDistribution {
 		
 		EmpiricalDistribution testAgeDiffDist = testAgeDist.combine(testAgeDist, (d1,d2) -> Math.abs(d1-d2)).getInterpolation();
 		
-		EmpiricalFunction fn2 = fn.normalise(testAgeDiffDist);
+		EmpiricalFunction fn2 = testAgeDiffDist.baselineOdds(fn);
 		
 		/*
 		 * IntStream.range(0, 80).mapToDouble(i -> fn.interpolate((double) i))
 		 * .forEach(System.out::println);
 		 */
 		
-		IntStream.range(0, 80).mapToObj(i -> fn.value((double) i)+" "+fn2.value((double) i))
+		IntStream.range(0, 80).mapToObj(i -> i+" "+fn.value((double) i)+" "+fn2.value((double) i))
 		.forEach(System.out::println);
 	}
 	
 	@Test
 	void testEuclidian() {
 		var dist = ExoticDistributions.getEuclidianDistanceDistribution();
-		DoubleStream.iterate(0, d -> d<Math.sqrt(2), d->d+Math.sqrt(2)/100)
-			.map(d-> dist.getCDF().interpolate(d))
-			.forEach(System.out::println);
+		DoubleStream.iterate(0, d -> d <= 1, d -> d + 1.0/100)
+			.map(d-> dist.getCumulative(d))
+			.forEach(
+				d -> {
+					if (Double.isNaN(d)) 
+						throw new RuntimeException();
+					else System.out.println(d);
+				}
+			);
 		
 	}
 }

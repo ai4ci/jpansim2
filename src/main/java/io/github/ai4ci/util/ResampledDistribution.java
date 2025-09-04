@@ -11,7 +11,7 @@ import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 public interface ResampledDistribution extends Abstraction.Distribution,Serializable {
 	
 	int PRECISION = 10000;
-	int KNOTS = 50;
+	// int KNOTS = 50;
 	
 	Abstraction.Distribution getFirst();
 	Abstraction.Distribution getSecond();
@@ -44,12 +44,12 @@ public interface ResampledDistribution extends Abstraction.Distribution,Serializ
 	}
 	
 	default double getCumulative(double x) {
-		return ((double) Arrays.stream(getSamples()).filter(d -> d<x).count())/PRECISION;
+		return ((double) Arrays.stream(getSamples()).filter(d -> d<x).count() + 1)/(PRECISION+1);
 	}
 	
 	@Value.Lazy
 	default EmpiricalDistribution getInterpolation() {
-		return EmpiricalDistribution.fromData(getSamples());
+		return EmpiricalDistribution.fromData(this.getLink(), getSamples());
 	}
 	
 }

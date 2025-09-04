@@ -1,7 +1,8 @@
 package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Exposure;
@@ -10,35 +11,53 @@ import io.github.ai4ci.abm.Exposure;
  * This is a temporary data structure that gets generated during the update
  * cycle to hold all the contact and exposures before they are written to the
  * individual {@link io.github.ai4ci.abm.PersonHistory} entries in the model.
+ * No effort is made in this class to ensure that added items are unique.
  */
 public class PersonStateContacts implements Serializable {
-	//volatile ThreadSafeArray<Contact>[] network;
-	ConcurrentSkipListMap<Integer,Contact>[] network;
+	
+	// The contact network is an array of concurrent skip list maps. The index
+	// of this array is the id of the index contact. This is initialised for the 
+	// whole population up front during the update cycle, and does not have to
+	// be resized. The concurrent skip list maps hold the variable length of 
+	// contactees. This is not enforced to be unique which is up to the provider 
+	ConcurrentHashMap<Integer,Contact>[] network;
+	// ConcurrentSkipListMap<Integer,Contact>[] network;
 	//volatile ThreadSafeArray<Exposure>[] exposure;
-	ConcurrentSkipListMap<Integer,Exposure>[] exposure;
+	ConcurrentHashMap<Integer,Exposure>[] exposure;
+	// ConcurrentSkipListMap<Integer,Exposure>[] exposure;
 	
 	@SuppressWarnings("unchecked")
+	
 	/** nodes is essentially the number of people in the model. Max size is the
 	 * maximum number of contacts they could make. In the worst case this will
 	 * create a data structure 2*nodes*maxSize big.
 	 */
 	public PersonStateContacts(int nodes, int maxSize) {
-		network = new ConcurrentSkipListMap[nodes]; //ThreadSafeArray[nodes];
-		exposure = new ConcurrentSkipListMap[nodes]; //new ThreadSafeArray[nodes];
+		network = new ConcurrentHashMap[nodes];
+				// new ConcurrentLinkedQueue[nodes];
+				// new ConcurrentSkipListMap[nodes]; //ThreadSafeArray[nodes];
+		exposure = 
+				new ConcurrentHashMap[nodes];
+				// new ConcurrentLinkedQueue[nodes];
+				// new ConcurrentSkipListMap[nodes]; //new ThreadSafeArray[nodes];
 		
 		for (int i=0; i<nodes; i++) {
 			network[i] = //new ThreadSafeArray<Contact>(Contact.class,maxSize);
-					new ConcurrentSkipListMap<Integer,Contact>();
+					// new ConcurrentSkipListMap<Integer,Contact>();
+					// new ConcurrentLinkedQueue<>();
+					new ConcurrentHashMap<Integer,Contact>();
 			exposure[i] = //ThreadSafeArray.empty(Exposure.class);
-					new ConcurrentSkipListMap<Integer,Exposure>();
+					// new ConcurrentSkipListMap<Integer,Exposure>();
+					// new ConcurrentLinkedQueue<>();
+					new ConcurrentHashMap<Integer,Exposure>();
 		}
 	}
 	
-	public ConcurrentSkipListMap<Integer,Contact> write(int i) {
+	public ConcurrentHashMap<Integer,Contact> write(int i) {
 		return network[i];
 	}
 	
-	public ConcurrentSkipListMap<Integer, Exposure> writeExp(int i) {
+	public ConcurrentHashMap<Integer,Exposure> writeExp(int i) {
 		return exposure[i];
 	}
 	
@@ -60,6 +79,7 @@ public class PersonStateContacts implements Serializable {
 //		return out;
 //	}
 
+	
 	public Contact[] getContactsForId(Integer ref) {
 		return network[ref].values().toArray(j -> new Contact[j]);
 	}

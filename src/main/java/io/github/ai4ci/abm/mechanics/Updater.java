@@ -5,6 +5,7 @@ import static io.github.ai4ci.abm.HistoryMapper.MAPPER;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import org.slf4j.Logger;
@@ -12,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Contact;
 import io.github.ai4ci.abm.Exposure;
+import io.github.ai4ci.abm.ImmutableContact;
+import io.github.ai4ci.abm.ImmutableExposure;
 import io.github.ai4ci.abm.ImmutableOutbreakHistory;
 import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonHistory;
@@ -22,13 +25,26 @@ import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonHistory;
+import io.github.ai4ci.abm.PersonState;
+import io.github.ai4ci.abm.SocialRelationship;
 import io.github.ai4ci.abm.mechanics.ModelOperation.OutbreakStateUpdater;
 import io.github.ai4ci.abm.mechanics.ModelOperation.PersonStateUpdater;
 import io.github.ai4ci.abm.mechanics.ModelOperation.TriConsumer;
+import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Ephemeral;
 import io.github.ai4ci.util.Sampler;
+import io.github.ai4ci.util.ThreadSafeArray;
 
-
+/**
+ * The updater is the main handler of the update cycle. It contains the hard
+ * coded bits of the update cycle and configurable aspects can be added with
+ * person processors and outbreak processors which can be created with 
+ * {@link #withPersonProcessor(Predicate, TriConsumer)} or 
+ * {@link #withOutbreakProcessor(Predicate, TriConsumer)}.
+ * 
+ * Pre-canned update configurations are found in the {@link ModelUpdate} class.
+ * 
+ */
 public class Updater {
 
 	static Logger log = LoggerFactory.getLogger(Updater.class);
@@ -72,6 +88,11 @@ public class Updater {
 		return this;
 	}
 	
+	/**
+	 * The main update method is called to advance the simulation by one day.
+	 * @param outbreak a simulation to update
+	 * @return the same outbreak with new states and histories
+	 */
 	public Outbreak update(Outbreak outbreak) {
 		prepareUpdate(outbreak);
 		// at this point the "current history" is the same as the previous state
@@ -91,7 +112,6 @@ public class Updater {
 	 * time we population the nextHisotry for outbreak and people from the
 	 * current state (and current time)
 	 */
-	
 	private void prepareUpdate(Outbreak outbreak) {
 		
 		if (outbreak instanceof ModifiableOutbreak) {
@@ -150,7 +170,7 @@ public class Updater {
 		// Sampler sampler = Sampler.getSampler();
 		if (outbreak instanceof ModifiableOutbreak) {
 			ModifiableOutbreak m = (ModifiableOutbreak) outbreak;
-			PersonStateContacts contactNetwork = Contact.contactNetwork(m);
+			PersonStateContacts contactNetwork = contactNetwork(m);
 //			Contact[][] contacts = contactNetwork.finaliseContacts();
 //			Exposure[][] exposures = contactNetwork.finaliseExposures();
 			
@@ -346,5 +366,108 @@ public class Updater {
 		}
 	}
 	
+	/**
+	 * Build the contact network for a specific outbreak day.
+	 * @param outbreak the simulation
+	 * @return a PersonStateContacts data structure with contacts and
+	 * exposures for every individual in the model (potentially empty). 
+	 */
+	public static PersonStateContacts contactNetwork(Outbreak outbreak) {
+		//Do the contact network here? and pass it as a parameter to the
+		//person updateState
+		ThreadSafeArray<SocialRelationship> network = outbreak.getSocialNetwork();
+		PersonStateContacts out = new PersonStateContacts(
+				outbreak.getPeople().size(),
+				network.size() / outbreak.getPeople().size() * 4
+		);
+		
+		network.parallelStream().forEach(r -> {
+			Sampler sampler = Sampler.getSampler();
+			PersonState one = r.getSource(outbreak).getCurrentState();
+			PersonState two = r.getTarget(outbreak).getCurrentState();
+			
+			// TODO: contacts stratified by venue such as work or school  
+			// connectedness quantile is a proxy for the context of a contact
+			// If we wanted to control this a different set of features of the 
+			// relationship could be used. At the moment this overloads mobility
+			// with type of contact, but in reality WORK contacts may be less
+			// Significant that home contacts. This is where we would implement
+			// something along these lines.
+			
+			double contactProbability = r.contactProbability(
+					one.getAdjustedMobility(),
+					two.getAdjustedMobility());
+			
+			if (sampler.bern(contactProbability)) {
+				// This is a contact. 
+				// Contact transmission probability depends on lowest transmissibility
+				
+				Integer oneref = one.getEntity().getId();
+				Integer tworef = two.getEntity().getId();
+				
+				double jointDetect = 
+						one.getAdjustedAppUseProbability()*
+						two.getAdjustedAppUseProbability()*
+						outbreak.getCurrentState().getContactDetectedProbability();
+				
+				boolean detected = sampler.bern(jointDetect);
+				
+				Contact contact = ImmutableContact.builder()
+					.setDetected(detected)
+					.setParticipant1Id(oneref)
+					.setParticipant2Id(tworef)
+					// TODO: Proximity and duration of a contact aren't handled
+					// .setProximityDuration(contactProbability)
+					.build();
+				
+				out.write(oneref).put(tworef, contact);
+				out.write(tworef).put(oneref, contact);
+				
+				asExposure(contact, one, two).ifPresent(e -> out.writeExp(oneref).put(tworef, e));
+				asExposure(contact, two, one).ifPresent(e -> out.writeExp(tworef).put(oneref, e));
+			}
+		});
+		
+		return out;
+		
+
+	}
 	
+	/**
+	 * Is a contact an exposure? This is a directional relationship so is called
+	 * two times for each contact. 
+	 */
+	public static Optional<Exposure> asExposure(Contact contact, PersonState infectee, PersonState infector) {
+		
+		Sampler sampler = Sampler.getSampler();
+		
+		if (!infector.isInfectious()) return Optional.empty();
+		
+		// This is where transmission rate / susceptability plays a role.
+		double trans =   
+			Conversions.scaleProbabilityByOR(
+				infector.getAdjustedTransmissibility(),
+				infectee.getSusceptibilityModifier()
+			);
+		
+		boolean transmitted = sampler.bern(trans);
+		if (transmitted == false) return Optional.empty();
+		
+		return Optional.of(
+					ImmutableExposure.builder()
+						.setExposerId(infector.getEntity().getId())
+						// Should the amount of exposure be dependent on the 
+						// probability of transmission or is this a stochastic 
+						// event? My belief is the latter. If it happens, the
+						// dose of virus is independent of how likely it was
+						// to happen. Probability of transmission depends on
+						// whether contact coughs, dose depends on how much 
+						// virus they cough over you.
+						// See PersonState#getContactExposure for where this is
+						// picked up and fed into the in host model.
+						.setExposure(infector.getNormalisedViralLoad())
+						//.setTransmissionProbability(trans)
+						.build()
+				);
+	}
 }

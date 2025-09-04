@@ -2,7 +2,6 @@ package io.github.ai4ci.config.setup;
 
 import org.immutables.value.Value;
 import org.jgrapht.generate.BarabasiAlbertGraphGenerator;
-import org.jgrapht.generate.GnpRandomGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 

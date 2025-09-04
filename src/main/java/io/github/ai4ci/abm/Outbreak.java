@@ -5,8 +5,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.immutables.value.Value;
-import org.jgrapht.graph.SimpleWeightedGraph;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.github.ai4ci.Data;
@@ -20,7 +18,9 @@ import io.github.ai4ci.util.ThreadSafeArray;
 
 /**
  * The main outbreak class is a mutable structure holding the state of the whole 
- * simulation, including configuration, social network, etc.
+ * simulation, including configuration, social network, etc. It is a mutable
+ * holder that contains largely immutable data structures that are operated on
+ * across multiple threads.
  */
 @Value.Modifiable
 @Data.Mutable

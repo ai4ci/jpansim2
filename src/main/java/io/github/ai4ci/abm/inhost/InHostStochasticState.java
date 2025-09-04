@@ -10,6 +10,29 @@ import io.github.ai4ci.config.inhost.StochasticModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
 
+/**
+ * A stochastic difference equation model of in-host viral dynamics and immune response.
+ *
+ * <p>This model simulates the discrete-time evolution of key compartments:
+ * <ul>
+ *   <li><b>Virions</b>: free viral particles,</li>
+ *   <li><b>Target cells</b>: susceptible, exposed (latently infected), infected, and removed,</li>
+ *   <li><b>Immune cells</b>: dormant, priming, and active (effector).</li>
+ * </ul>
+ *
+ * <p>Transitions between compartments are modeled as stochastic events using binomial and Poisson sampling,
+ * capturing demographic and interaction noise. The model supports external inputs such as:
+ * <ul>
+ *   <li>New virion exposure (infection),</li>
+ *   <li>Immunization (immune priming).</li>
+ * </ul>
+ *
+ * <p>The dynamics are governed by per-time-step rates, converted to probabilities via \( p = 1 - e^{-r} \).
+ * This ensures consistency with continuous-time interpretations while enabling efficient discrete simulation.
+ *
+ * @see <a href="https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities">Poisson Binomial Distribution</a>
+ * @see <a href="https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-randomly-independently">Set Coverage Problem</a>
+ */
 @Value.Immutable
 public interface InHostStochasticState extends InHostModelState<StochasticModel> {
 
@@ -35,7 +58,16 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	@Value.Redacted double getBaselineViralInfectionRate();
 	@Value.Redacted int getVirionsDiseaseCutoff();
 	
-
+	/**
+	 * Computes the number of target cells that are no longer susceptible due to recovery, death, or removal.
+	 *
+	 * <p>This is derived from conservation of total targets:
+	 * \[
+	 * T_{\text{removed}} = T_{\text{total}} - T_{\text{susceptible}} - T_{\text{exposed}} - T_{\text{infected}}
+	 * \]
+	 *
+	 * @return the count of removed (non-susceptible, non-infected) target cells
+	 */
 	@Value.Derived
 	default int getTargetRemoved() {
 		return getTargets() - getTargetSusceptible() - getTargetExposed() - getTargetInfected();
@@ -56,13 +88,18 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		return tmp;
 	}
 	
-	/** 
-	 * Infected but may be incubating
+	/**
+	 * Computes a proxy for disease severity based on the proportion of non-susceptible target cells.
+	 *
+	 * <p>Severity is defined as:
+	 * \[
+	 * S(t) = \frac{T_{\text{total}} - T_{\text{susceptible}}(t) - T_{\text{exposed}}(t)}{T_{\text{total}}}
+	 * \]
+	 * which reflects the fraction of targets that have been infected and progressed beyond latency.
+	 * This assumes severity correlates with cumulative tissue damage.
+	 *
+	 * @return the proportion of targets that are infected or removed
 	 */
-	default boolean isInfected() {
-		return getTargetExposed() > 0 || getTargetInfected() > 0;
-	}
-	
 	@Value.Derived
 	default double getNormalisedSeverity() {
 		// The interpretation of this number depends on the calibration
@@ -73,26 +110,79 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 		return currentPercent; //Conversions.oddsRatio(currentPercent, baselinePercent);
 	}
 	
-	@Value.Derived
 	/**
-	 * The activity as a percent of maximum
-	 * @return
+	 * Computes immune activity as the fraction of immune cells that are active (effector) state.
+	 *
+	 * <p>Defined as:
+	 * \[
+	 * I_{\text{activity}} = \frac{I_{\text{active}}}{I_{\text{total}}}
+	 * \]
+	 * where \( I_{\text{total}} = \text{floor}(T_{\text{total}} \cdot r_I) \), and \( r_I \) is the immune-to-target ratio.
+	 * This normalized activity modulates viral clearance and infection rates.
+	 *
+	 * @return immune activity as a fraction of maximum capacity
 	 */
+	@Value.Derived
 	default double getImmuneActivity() {
 		return ((double) this.getImmuneActive())/this.getImmune();
 	}
 
+	/**
+	 * Computes the number of immune cells in the dormant (naive or memory) state.
+	 *
+	 * <p>Defined as:
+	 * \[
+	 * I_{\text{dormant}} = I_{\text{total}} - I_{\text{priming}} - I_{\text{active}}
+	 * \]
+	 * These cells can be activated by infection or immunization.
+	 *
+	 * @return count of dormant immune cells
+	 */
 	@Value.Derived
 	default int getImmuneDormant() {
 		return getImmune() - getImmunePriming() - getImmuneActive();
 	}
 
 	/**
-	 * Update the viral load for a person. 
-	 * This depends on the PersonHistory being up to date which it should be based
-	 * on the fact this is updated during the next update phase.
-	 * @param rng (thread local RNG)
-	 * @return
+	 * Advances the in-host state by one time step using stochastic difference equations.
+	 *
+	 * <p>The update models the following biological processes:
+	 * <ul>
+	 *   <li><b>Viral replication:</b> Poisson-distributed production from infected cells,</li>
+	 *   <li><b>Neutralization:</b> Binomial clearance by active immunity,</li>
+	 *   <li><b>Infection:</b> Stochastic infection of susceptible targets,</li>
+	 *   <li><b>Immune activation:</b> Priming and activation cascades,</li>
+	 *   <li><b>Cell turnover:</b> Recovery of target cells and waning of immunity.</li>
+	 * </ul>
+	 *
+	 * <p><u>Infection of Target Cells</u></p>
+	 * The number of target cells that interact with virions is modeled using the <i>coverage problem</i>
+	 * from combinatorics. When \( n \) virions sample from \( S \) susceptible targets with replacement,
+	 * the expected number of unique targets hit is:
+	 * \[
+	 * \mathbb{E}[\text{interacted}] = S \left(1 - e^{-n/S}\right)
+	 * \]
+	 * This approximates the solution to the classic problem of set coverage after independent random sampling
+	 * (<a href="https://math.stackexchange.com/questions/32800">see reference</a>).
+	 *
+	 * <p>From these interacting targets, a binomial sample determines how many become <i>exposed</i>,
+	 * with probability \( p_{\text{infection}} = 1 - e^{-r_{\text{infect}} \cdot S/T} \).
+	 *
+	 * <p><u>Immune Dynamics</u></p>
+	 * Immune activation depends on the burden of exposed and infected cells:
+	 * \[
+	 * p_{\text{priming}} = 1 - e^{-r_{\text{prime}} \cdot (T_e + T_i)/T}
+	 * \]
+	 * Active immunity wanes at rate \( r_{\text{waning}} \), modeled as a binomial decay process.
+	 *
+	 * <p><u>Chronic Infection</u></p>
+	 * A fixed probability \( p_{\text{chronic}} \) determines whether an exposed cell avoids immune clearance
+	 * and remains in a latent reservoir.
+	 *
+	 * @param rng the random sampler for stochastic transitions
+	 * @param virionDose the external virion exposure, scaled by disease cutoff
+	 * @param immunisationDose the immunization strength, interpreted as fraction of dormant immunity to prime
+	 * @return a new state advanced by one time unit
 	 */
 	default InHostStochasticState update(Sampler rng, double virionDose, double immunisationDose) { //, double viralActivityModifier, double immuneModifier) {
 		
@@ -211,3 +301,192 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 
 	
 }
+
+
+/*
+Yes — while the `InHostStochasticState` model is a thoughtful and computationally efficient discrete-time stochastic formulation, there are several **biological and mathematical critiques** of the relationship between *virions* and *target cells*, particularly in how infection dynamics are modeled. These critiques stem from the interplay of assumptions about interaction mechanics, population scaling, and biological realism.
+
+Let’s analyze the key aspects using insights from the provided knowledge base (Poisson binomial, coverage problem) and standard virological principles.
+
+---
+
+### 🔍 1. **Infection Mechanism: From Virions to Target Cell Exposure**
+
+The core infection step uses this logic:
+
+```java
+Integer target_interacted = (int) floor(
+    (double) getTargetSusceptible() * 
+    (1 - exp( - virions_infecting.doubleValue() / ((double) getTargetSusceptible()) ))
+);
+Integer target_newly_exposed = rng.binom(target_interacted, p_infection);
+```
+
+This combines:
+- A **coverage model** (from the Math StackExchange reference):  
+  The expected number of distinct susceptible cells that "interact" with virions is:
+  \[
+  \mathbb{E}[C] = S \left(1 - e^{-n/S}\right)
+  \]
+  where \( S = T_{\text{susceptible}} \), \( n = \text{virions\_infecting} \).  
+  ✅ This is **correct** for modeling the expected number of unique targets hit under independent sampling with replacement.
+
+- Then, only a **fraction** of those interacting cells become exposed, via a binomial draw with probability \( p_{\text{infection}} \).
+
+But here lies the **critique**:
+
+> ❌ **Double-counting of infection probability**:  
+> The model applies a second infection probability \( p_{\text{infection}} \) *after* already modeling exposure via virion contact.
+
+In reality, if a virion "interacts" with a cell in the coverage model, that interaction should already encode the **probability of successful infection**. But instead:
+- `virions_infecting` is a binomial sample based on a global infection probability,
+- Then `target_interacted` computes how many cells are hit,
+- Then `target_newly_exposed` applies *another* infection probability.
+
+This **separates binding from infection** — which could be valid — but the current structure risks **under- or over-estimating infection efficiency** unless carefully calibrated.
+
+---
+
+### ✅ Suggested Fix: Integrate Infection Probability into Virion Efficacy
+
+Instead of:
+1. Sample `virions_infecting = binom(virions, p_infection)`
+2. Compute `target_interacted = S(1 - e^{-n/S})`
+3. Then `target_newly_exposed = binom(target_interacted, p_infection)`
+
+Do one of the following:
+
+#### Option A: Let each virion have a chance to infect, and use coverage as a mechanical limit
+```java
+// Effective infectious virions
+int n_eff = rng.binom(getVirions(), p_infection_per_virion);
+
+// Number of distinct cells hit
+int target_interacted = (int) floor(S * (1 - exp(-n_eff / (double) S)));
+
+// All hit cells become exposed (binding ≈ infection)
+target_newly_exposed = target_interacted;
+```
+
+#### Option B: Use a per-cell infection probability based on virion load
+Use a **Poisson approximation** to the number of virions hitting a cell:
+- Average hits per cell: \( \lambda = n / S \)
+- Probability a cell is hit at least once: \( 1 - e^{-\lambda} \)
+- Then, probability of infection given hit: \( p_{\text{inf|hit}} \)
+- So total infection probability per cell:  
+  \[
+  p_{\text{cell infected}} = (1 - e^{-\lambda}) \cdot p_{\text{inf|hit}}
+  \]
+- Then:
+  \[
+  \mathbb{E}[\text{newly exposed}] = S \cdot p_{\text{cell infected}}
+  \]
+- Draw: `target_newly_exposed = rng.binom(S, p_cell_infected)`
+
+This avoids the intermediate "interacted" state and is more directly interpretable.
+
+---
+
+### 🔍 2. **Biological Interpretation of "Virions" vs. "Infectious Units"**
+
+The model tracks `getVirions()` as a count, but:
+- Not all virions are infectious,
+- The `p_infection` term tries to correct for this,
+- But it’s applied globally, not per interaction.
+
+This leads to **nonlinear scaling issues**: doubling virions doesn’t double infection probability due to the `1 - exp(-n/S)` saturation.
+
+But if `virions` includes non-infectious particles (which they usually do), then:
+- The model should distinguish **total virions** from **infectious units**,
+- Or scale `p_infection` appropriately with virion quality.
+
+Otherwise, the same `virionsDx` (disease cutoff) may not generalize across variants or hosts.
+
+---
+
+### 🔍 3. **Immune Clearance vs. Viral Replication: Scale Dependence**
+
+The immune neutralization is modeled as:
+```java
+p_neutralization = 1 - exp(-rate_neutralization * getImmuneActive() / (double) getImmune())
+```
+and then:
+```java
+virions_neutralized = rng.binom(getVirions(), p_neutralization)
+```
+
+This assumes:
+- The neutralization rate scales with **fraction of active immunity**,
+- But the effect is applied to the **total virion pool**.
+
+However, this creates a **mismatch in scaling**:
+- Immune cells act locally (e.g., in tissue),
+- But virions may be systemic.
+
+If the number of virions grows faster than immune capacity (e.g., in immunosuppressed hosts), the model may **underestimate viral escape** unless rates are carefully tuned.
+
+Better: Model neutralization as a **bimolecular reaction**:
+\[
+\text{neutralized} \sim \text{Binomial}\left(V, 1 - e^{-k \cdot I}\right)
+\]
+where \( k \) is a clearance constant, and \( I = \text{immune active} \), without normalizing by total immune capacity — unless that total is fixed.
+
+---
+
+### 🔍 4. **Target Cell Recovery: Biologically Unjustified?**
+
+```java
+Integer target_recovered = rng.binom(getTargetRemoved(), p_target_recovery);
+```
+This assumes removed (e.g., dead or differentiated) cells can "recover" back to susceptible.
+
+But in most viral infections:
+- Dead cells don’t come back,
+- Recovery implies **new cell production** (e.g., hematopoiesis, epithelial turnover),
+- So `target_recovered` should be drawn from a **source pool**, not from `removed`.
+
+Better: Replace with:
+```java
+target_recovered = rng.poisson(rate_recovery * getTargetRemoved());
+```
+or even better, introduce a **progenitor compartment** if modeling long-term dynamics.
+
+Alternatively, if turnover is slow, just don’t recover them — let immunity handle protection.
+
+---
+
+### 🔍 5. **Stochasticity vs. Population Size: Risk of Over-Discreteness**
+
+Because all transitions are binomial or Poisson, the model is **fully discrete** — good for small populations.
+
+But if `getTargets()` is large (e.g., millions of cells), the stochastic noise may be too small to matter, and a **deterministic ODE approximation** would be faster.
+
+Conversely, if `getTargets()` is small (e.g., localized infection), the model is appropriate.
+
+👉 **Recommendation**: Document expected scale (e.g., 100–10,000 cells) and validate that binomial sampling doesn’t induce artificial extinction or explosion.
+
+---
+
+### ✅ Summary of Critiques
+
+| Issue | Problem | Suggested Fix |
+|------|-------|---------------|
+| **Double infection probability** | Applying `p_infection` twice (on virions and on cells) | Fold infection probability into per-cell or per-virion efficacy |
+| **Virion vs. infectious unit** | Not all virions infect; model lacks distinction | Introduce `infectious_ratio` or scale `p_infection` |
+| **Immune normalization** | Clearance depends on fraction active, not absolute count | Use absolute immune effector count unless constrained |
+| **Target cell recovery** | "Removed" cells becoming susceptible again | Model regeneration separately, or remove recovery |
+| **Scaling behavior** | May not generalize across population sizes | Document intended scale; consider hybrid models |
+
+---
+
+### ✅ Final Verdict
+
+The model is **mechanistically sound at a high level**, especially in its use of:
+- The **coverage problem** to model stochastic exposure,
+- The **Poisson binomial intuition** for independent events,
+- Discrete stochastic sampling for realism.
+
+However, the **infection submodel** could be simplified and made more biologically coherent by **removing redundant probability layers** and ensuring that the **meaning of "virions" and "targets"** is consistent across processes.
+
+With those refinements, it would be a robust and interpretable in-host framework.
+*/

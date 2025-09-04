@@ -270,7 +270,7 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 * all people who have a test result.
 	 * @param filter a predicate to select the type of test to look at (e.g. by indication
 	 * or by test type)
-	 * @param wesTested should the denominator include only people with tests done,
+	 * @param wasTested should the denominator include only people with tests done,
 	 * or everyone?
 	 */
 	default Binomial getPresumedTestPositivity(Predicate<TestResult> filter, boolean wasTested) {

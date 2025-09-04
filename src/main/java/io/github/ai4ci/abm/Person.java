@@ -11,6 +11,10 @@ import io.github.ai4ci.abm.mechanics.Abstraction.HistoricalStateProvider;
 import io.github.ai4ci.abm.mechanics.StateMachine;
 import io.github.ai4ci.util.Ephemeral;
 
+/**
+ * The main Person class is a mutable holder that contains immutable data 
+ * pertaining to baseline, current state, recent history etc. 
+ */
 @Value.Modifiable
 @Data.Mutable
 public abstract class Person implements Entity, HistoricalStateProvider<PersonHistory> {
@@ -39,10 +43,26 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	public abstract PersonState getCurrentState();
 	public abstract PersonDemographic getDemographic();
 	
+	/*
+	 * Only populated during the update cycle, and copied from the t-1 state. 
+	 * This is where changes to the future t state are made.
+	 */
 	public abstract Ephemeral<ImmutablePersonState.Builder> getNextState();
+	
+	/*
+	 * Only populated during the update cycle largely as a mapping from the t-1 
+	 * state. Historical events are added most notably test sampling.
+	 */
 	public abstract Ephemeral<ImmutablePersonHistory.Builder> getNextHistory();
+	
+	/*
+	 * The person's behavioural state machine.
+	 */
 	public abstract StateMachine getStateMachine();
 
+	/**
+	 * Reverse time ordered list of historical states (recent first).
+	 */
 	public abstract List<PersonHistory> getHistory();
 	
 	

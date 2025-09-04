@@ -4,7 +4,9 @@ import java.util.ArrayList;
 
 /**
  * Used to prevent immutables deep cloning for lists. A shallow list will always
- * be copied in situ to a new immutable.  
+ * be copied in situ to a new immutable. Its basically an arraylist hidden
+ * so deep cloning cannot happen. Its particularly used to expose one set of 
+ * test types to the test results class, without creating an army of clones.
  * @param <X> the list type
  */
 public class ShallowList<X> extends ArrayList<X> {

@@ -17,7 +17,11 @@ import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.abm.mechanics.ModelOperation.TriFunction;
 
 
-
+/**
+ * Specify distributions and parameters in a way that makes configuring them
+ * in a JSON file is relatively straightforward. All distributions defined by
+ * a central and dispersion parameter which in most cases will be Mean and SD.
+ */
 @Value.Immutable
 @JsonSerialize(as = ImmutableSimpleDistribution.class)
 @JsonDeserialize(as = ImmutableSimpleDistribution.class)
@@ -53,46 +57,46 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 	@Nullable @Value.Default default Double getDispersion() {return null;}
 	
 	
-	private static SimpleDistribution of(Type type, Double mean, Double sd) {
+	private static SimpleDistribution of(Type type, Double mean, Double sd, LinkFunction link) {
 		return ImmutableSimpleDistribution.builder().setType(type)
-				.setDispersion(sd).setCentral(mean).build();
+				.setDispersion(sd).setCentral(mean).setLink(link).build();
 	}
-	private static SimpleDistribution of(Type type, Double mean) {
-		return of(type,mean,null);
+	private static SimpleDistribution of(Type type, Double mean, LinkFunction link) {
+		return of(type,mean,null, link);
 	}
 	
-	public static SimpleDistribution binom(int n,Double p) {
-		return of(Type.BINOM, n*p, n*p*(1-p));
+	public static SimpleDistribution binom(int n, Double p) {
+		return of(Type.BINOM, n*p, n*p*(1-p), LinkFunction.LOGIT);
 	}
 	public static SimpleDistribution pois(Double rate) {
-		return of(Type.POIS, rate);
+		return of(Type.POIS, rate, LinkFunction.LOG);
 	}
 	public static SimpleDistribution negBinom(Double mean, Double sd) {
-		return of(Type.NEG_BINOM, mean, sd);
+		return of(Type.NEG_BINOM, mean, sd, LinkFunction.LOGIT);
 	}
 	public static SimpleDistribution gamma(Double mean, Double sd) {
-		return of(Type.GAMMA, mean, sd);
+		return of(Type.GAMMA, mean, sd, LinkFunction.LOG);
 	}
 	public static SimpleDistribution norm(Double mean, Double sd) {
-		return of(Type.NORM, mean, sd);
+		return of(Type.NORM, mean, sd, LinkFunction.NONE);
 	}
 	public static SimpleDistribution logNorm(Double mean, Double sd) {
-		return of(Type.LOG_NORM, mean, sd);
+		return of(Type.LOG_NORM, mean, sd, LinkFunction.LOG);
 	}
 	public static SimpleDistribution point(Double mean) {
-		return of(Type.POINT, mean);
+		return of(Type.POINT, mean, LinkFunction.NONE);
 	}
 	public static SimpleDistribution uniform0(Double upper) {
-		return of(Type.UNIFORM0, upper/2);
+		return of(Type.UNIFORM0, upper/2, LinkFunction.NONE);
 	}
 	public static SimpleDistribution uniform() {
-		return of(Type.UNIFORM0, 1.0/2);
+		return of(Type.UNIFORM0, 1.0/2, LinkFunction.NONE);
 	}
 	public static SimpleDistribution unimodalBeta(Double mean, Double sd) {
-		return of(Type.UNIMODAL_BETA, mean, sd);
+		return of(Type.UNIMODAL_BETA, mean, sd, LinkFunction.LOGIT);
 	}
 	public static SimpleDistribution beta(Double mean, Double sd) {
-		return of(Type.BETA, mean, sd);
+		return of(Type.BETA, mean, sd, LinkFunction.LOGIT);
 	}
 	
 	public default double sample() {
@@ -120,9 +124,9 @@ public interface SimpleDistribution extends Abstraction.Distribution, Serializab
 	}
 	
 	default double getCumulative(double x) {
-		return Arrays.stream(getSamples())
+		return (Arrays.stream(getSamples())
 			.filter(d -> d < x )
-			.count() / PRECISION;
+			.count()+1) / (PRECISION+1);
 	}
 	
 	@JsonIgnore 

@@ -16,8 +16,7 @@ import io.github.ai4ci.util.ModelNav;
  * during the update cycle. This is where time dependent comparisons can be made.
  * These model update functions happen after the current state is mapped across
  * and the behaviour or policy state machines are updated. This means that they 
- * can see the new behaviour state but nothing else will have changed. This is 
- * where time dependent functions can be applied
+ * can see the new behaviour state but nothing else will have changed. 
  */
 public class ModelUpdate {
 

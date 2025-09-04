@@ -2,7 +2,6 @@ package io.github.ai4ci.abm.builders;
 
 import io.github.ai4ci.abm.ImmutableOutbreakBaseline;
 import io.github.ai4ci.config.setup.SetupConfiguration;
-import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.abm.ImmutableOutbreakState;
 import io.github.ai4ci.abm.ImmutablePersonBaseline;
 import io.github.ai4ci.abm.ImmutablePersonState;

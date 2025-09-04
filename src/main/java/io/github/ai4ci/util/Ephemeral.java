@@ -3,6 +3,12 @@ package io.github.ai4ci.util;
 import java.io.Serializable;
 import java.util.Optional;
 
+/** 
+ * An optional value that is not serialised. It is used to 
+ * temporarily hold the next state of a Person or Outbreak during the update 
+ * cycle, and is cleared after the cycle. 
+ * @param <T>
+ */
 public class Ephemeral<T> implements Serializable {
 	
 	transient T value;

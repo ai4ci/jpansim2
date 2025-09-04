@@ -4,10 +4,10 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.ai4ci.abm.inhost.ExposureModel;
+import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState.ExposureModel;
 import io.github.ai4ci.abm.inhost.InHostModelState;
 import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState;
-import io.github.ai4ci.abm.inhost.ExposureModel.BiPhasicLogistic;
+import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState.BiPhasicLogistic;
 import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.util.Sampler;
 import io.github.ai4ci.config.PartialExecutionConfiguration;

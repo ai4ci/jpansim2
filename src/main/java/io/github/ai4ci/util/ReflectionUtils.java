@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.Stream;
-
 import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
 import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
@@ -18,10 +16,15 @@ import io.github.ai4ci.abm.mechanics.Abstraction.SimpleFunction;
 import io.github.ai4ci.config.DemographicAdjustment.Scale;
 import io.github.ai4ci.config.DemographicAdjustment.ScaleType;
 import io.github.ai4ci.config.PartialDemographicAdjustment;
-import io.github.ai4ci.flow.CSVWriter.Writeable;
 
 public class ReflectionUtils {
 
+	/**
+	 * Find the immutable (or modifiable) implementation version of an interface
+	 * @param <X> the interface
+	 * @param clz
+	 * @return
+	 */
 	public static <X> Class<?> immutable(Class<X> clz) {
 		if (clz.getSimpleName().startsWith("Immutable")) return clz;
 		if (clz.getSimpleName().startsWith("Modifiable")) return clz;
@@ -46,18 +49,33 @@ public class ReflectionUtils {
 		}
 	}
 	
+	/**
+	 * Initialise an object based on class name, package and parameters
+	 * @param <X>
+	 * @param className
+	 * @param clzInPackage
+	 * @param params optionakl parameters
+	 * @return
+	 */
 	public static <X> X initialise(String className, Class<?> clzInPackage, Object... params) {
 		String base = clzInPackage.getPackageName();
 		if (!className.startsWith(base)) className = base + "." + className;
 		try {
 			@SuppressWarnings("unchecked")
 			Class<X> riskModelClass = (Class<X>) Class.forName(className);
-			return ReflectionUtils.initialise(riskModelClass);
+			return ReflectionUtils.initialise(riskModelClass, params);
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
+	/** 
+	 * Initialise a class using a constructor and parameters
+	 * @param <X> the type returned.
+	 * @param clz the class 
+	 * @param params the parameters
+	 * @return an instance of type X
+	 */
 	@SuppressWarnings("unchecked")
 	public static <X> X initialise(Class<X> clz, Object... params) {
 		Class<?>[] paramTypes = Arrays.stream(params).map(o -> o.getClass()).toArray(i -> new Class<?>[i]);
@@ -85,7 +103,10 @@ public class ReflectionUtils {
 	
 	/** 
 	 * Reflection based configuration merging due to complexities working
-	 * with mapstruct for nested immutables. 
+	 * with mapstruct for nested immutables. The problem here is that nested 
+	 * immutables need to be merged by constructing new immutables but mapstruct
+	 * assumes they can be merged directly using javabeans. By providing this 
+	 * method we can merge
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <X> X merge(X base, Modification<? extends X> modifier) {
@@ -187,6 +208,13 @@ public class ReflectionUtils {
 		set(to, s, value1);
 	}
 	
+	/**
+	 * Get a getter method by field name
+	 * @param <X>
+	 * @param o any object
+	 * @param s the name of the field
+	 * @return am Optional<Method> that can be invoked to set the field of that name
+	 */
 	@SuppressWarnings("unchecked")
 	private static <X> Optional<X> get(Object o, String s) {
 		try {

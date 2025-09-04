@@ -1,10 +1,12 @@
 package io.github.ai4ci.abm.mechanics;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.DoubleUnaryOperator;
 
+import org.apache.commons.math3.analysis.integration.RombergIntegrator;
+import org.apache.commons.math3.util.FastMath;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -19,18 +21,17 @@ import io.github.ai4ci.config.inhost.PartialMarkovStateModel;
 import io.github.ai4ci.config.inhost.PartialPhenomenologicalModel;
 import io.github.ai4ci.config.inhost.PartialStochasticModel;
 import io.github.ai4ci.config.setup.PartialSetupConfiguration;
+import io.github.ai4ci.util.EmpiricalFunction;
 import io.github.ai4ci.util.ImmutableEmpiricalDistribution;
 import io.github.ai4ci.util.ImmutableEmpiricalFunction;
 import io.github.ai4ci.util.ImmutableFixedValueFunction;
 import io.github.ai4ci.util.ImmutableMathematicalFunction;
 import io.github.ai4ci.util.ImmutableResampledDistribution;
 import io.github.ai4ci.util.ImmutableSimpleDistribution;
-import io.github.ai4ci.util.ImmutableTransformedDistribution;
 import io.github.ai4ci.util.LinkFunction;
 import io.github.ai4ci.util.ModelNav;
 import io.github.ai4ci.util.ResampledDistribution;
 import io.github.ai4ci.util.Sampler;
-import io.github.ai4ci.util.TransformedDistribution;
 
 public interface Abstraction {
 
@@ -53,7 +54,16 @@ public interface Abstraction {
 		@Type(ImmutableMathematicalFunction.class)
 	})
 	public interface SimpleFunction {
-		double value(double y);
+		
+		double value(double x);
+		
+		double DX = 0.00001; 
+		
+		default double differential(double x) {
+			double dy = (value(x+DX)-value(x-DX))/(2*DX);
+			return dy;
+		}
+		
 	}
 
 	public interface Entity extends Serializable {
@@ -85,6 +95,10 @@ public interface Abstraction {
 		double getCentral();
 		double getCumulative(double x);
 		double getMedian();
+		LinkFunction getLink();
+		
+		default double getMinSupport() {return getLink().getMinSupport();}
+		default double getMaxSupport() {return getLink().getMaxSupport();}
 		
 		double sample(Sampler rng);
 		
@@ -93,7 +107,9 @@ public interface Abstraction {
 		}
 		
 		default double getDensity(double x) {
-			return (getCumulative(x+DX)-getCumulative(x-DX))/(2*DX); 
+			if (!getLink().inSupport(x)) return 0;
+			double dy = (getCumulative(x+DX)-getCumulative(x-DX))/(2*DX);
+			return dy;
 		}
 		
 		default ResampledDistribution combine(Distribution with, BiFunction<Double,Double,Double> using) {
@@ -101,26 +117,47 @@ public interface Abstraction {
 					.setFirst(this)
 					.setSecond(with)
 					.setCombiner(using)
+					.setLink(LinkFunction.NONE)
 					.build();
 		};
 		
-		default TransformedDistribution transform(LinkFunction link) {
-			return transform(link.fn, link.invFn);
-		}
 		
-		default TransformedDistribution transform(DoubleUnaryOperator link) {
-			return transform(link, (d) -> {
-				throw new RuntimeException("Inverse not implemented");});
-		}
 		
-		default TransformedDistribution transform(DoubleUnaryOperator link, DoubleUnaryOperator inverse) {
-			return ImmutableTransformedDistribution.builder()
-					.setBaseDistribution(this)
-					.setLink(link)
-					.setInverseLink(inverse)
-					.build();
-		};
+//		default TransformedDistribution transform(LinkFunction link) {
+//			return transform(link.fn, link.invFn);
+//		}
+//		
+//		default TransformedDistribution transform(DoubleUnaryOperator link) {
+//			return transform(link, (d) -> {
+//				throw new RuntimeException("Inverse not implemented");});
+//		}
+//		
+//		default TransformedDistribution transform(DoubleUnaryOperator link, DoubleUnaryOperator inverse) {
+//			return ImmutableTransformedDistribution.builder()
+//					.setBaseDistribution(this)
+//					.setTransform(link)
+//					.setInverseTransform(inverse)
+//					.build();
+//		};
+		
+		
 
+	}
+	
+	public interface Interpolator extends Serializable {
+		
+		double DX = 0.00001; 
+		double interpolate(double x);
+		
+		default double differential(double x) {
+			double dy = (interpolate(x+DX)-interpolate(x-DX))/(2*DX);
+			return dy;
+		}
+		
+	}
+	
+	public static double squish(double low, double x, double high) {
+		return (Math.min(Math.max(x, low), high));
 	}
 	
 	public interface TemporalState<E extends Entity> extends Serializable {

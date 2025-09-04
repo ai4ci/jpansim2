@@ -1,12 +1,6 @@
 package io.github.ai4ci.util;
 import org.mariuszgromada.math.mxparser.*;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.DoubleUnaryOperator;
-
-import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.immutables.value.Value;
 import org.mariuszgromada.math.mxparser.Argument;
 import org.mariuszgromada.math.mxparser.Expression;
@@ -22,7 +16,19 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 @JsonDeserialize(as = ImmutableMathematicalFunction.class)
 public interface MathematicalFunction extends Serializable, Abstraction.SimpleFunction {
 	
+	/**
+	 * A univariate mathematical function as a String containing `x` as the 
+	 * parameter. Supported expressions are described here:
+	 * https://mathparser.org/mxparser-math-collection
+	 * @return the function expression.
+	 */
 	String getFXExpression();
+	
+	static class LicenseHolder { 
+		static {
+			License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
+		}
+	}
 	
 	@JsonIgnore
 	@Value.Derived default Argument getXArgument() {
@@ -31,7 +37,6 @@ public interface MathematicalFunction extends Serializable, Abstraction.SimpleFu
 	
 	@JsonIgnore
 	@Value.Derived default Expression getParsed() {
-		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
 		mXparser.disableUlpRounding();
 		mXparser.disableCanonicalRounding();
 		mXparser.disableAlmostIntRounding();

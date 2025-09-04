@@ -50,9 +50,12 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	@JsonIgnore
 	@Value.Default default SimpleFunction getNormalisedOddsContactFromAgeDifference() {
 		if (getOddsContactFromAgeDifference() instanceof EmpiricalFunction) {
-			return ((EmpiricalFunction) getOddsContactFromAgeDifference()).normalise(
-					getAgeDistribution().combine(getAgeDistribution(), (d1,d2) -> Math.abs(d1-d2)).getInterpolation() 
-			);
+			return getAgeDistribution()
+				.combine(getAgeDistribution(), (d1,d2) -> Math.abs(d1-d2))
+				.getInterpolation()
+				.baselineOdds(
+					((EmpiricalFunction) getOddsContactFromAgeDifference())
+				);
 		}
 		return getOddsContactFromAgeDifference();
 	};

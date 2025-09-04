@@ -11,12 +11,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.github.ai4ci.abm.mechanics.Abstraction;
 import io.github.ai4ci.util.ImmutableHistogramDistribution.Builder;
 
+@Deprecated
 @Value.Immutable
 @JsonSerialize(as = ImmutableHistogramDistribution.class)
 @JsonDeserialize(as = ImmutableHistogramDistribution.class)
 public interface HistogramDistribution extends Abstraction.Distribution, Serializable {
 
 	double[] getSamples();
+	@Value.Default default LinkFunction getLink() {return LinkFunction.NONE;}
+	
 	
 	@JsonIgnore
 	@Value.Derived default double[] getX() {
@@ -26,12 +29,12 @@ public interface HistogramDistribution extends Abstraction.Distribution, Seriali
 	}
 	
 	@JsonIgnore
-	@Value.Derived default double getMin() {
+	@Value.Derived default double getMinimum() {
 		return getX()[0];
 	}
 	
 	@JsonIgnore
-	@Value.Derived default double getMax() {
+	@Value.Derived default double getMaximum() {
 		return getX()[getX().length-1];
 	}
 	
@@ -58,8 +61,8 @@ public interface HistogramDistribution extends Abstraction.Distribution, Seriali
 	
 	private double interpolateX(double x) {
 		int index = findIndexForX(x);
-		if (index == -1) return getMin();
-		if (index == getX().length-1) return getMax();
+		if (index == -1) return getMinimum();
+		if (index == getX().length-1) return getMaximum();
 		double x0 = getX()[index];
 		if (x0 == x) return getY(index);
 		double x1 = getX()[index+1];
@@ -68,8 +71,8 @@ public interface HistogramDistribution extends Abstraction.Distribution, Seriali
 	}
 	
 	private double gradientX(double x) {
-		if (x < getMin()) return 0;
-		if (x > getMax()) return 0;
+		if (x < getMinimum()) return 0;
+		if (x > getMaximum()) return 0;
 		double dy = 1.0 / (getX().length-1);
 		int index = findIndexForX(x);
 		if (getX()[index] == x) {
@@ -81,8 +84,8 @@ public interface HistogramDistribution extends Abstraction.Distribution, Seriali
 	}
 	
 	private double interpolateY(double y) {
-		if (y < Math.ulp(0) * 2) return getMin();
-		if (1-y < Math.ulp(0) * 2) return getMax();
+		if (y < Math.ulp(0) * 2) return getMinimum();
+		if (1-y < Math.ulp(0) * 2) return getMaximum();
 		double indexDbl = Math.floor(y*(getX().length-1));
 		int index = (int) Math.floor(indexDbl);
 		double mod = indexDbl - index;

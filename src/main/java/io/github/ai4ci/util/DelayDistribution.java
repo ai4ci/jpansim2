@@ -8,7 +8,7 @@ import org.apache.commons.statistics.distribution.GammaDistribution;
 import org.immutables.value.Value;
 
 /**
- * The delay distribution is a probability distribution in time
+ * The delay distribution is a probability distribution in discrete time
  * conditional on an event happening. It is useful to generate a per
  * day conditional hazard.
  * 

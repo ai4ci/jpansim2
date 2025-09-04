@@ -18,8 +18,8 @@ import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.abm.inhost.InHostModelState;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
+import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.HistogramDistribution;
-import io.github.ai4ci.util.ImmutableDelayDistribution;
 import io.github.ai4ci.util.Sampler;
 
 @JsonTypeInfo(use = Id.NAME, requireTypeIdForSubtypes = OptBoolean.TRUE)
@@ -144,7 +144,7 @@ public interface InHostConfiguration extends Serializable {
 	 * 
 	 * @return an empirical distribution
 	 */
-	public static HistogramDistribution getPeakSeverity(InHostConfiguration config, ExecutionConfiguration execConfig,
+	public static EmpiricalDistribution getPeakSeverity(InHostConfiguration config, ExecutionConfiguration execConfig,
 			int samples, int duration) {
 		Sampler rng = Sampler.getSampler();
 		double[] x = new double[samples];
@@ -161,7 +161,7 @@ public interface InHostConfiguration extends Serializable {
 			x[i] = max;
 		}
 
-		return HistogramDistribution.fromData(x);
+		return EmpiricalDistribution.fromData(x);
 	}
 
 	default double getSeveritySymptomsCutoff(Outbreak outbreak, ExecutionConfiguration configuration) {

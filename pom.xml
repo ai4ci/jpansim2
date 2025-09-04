@@ -98,6 +98,11 @@
 			<artifactId>jackson-datatype-guava</artifactId>
 			<version>${com.fasterxml.jackson.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-csv</artifactId>
+			<version>${com.fasterxml.jackson.version}</version>
+		</dependency>
 
 		<!-- JGRAPHT network -->
 		<dependency>
@@ -147,7 +152,21 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.10.2</version>
+			<version>5.13.4</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-params -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<version>5.13.4</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>3.27.4</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -161,6 +180,24 @@
 			<artifactId>jsonschema-module-jackson</artifactId>
 			<version>4.38.0</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.ejml</groupId>
+			<artifactId>ejml-all</artifactId>
+			<version>0.44.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.ejml</groupId>
+			<artifactId>ejml-ddense</artifactId>
+			<version>0.44.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.classgraph</groupId>
+			<artifactId>classgraph</artifactId>
+			<version>4.8.164</version> <!-- Check for latest -->
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 
@@ -227,7 +264,47 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.11.2</version>
+				<configuration>
+					<linksource>true</linksource>
+					<sourceFileExcludes>
+						<sourceFileExclude>**/Immutable*.java</sourceFileExclude>
+						<sourceFileExclude>**/Modifiable*.java</sourceFileExclude>
+						<sourceFileExclude>**/*Impl.java</sourceFileExclude>
+					</sourceFileExcludes>
+					<additionalOptions>
+						<additionalOption>--allow-script-in-comments</additionalOption>
+						<additionalOption>
+							-header '&lt;script
+							type="text/javascript"
+							src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
+					</additionalOptions>
+				</configuration>
 			</plugin>
+
+			<!-- Run InterfacerSchemaGenerator after classes are compiled -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.4.1</version>
+				<executions>
+					<execution>
+						<id>generate-interfacer-schemas</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>io.github.ai4ci.util.InterfaceSchemaGenerator</mainClass>
+							<classpathScope>compile</classpathScope>
+							<arguments>
+								<argument>io.github.ai4ci.config.geography</argument>
+								<argument>${basedir}/analysis/schemas.R</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 </project>

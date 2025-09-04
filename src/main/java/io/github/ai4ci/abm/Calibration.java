@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import io.github.ai4ci.config.inhost.InHostConfiguration;
+import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.HistogramDistribution;
 import io.github.ai4ci.util.ThreadSafeArray;
 
@@ -24,10 +25,10 @@ public class Calibration {
 	static Logger log = LoggerFactory.getLogger(Calibration.class);
 
 	/**
-	 * What can we assume we know at this stage? This is used to baseline the
-	 * outbreak. At this point the social network and demographics are set up. We
-	 * should also have the individuals baselined. This means we can look at their
-	 * individual mobility and hence the probability of contact across the network.
+	 * This is used to baseline the outbreak and at the point of baselining the
+	 * social network and demographics are set up. We should also have the
+	 * individuals configured. This means we can look at their individual mobility
+	 * and hence the probability of contact across the network.
 	 */
 	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 
@@ -68,7 +69,7 @@ public class Calibration {
 	 * Identifies for a given transmission parameter, the expected number of
 	 * exposures per infection, given social network topology and baseline contact
 	 * probability between agents. This looks at the set of theoretical networks
-	 * where one person is infected, and identifies for a sampled set of ranodm viral
+	 * where one person is infected, and identifies for a sampled set of random viral
 	 * load profiles, how infectious that person is at any given time, and how
 	 * likely they are to be contacting someone.
 	 */
@@ -180,7 +181,7 @@ public class Calibration {
 	 */
 	public static double inferSeverityCutoff(Outbreak outbreak, double infectionEventRatio) {
 
-		HistogramDistribution dist = InHostConfiguration.getPeakSeverity(
+		EmpiricalDistribution dist = InHostConfiguration.getPeakSeverity(
 				outbreak.getExecutionConfiguration().getInHostConfiguration(), 
 				outbreak.getExecutionConfiguration(),
 				1000, 50);
@@ -196,7 +197,7 @@ public class Calibration {
 	 * network edge with a per edge probability. The distribution would be the sum
 	 * of bernoullis with different probabilities which is a Poisson Binomial
 	 * Distribution
-	 * {@link https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities}
+	 * {@see https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities}
 	 * 
 	 */
 	public static double[] networkDegreePerPerson(Outbreak o) {
@@ -227,6 +228,47 @@ public class Calibration {
 		return DoubleStream.of(nodeDegree).average().orElse(0);
 	}
 	
+	/**
+	 * Computes the percolation threshold of the probabilistic contact network using the
+	 * second moment of the degree distribution.
+	 *
+	 * <p>In epidemic percolation theory, the threshold for sustained transmission is determined by
+	 * the structure of the contact network. For a random network, the critical transmissibility \( T_c \)
+	 * at which a giant connected component emerges is:
+	 * $$
+	 * T_c = \frac{\langle k \rangle}{\langle k^2 \rangle - \langle k \rangle}
+	 * $$
+	 * where \( \langle k \rangle \) is the mean degree and \( \langle k^2 \rangle \) is the second moment
+	 * of the degree distribution.
+	 *
+	 * <p>In this model, contact between agents is probabilistic, so the degree of each node is a
+	 * sum of independent Bernoulli variables with different success probabilities \( p_{ij} \),
+	 * forming a <i>Poisson binomial distribution</i>. The expected degree of node \( i \) is:
+	 * $$
+	 * \mathbb{E}[k_i] = \sum_{j} p_{ij}
+	 * $$
+	 * and the variance is:
+	 * $$
+	 * \mathrm{Var}(k_i) = \sum_{j} p_{ij}(1 - p_{ij})
+	 * $$
+	 * as per the properties of the Poisson binomial distribution.
+	 *
+	 * <p>The second moment \( \langle k^2 \rangle \) is estimated as:
+	 * $$
+	 * \langle k^2 \rangle = \langle k \rangle^2 + \langle \mathrm{Var}(k_i) \rangle
+	 * $$
+	 * where the latter term accounts for the excess variance due to heterogeneous \( p_{ij} \).
+	 *
+	 * <p>This method computes the average percolation threshold across the population,
+	 * reflecting the network's susceptibility to epidemic spread. A lower threshold implies
+	 * higher connectivity and easier outbreak propagation.
+	 *
+	 * @param o the outbreak configuration, including the social network and agent mobility
+	 * @return the percolation threshold \( T_c \), interpreted as the minimum transmissibility
+	 *         required for an epidemic to occur
+	 *
+	 * @see <a href="https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities">Poisson Binomial Distribution</a>
+	 */
 	public static double percolationThreshold(Outbreak o) {
 		
 		AtomicDouble[] degrees = new AtomicDouble[o.getPopulationSize()];
@@ -259,11 +301,44 @@ public class Calibration {
 		return k / (k2 - k);
 	}
 	
+	/**
+	 * Adjusts the target \( R_0 \) to account for network structure effects by normalizing
+	 * against the maximum possible percolation threshold of a fully connected network
+	 * with the same mean degree.
+	 *
+	 * <p>The effective reproductive number in a network is constrained by its topology.
+	 * The percolation threshold \( T_c = \langle k \rangle / (\langle k^2 \rangle - \langle k \rangle) \)
+	 * determines the minimum transmissibility for an epidemic. In a fully connected network
+	 * with homogeneous contact probability, \( \langle k^2 \rangle = \langle k \rangle^2 \), so:
+	 * $$
+	 * T_{\text{max}} = \frac{\langle k \rangle}{\langle k \rangle^2 - \langle k \rangle} = \frac{1}{\langle k \rangle - 1}
+	 * $$
+	 *
+	 * <p>This method computes the ratio of the actual percolation threshold \( T_c \) to \( T_{\text{max}} \),
+	 * which captures how much the network structure reduces or enhances transmission potential.
+	 * The adjusted \( R_0 \) is then:
+	 * $$
+	 * R_0^{\text{adj}} = R_0 \cdot \frac{T_c}{T_{\text{max}}}
+	 * $$
+	 *
+	 * <p>This adjustment ensures that the calibrated transmission parameter reflects only
+	 * the biological mechanism (viral load → transmissibility), decoupled from network-specific
+	 * structural effects. It allows for transferable parameter estimates across different
+	 * population structures.
+	 *
+	 * <p>For example, a clustered or sparse network will have \( T_c > T_{\text{max}} \), leading to
+	 * \( R_0^{\text{adj}} \lt R_0 \), meaning a higher intrinsic transmissibility is needed to achieve
+	 * the same population-level \( R_0 \).
+	 *
+	 * @param o the outbreak configuration
+	 * @param R0 the desired basic reproduction number in a well-mixed population
+	 * @return the network-adjusted \( R_0 \) that compensates for reduced connectivity or clustering
+	 *         in the actual social network
+	 */
 	public static double adjustR0(Outbreak o, double R0) {
-		double[] nodeDegree = networkDegreePerPerson(o);
 		// N.B. this is the average percolation threshold (average of average contact
 		// network degree ....)
-		double k = DoubleStream.of(nodeDegree).average().orElse(0);
+		double k = averageContactDegree(o);
 		double perc = percolationThreshold(o);
 		// This is the percolation of a network
 		double maxPerc = k / (k*k - k);
@@ -278,7 +353,25 @@ public class Calibration {
 		return R0 * Tc;
 	}
 
-	
+	/**
+	 * Infers the viral load transmission parameter that achieves a target R₀ using a fast,
+	 * polynomial-based approximation.
+	 *
+	 * <p>This method is an optimized alternative to {@link #inferViralLoadTransmissionParameter(Outbreak, double)}.
+	 * It uses the {@link Estimator} class to approximate the expected number of secondary exposures
+	 * per infection via a precomputed quartic polynomial in the transmission parameter. The approximation
+	 * is derived from a series expansion of the probability of at least one exposure over time,
+	 * accounting for variable daily transmissibility and contact probability.
+	 *
+	 * <p>The method adjusts the target R₀ for network structure using {@link #adjustR0(Outbreak, double)}
+	 * and solves for the transmission parameter using Brent's method. The result is significantly faster
+	 * than the full simulation-based approach, making it suitable for repeated calibration tasks.
+	 *
+	 * @param outbreak the outbreak configuration, including social network and viral load profiles
+	 * @param R0 the desired basic reproduction number to calibrate to
+	 * @return the inferred transmission parameter (scales transmissibility per unit viral load above 1.0)
+	 * @throws RuntimeException if no solution is found within the valid parameter range [0, 0.1]
+	 */
 	public static double inferViralLoadTransmissionParameterQuick(Outbreak outbreak, double R0) {
 		double[][] viralLoadProfile = outbreak.getExecutionConfiguration().getViralLoadProfile();
 		double [] contactProbability = outbreak.getSocialNetwork().parallelStream().mapToDouble(r -> {
@@ -312,6 +405,53 @@ public class Calibration {
 		}
 	}
 	
+	/**
+	 * An optimized estimator for the expected probability of transmission across a social network edge
+	 * given a transmission parameter and viral load profiles.
+	 *
+	 * <p>This class precomputes a quartic polynomial approximation of the expected transmission
+	 * probability by leveraging the structure of the Poisson binomial distribution formed by
+	 * independent daily exposure risks over an infection period. For each viral load profile,
+	 * the excess viral load (above threshold 1.0) is summarized into raw moments \( B_1 \)–\( B_4 \),
+	 * where \( B_n = \sum_t (\delta_t)^n \) and \( \delta_t = \max(v_t - 1, 0) \).
+	 *
+	 * <p>The probability of at least one exposure is \( 1 - \prod_t (1 - p_t) \), with \( p_t = k \cdot c \cdot \delta_t \).
+	 * Using the cumulant generating function of the Poisson binomial distribution,
+	 * this is approximated as:
+	 * $$
+	 * \mathbb{P}(\text{any exposure}) = 1 - \exp\left( \sum_t \log(1 - p_t) \right)
+	 * $$
+	 * Expanding the logarithm:
+	 * $$
+	 * \sum_t \log(1 - p_t) = -\sum_{n=1}^\infty \frac{(k c)^n}{n} \sum_t (\delta_t)^n = -\sum_{n=1}^\infty \frac{(k c)^n}{n} B_n
+	 * $$
+	 * Let \( S(c) = \sum_{n=1}^4 \frac{(k c)^n}{n} B_n \). Then:
+	 * $$
+	 * \mathbb{P}(\text{any exposure}) \approx 1 - e^{-S(c)}
+	 * $$
+	 * This is expanded as a power series in \( c \):
+	 * $$
+	 * 1 - e^{-S(c)} = a_1 c + a_2 c^2 + a_3 c^3 + a_4 c^4 + \cdots
+	 * $$
+	 * The coefficients \( a_1, a_2, a_3, a_4 \) are computed using combinatorial identities from the Taylor expansion,
+	 * then averaged over all contact probabilities \( k_{ij} \) and viral load profiles \( m \).
+	 *
+	 * <p>The final surrogate model is:
+	 * $$
+	 * \hat{p}(c) = \overline{a_1} \cdot c + \overline{a_2} \cdot c^2 + \overline{a_3} \cdot c^3 + \overline{a_4} \cdot c^4
+	 * $$
+	 * enabling \( O(1) \) evaluation during root-finding. This avoids repeated time-series computations,
+	 * accelerating R₀ calibration while preserving accuracy for realistic parameter ranges.
+	 *
+	 * <p>The underlying distribution of exposures is a Poisson binomial with:
+	 * $$
+	 * \mathbb{E}\left[\sum_t X_t\right] = \sum_t p_t, \quad \mathrm{Var}\left[\sum_t X_t\right] = \sum_t p_t(1 - p_t),
+	 * $$
+	 * as referenced in the Poisson binomial distribution literature. The independence of daily exposure events
+	 * justifies the additive structure of the cumulants used in the expansion.
+	 *
+	 * @see <a href="https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities">Poisson Binomial Distribution</a>
+	 */
 	public static class Estimator {
 		
 		public Estimator(double[][] viralLoadProfiles, double[] contactProbabilities) {
@@ -319,11 +459,34 @@ public class Calibration {
 			precomputeAverageCoefficients(contactProbabilities, tmp);
 		}
 		
-	/**
-     * Precompute B1, B2, B3, B4 for each of 100 viral load profiles.
-     * @param viralLoadData A 100x100 array: [profile][day]
-     * @return A 100x4 array: [profile][B1, B2, B3, B4]
-     */
+		/**
+		 * Precomputes the first four raw moments of the excess viral load (above threshold 1.0)
+		 * for each simulated viral load profile, used to approximate transmission risk over time.
+		 *
+		 * <p>For each viral load profile \(  m  \) , define \(  \delta_t^{(m)} = \max(v_t^{(m)} - 1, 0)  \)  as the
+		 * excess infectiousness on day \(  t  \) . The transmission probability on day \(  t  \)  is assumed to be
+		 * linear in \(  \delta_t  \) : \(  p_t = k \cdot c \cdot \delta_t  \) , where \(  k  \)  is the contact probability
+		 * and \(  c  \)  is the transmission parameter.
+		 *
+		 * <p>The probability of at least one exposure over the infectious period is:
+		 * $$
+		 * \mathbb{P}(\text{any exposure}) = 1 - \prod_{t=1}^T (1 - p_t)
+		 * $$
+		 * Taking logs of the survival probability:
+		 * $$
+		 * \log \mathbb{P}(\text{no exposure}) = \sum_{t=1}^T \log(1 - p_t) = -\sum_{n=1}^\infty \frac{(k c)^n}{n} \sum_{t=1}^T (\delta_t)^n
+		 * $$
+		 * Define the \(  n  \) -th raw moment of excess viral load as:
+		 * $$
+		 * B_n^{(m)} = \sum_{t=1}^T (\delta_t^{(m)})^n
+		 * $$
+		 * This method computes \(  B_1^{(m)}, B_2^{(m)}, B_3^{(m)}, B_4^{(m)}  \)  for each profile \(  m  \) ,
+		 * which capture the mean, variance-like, skewness-like, and kurtosis-like contributions
+		 * to the cumulant structure of the underlying Poisson binomial process.
+		 *
+		 * @param viralLoadData A 100x100 array: [profile][day] of simulated viral load trajectories
+		 * @return A 100x4 array: [profile][B₁, B₂, B₃, B₄], the first four raw moments of \(  \delta_t  \) 
+		 */
 	    private static double[][] computeBProfiles(double[][] viralLoadData) {
 	        if (viralLoadData.length != 100 || viralLoadData[0].length != 100)
 	            throw new IllegalArgumentException("Input must be a 100x100 array");
@@ -372,7 +535,48 @@ public class Calibration {
 //	                 - (B4 / 24.0) * Math.pow(c, 4);
 //	        }
 
-	        // Precompute average polynomial coefficients from all k_ij values
+	        /**
+	         * Precomputes the average polynomial coefficients that approximate the expected
+	         * probability of transmission across all contact edges and viral load profiles.
+	         *
+	         * <p>The goal is to approximate:
+	         * $$
+	         * \bar{p}(c) = \frac{1}{E} \sum_{ij} \frac{1}{M} \sum_{m=1}^M \left(1 - \prod_{t=1}^T (1 - k_{ij} c \delta_t^{(m)})\right)
+	         * $$
+	         * using a quartic polynomial:
+	         * $$
+	         * \bar{p}(c) \approx a_1 c + a_2 c^2 + a_3 c^3 + a_4 c^4
+	         * $$
+	         *
+	         * <p>Using the cumulant generating function of the Poisson binomial distribution of exposures,
+	         * we expand:
+	         * $$
+	         * \mathbb{P}(\text{any exposure}) = 1 - \exp\left( \sum_{t} \log(1 - k_{ij} c \delta_t^{(m)}) \right)
+	         * \approx 1 - \exp\left( -\sum_{n=1}^4 \frac{(k_{ij} c)^n}{n} B_n^{(m)} \right)
+	         * $$
+	         * Let \(  S = \sum_{n=1}^4 s_n c^n  \)  with \(  s_n = \frac{k_{ij}^n B_n^{(m)}}{n}  \) . Then:
+	         * $$
+	         * 1 - e^{-S} = s_1 c + \left(s_2 - \frac{s_1^2}{2}\right) c^2 + \left(s_3 - s_1 s_2 + \frac{s_1^3}{6}\right) c^3 + \cdots
+	         * $$
+	         *
+	         * <p>However, the implementation uses an equivalent but algebraically reorganized expansion,
+	         * where intermediate terms \(  d_n = k_{ij} \cdot \frac{(-1)^{n+1} B_n^{(m)}}{n!}  \) are used to construct
+	         * the polynomial coefficients via combinatorial identities arising from the Taylor expansion
+	         * of \(  1 - e^{-X}  \) .
+	         *
+	         * <p>This method:
+	         * <ul>
+	         *   <li>Iterates over all contact probabilities \(  k_{ij}  \) </li>
+	         *   <li>For each \(  k_{ij}  \)  and profile \(  m  \) , computes local coefficients \(  c_1, c_2, c_3, c_4  \) </li>
+	         *   <li>Averages them first over profiles (inner loop), then over edges (outer loop)</li>
+	         * </ul>
+	         *
+	         * <p>The resulting cached coefficients \(  \texttt{avg\_c1}, \dots, \texttt{avg\_c4}  \)  enable
+	         * \(  O(1)  \)  evaluation of the expected transmission probability in {@link #fastPTransmission(double)}.
+	         *
+	         * @param kValues Array of contact probabilities \(  k_{ij}  \)  for each edge in the social network
+	         * @param bProfiles Output of {@link #computeBProfiles(double[][])}: \(  B_1, B_2, B_3, B_4  \)  per profile
+	         */
 	        public void precomputeAverageCoefficients(double[] kValues, double[][] bProfiles) {
 	            
 	            double total_c1 = 0.0;

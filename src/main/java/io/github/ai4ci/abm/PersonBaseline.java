@@ -14,13 +14,24 @@ public interface PersonBaseline extends Serializable {
 	 */
 	Double getMobilityBaseline();
 	
+	/**
+	 * How likely is this person to comply with instructions compared to another
+	 */
 	Double getComplianceBaseline();
 	
 //	Double getLowRiskMobilityIncreaseTrigger();
 //	Double getHighRiskMobilityDecreaseTrigger();
 //	Double getHighRiskMobilityModifier();
 	
+	/**
+	 * How likely is a this person to have false positive symptoms when not 
+	 * infected
+	 */
 	Double getSymptomSpecificity();
+	
+	/**
+	 * How likely is a this person to have no symptoms when infected
+	 */
 	Double getSymptomSensitivity();
 	
 	BehaviourState getDefaultBehaviourState();
@@ -31,6 +42,10 @@ public interface PersonBaseline extends Serializable {
 	 * @return
 	 */
 	Double getSelfIsolationDepth();
+	
+	/**
+	 * How likely is this person to use an app on any given day.
+	 */
 	Double getAppUseProbability();
 	
 	

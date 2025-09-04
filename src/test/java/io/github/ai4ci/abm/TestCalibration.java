@@ -15,7 +15,6 @@ import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
 import io.github.ai4ci.config.setup.PartialSetupConfiguration;
-import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.DelayDistribution;
 import io.github.ai4ci.util.ImmutableDelayDistribution;

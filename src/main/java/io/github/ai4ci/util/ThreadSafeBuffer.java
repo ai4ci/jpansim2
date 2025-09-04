@@ -17,6 +17,7 @@ import org.apache.commons.lang3.NotImplementedException;
  * primarily by one thread. Will block putting thread if the buffer is full. 
  * @param <X> the buffer type
  */
+@Deprecated
 public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 	
 	Class<X> type;

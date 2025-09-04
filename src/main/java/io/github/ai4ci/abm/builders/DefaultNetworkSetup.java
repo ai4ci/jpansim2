@@ -8,7 +8,6 @@ import org.jgrapht.graph.SimpleGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.abm.Calibration;
 import io.github.ai4ci.abm.ImmutableSocialRelationship;
 import io.github.ai4ci.abm.ModifiableOutbreak;
 import io.github.ai4ci.abm.Person;

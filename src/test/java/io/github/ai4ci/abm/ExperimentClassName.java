@@ -2,7 +2,7 @@ package io.github.ai4ci.abm;
 
 import io.github.ai4ci.abm.policy.ReactiveLockdown;
 
-public class ClassNameTest {
+public class ExperimentClassName {
 
 	public static interface Test1 {
 		String name();

@@ -77,7 +77,7 @@ public interface DemographicAdjustment {
 			.setAsymptomaticFraction(
 					ImmutableMathematicalFunction.builder()
 						// baseline 45, doubles every 20 years of age (inverted)
-						.setFXExpression("exp((45-x)/20*lg(2))")
+						.setFXExpression("exp(-(x-45)/20*lg(2))")
 						.build()
 			)
 			.build();

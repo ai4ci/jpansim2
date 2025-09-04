@@ -1,0 +1,649 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={In host viral load model},
+  pdfauthor={Rob Challen},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{In host viral load model}
+\author{Rob Challen}
+\date{2025-08-28}
+
+\begin{document}
+\maketitle
+
+\section{Model desiderata}\label{model-desiderata}
+
+\begin{itemize}
+\tightlist
+\item
+  Sensible viral peak in naive host that can be translated into a viral
+  load PCR measurement, with fairly predictable peak of virus, so we can
+  determine a test signal / noise parameter for sensitivity and
+  specificity, and make the PCR translation sensible.
+\item
+  Viral peak related to infectiousness, and producing a typical latent
+  period / infectious period / delay distribution for secondary
+  infections.
+\item
+  Tunable peak viral load and viral shedding duration.
+\item
+  Some measure of severity that allows us to express risk of illness
+  (e.g.~symptoms, hospitalisation, death) in terms of modelled
+  quantities.
+\item
+  Tunable host response to infection leading to different severity for
+  given viral challenge
+\item
+  Ability to vaccinate individuals leading to less severe or lower viral
+  peaks.
+\item
+  Waning of immunity. Tunable.
+\item
+  Secondary milder disease course, on second viral challenge.
+\item
+  Complete elimination of infection possible (or stable very low level
+  of virus).
+\item
+  Chronic infection state possible.
+\end{itemize}
+
+\section{Compartments}\label{compartments}
+
+\(V\) is count of virions.
+
+\(T\) is total target cells, \(S\), susceptible targets, \(E\) is
+``exposed'' targets (infected but not yet producing virus), \(I\) is
+infected ( and producing virus), \(R\), ``removed'' are target cells
+inactivated by immunity.
+
+\(J\) is the total number of immune cells, of which \(D\) are dormant,
+\(P\) are priming, and \(A\) are active.
+
+\(\alpha\) is the fraction of immune to target cells. This affects how
+effective the immune system is at clearing the virus.
+
+\[
+\begin{align}
+V \\
+1 &= S + E + I + R\\
+\alpha &= D + P + A\\
+\end{align}
+\]
+
+\subsection{Virions}\label{virions}
+
+\(X_t\) is the time varying external viral exposure. \(\beta_{neut}\) is
+a rate at which virions are neutralised by the immune system, after
+which they are removed from the system. \(\beta_{inf}\) is a rate at
+which virions infect susceptible target cells. \(\beta_{rep}\) is a rate
+at which infected target cell replicate virus.
+
+A continuous deterministic model might be:
+
+\$\$ \begin{align}
+
+V_{add} &= \beta_{rep} \times I \\
+\beta_{remov} &= \beta_{neut} \times A + \beta_{inf} \times S \\ 
+V_{remov} &= \beta_{remov} \times V \\
+V_{neut} &= \frac{\beta_{neut} \times A}{\beta_{remov}} \times V_{remov} \\
+V_{inf} &= \frac{\beta_{inf} \times S}{\beta_{remov}} \times V_{remov}\\
+
+\frac{dV}{dt} &= X_t - V_{remov} + V_{add}\\
+
+\end{align} \$\$
+
+\subsection{Targets}\label{targets}
+
+The interaction between virions and susceptible target cells has to take
+into account the possibility of multiple virions infecting the same
+cell.
+
+This is different in the stochastic versus the continuous case, as in
+the former we can use the absolute counts to get a precise value for the
+probability of virions interacting with multiple.
+
+\(\beta_{recov}\) is a recovery rate of target cells, \(\beta_{EI}\) is
+the rate ``exposed'' targets convert to ``infected'' cells which produce
+new virions. \(\gamma\) is a relative probability of discovery of
+exposed cells compared to infected.
+
+TODO: think about moving innoculation to S-\textgreater E transition
+rather than adding to viral component. Would need to scale innoculation
+by the immune activity, before the \(\beta_{infcell}\) to get similar
+mucosal immune effect.
+
+\[
+\begin{align}
+\beta_{infcell} &= \beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S}}\bigg) \\
+S_E &= \beta_{infcell} \times S \\
+\beta_{E-} &= \gamma\beta_{neut} \times A + \beta_{EI} \\
+E_{-} &= \beta_{E-} \times E \\
+E_R &= \frac{\gamma\beta_{neut} \times A}{\beta_{E-}} \times E_{-} \\
+E_I &= \frac{\beta_{EI}}{\beta_{E-}} \times E_{-} \\
+I_R &= \beta_{neut} \times A \times I \\
+\frac{dS}{dt} &= \beta_{recov} R - S_E \\
+\frac{dE}{dt} &= S_E - E_{-} \\
+\frac{dI}{dt} &= E_I - I_R\\
+\frac{dR}{dt} &= E_R + I_R - \beta_{recov} R\\ 
+\end{align}
+\]
+
+\subsection{Immunity}\label{immunity}
+
+\(V_t\) is a time varying vaccination dose. \(\beta_{induce}\) is the
+rate at which exposed and infected targets. \(\beta_{PA}\) is the rate
+at which primed immune cells transition to active. \(\beta_{waning}\) is
+the rate at which active immune cells become dormant.
+
+The SEIRS target cell model, with phases susceptible, exposed, producing
+infective virus, regenerating is coupled to a SEIS-like model for
+immunity where the phases as dormant, priming, active, dormant.
+
+\[
+\begin{align}
+D_P &= \beta_{induce} \times \alpha(E+I) \times D \\
+\frac{dD}{dt} &= \beta_{waning} A - D_P \\
+\frac{dP}{dt} &= D_P - \beta_{PA} P \\
+\frac{dA}{dt} &= \beta_{PA} P - \beta_{waning} A\\
+\end{align}
+\]
+
+\section{model implementation}\label{model-implementation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ode }\OtherTok{=} \CommentTok{\#odin.dust::odin\_dust(\{}
+\NormalTok{  odin}\SpecialCharTok{::}\FunctionTok{odin}\NormalTok{(\{}
+  
+  \CommentTok{\# Initial state}
+  
+\NormalTok{  ratio\_immune\_target }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+  
+  \FunctionTok{initial}\NormalTok{(virions) }\OtherTok{=} \DecValTok{0}
+  
+  \FunctionTok{initial}\NormalTok{(target\_susceptible) }\OtherTok{=} \DecValTok{1}
+  \FunctionTok{initial}\NormalTok{(target\_exposed) }\OtherTok{=} \DecValTok{0}
+  \FunctionTok{initial}\NormalTok{(target\_infected) }\OtherTok{=} \DecValTok{0}
+  
+\NormalTok{  target\_removed }\OtherTok{=} \DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ (target\_susceptible }\SpecialCharTok{+}\NormalTok{ target\_exposed }\SpecialCharTok{+}\NormalTok{ target\_infected)}
+  
+  \FunctionTok{initial}\NormalTok{(immune\_priming) }\OtherTok{=} \DecValTok{0}
+  \FunctionTok{initial}\NormalTok{(immune\_active) }\OtherTok{=} \DecValTok{0}
+\NormalTok{  immune\_dormant }\OtherTok{=}\NormalTok{ ratio\_immune\_target }\SpecialCharTok{{-}}\NormalTok{ immune\_priming }\SpecialCharTok{{-}}\NormalTok{ immune\_active}
+  
+  \CommentTok{\# Virions}
+  
+  \FunctionTok{deriv}\NormalTok{(virions) }\OtherTok{=}\NormalTok{ virions\_added }\SpecialCharTok{{-}}\NormalTok{ virions\_removed}
+  
+\NormalTok{  rate\_infection }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{  rate\_virion\_replication }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{2}\NormalTok{)}
+\NormalTok{  rate\_neutralization }\OtherTok{=}\NormalTok{ rate\_virion\_replication}
+  
+\NormalTok{  virions\_added }\OtherTok{=}\NormalTok{ rate\_virion\_replication }\SpecialCharTok{*}\NormalTok{ target\_infected}
+  
+\NormalTok{  rate\_virion\_removal }\OtherTok{=}\NormalTok{ ( rate\_neutralization }\SpecialCharTok{*}\NormalTok{ immune\_active }\SpecialCharTok{+}
+\NormalTok{      rate\_infection }\SpecialCharTok{*}\NormalTok{ target\_susceptible )}
+  
+\NormalTok{  virions\_removed }\OtherTok{=}\NormalTok{ virions }\SpecialCharTok{*}\NormalTok{ rate\_virion\_removal}
+\NormalTok{  virions\_neutralized }\OtherTok{=}\NormalTok{ virions\_removed }\SpecialCharTok{*}\NormalTok{ (rate\_neutralization }\SpecialCharTok{*}\NormalTok{ immune\_active)}\SpecialCharTok{/}\NormalTok{rate\_virion\_removal}
+\NormalTok{  virions\_infecting }\OtherTok{=}\NormalTok{ virions\_removed }\SpecialCharTok{*}\NormalTok{ (rate\_infection }\SpecialCharTok{*}\NormalTok{ target\_susceptible)}\SpecialCharTok{/}\NormalTok{rate\_virion\_removal}
+  
+  
+  
+  \CommentTok{\# Targets}
+  
+  \FunctionTok{deriv}\NormalTok{(target\_susceptible) }\OtherTok{=}\NormalTok{ target\_recovered }\SpecialCharTok{{-}}\NormalTok{ target\_newly\_exposed}
+  \FunctionTok{deriv}\NormalTok{(target\_exposed) }\OtherTok{=}\NormalTok{ target\_newly\_exposed }\SpecialCharTok{{-}}\NormalTok{ target\_exposed\_removed}
+  \FunctionTok{deriv}\NormalTok{(target\_infected) }\OtherTok{=}\NormalTok{ target\_start\_infected }\SpecialCharTok{{-}}\NormalTok{ target\_infected\_removed}
+  
+\NormalTok{  rate\_target\_recovery }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\DecValTok{7}\NormalTok{)}
+\NormalTok{  rate\_infected\_given\_exposed }\OtherTok{=}\NormalTok{ rate\_virion\_replication}
+\NormalTok{  rate\_cellular\_removal }\OtherTok{=}\NormalTok{ rate\_neutralization}
+  
+  
+  \CommentTok{\# https://math.stackexchange.com/questions/32800/probability{-}distribution{-}of{-}coverage{-}of{-}a{-}set{-}after{-}x{-}independently{-}randomly/32816\#32816 in the limit where N is large}
+\NormalTok{  target\_newly\_exposed }\OtherTok{=}\NormalTok{ rate\_infection }\SpecialCharTok{*}\NormalTok{ target\_susceptible }\SpecialCharTok{*}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{{-}}\FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{virions\_infecting}\SpecialCharTok{/}\NormalTok{target\_susceptible))}
+
+\NormalTok{  target\_recovered }\OtherTok{=}\NormalTok{ target\_removed }\SpecialCharTok{*}\NormalTok{ rate\_target\_recovery}
+  
+\NormalTok{  p\_propensity\_chronic }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{0}\NormalTok{)}
+  
+\NormalTok{  rate\_target\_exposed\_removed }\OtherTok{=}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{{-}}\NormalTok{p\_propensity\_chronic) }\SpecialCharTok{*}\NormalTok{ rate\_cellular\_removal }\SpecialCharTok{*}\NormalTok{ immune\_active }\SpecialCharTok{+}
+\NormalTok{    rate\_infected\_given\_exposed}
+\NormalTok{  target\_exposed\_removed }\OtherTok{=}\NormalTok{ target\_exposed }\SpecialCharTok{*}\NormalTok{ rate\_target\_exposed\_removed}
+  
+\NormalTok{  target\_exposed\_neut }\OtherTok{=}\NormalTok{ target\_exposed\_removed }\SpecialCharTok{*}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{{-}}\NormalTok{p\_propensity\_chronic) }\SpecialCharTok{*}\NormalTok{ rate\_cellular\_removal }\SpecialCharTok{*}\NormalTok{ immune\_active }\SpecialCharTok{/}\NormalTok{  rate\_target\_exposed\_removed}
+\NormalTok{  target\_start\_infected }\OtherTok{=}\NormalTok{ target\_exposed\_removed }\SpecialCharTok{*}\NormalTok{ rate\_infected\_given\_exposed }\SpecialCharTok{/}\NormalTok{ rate\_target\_exposed\_removed}
+  
+\NormalTok{  target\_infected\_removed }\OtherTok{=}\NormalTok{ target\_infected }\SpecialCharTok{*}\NormalTok{ rate\_cellular\_removal }\SpecialCharTok{*}\NormalTok{ immune\_active}
+  
+  
+  \CommentTok{\# Immunity}
+  
+  
+  
+\NormalTok{  rate\_priming\_given\_infected }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{  rate\_active\_given\_priming }\OtherTok{=}\NormalTok{ rate\_priming\_given\_infected}
+\NormalTok{  rate\_senescence\_given\_active }\OtherTok{=} \FunctionTok{user}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\DecValTok{150}\NormalTok{)}
+  
+  
+\NormalTok{  immune\_start\_priming }\OtherTok{=}\NormalTok{ immune\_dormant }\SpecialCharTok{*}\NormalTok{ rate\_priming\_given\_infected }\SpecialCharTok{*}\NormalTok{ (target\_exposed}\SpecialCharTok{+}\NormalTok{target\_infected)}
+  
+\NormalTok{  immune\_start\_active }\OtherTok{=}\NormalTok{ immune\_priming }\SpecialCharTok{*}\NormalTok{ rate\_active\_given\_priming}
+
+  \FunctionTok{deriv}\NormalTok{(immune\_priming) }\OtherTok{=}\NormalTok{ immune\_start\_priming }\SpecialCharTok{{-}}\NormalTok{ immune\_start\_active}
+      
+\NormalTok{  immune\_senescence }\OtherTok{=}\NormalTok{ immune\_active }\SpecialCharTok{*}\NormalTok{ rate\_senescence\_given\_active}
+    
+  \FunctionTok{deriv}\NormalTok{(immune\_active) }\OtherTok{=}\NormalTok{ immune\_start\_active }\SpecialCharTok{{-}}\NormalTok{ immune\_senescence}
+  
+  
+  
+\NormalTok{\}, }\AttributeTok{skip\_cache =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required namespace: pkgbuild
+\end{verbatim}
+
+\begin{verbatim}
+## Unused equations: target_exposed_neut, virions_neutralized
+##  target_exposed_neut = target_exposed_removed * (1 - p_propensity_chronic) * 
+##     rate_cellular_removal * immune_active/rate_target_exposed_removed # (line 30)
+##  virions_neutralized = virions_removed * (rate_neutralization * 
+##     immune_active)/rate_virion_removal # (line 17)
+\end{verbatim}
+
+\begin{verbatim}
+## Generating model in c
+\end{verbatim}
+
+\begin{verbatim}
+## i Re-compiling odinb3e2858c (debug build)
+\end{verbatim}
+
+\begin{verbatim}
+## -- R CMD INSTALL ---------------------------------------------------------------
+##      Loading required namespace: usethis
+##      Loading required namespace: tidyr
+##      Loading required namespace: systemfonts
+##      Loading required namespace: svglite
+##      Loading required namespace: stringr
+##      Loading required namespace: scales
+##      Loading required namespace: rsvg
+##      Loading required namespace: rmarkdown
+##      Loading required namespace: readr
+##      Loading required namespace: rappdirs
+##      Loading required namespace: ragg
+##      Loading required namespace: pdftools
+##      Loading required namespace: officer
+##      Loading required namespace: huxtable
+##      Loading required namespace: ggplot2
+##      Loading required namespace: flextable
+##      Loading required namespace: base64enc
+##   -  installing *source* package ‘odinb3e2858c’ ...
+##    ** this is package ‘odinb3e2858c’ version ‘0.0.1’
+##    ** using staged installation
+##      ** libs
+##      using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04.2) 11.4.0’
+##      gcc -I"/usr/share/R/include" -DNDEBUG       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-0RQCNp/r-base-4.5.1=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -UNDEBUG -Wall -pedantic -g -O0 -c odin.c -o odin.o
+##      odin.c: In function ‘odin_metadata’:
+##    odin.c:159:18: warning: unused variable ‘internal’ [-Wunused-variable]
+##      159 |   odin_internal *internal = odin_get_internal(internal_p, 1);
+##          |                  ^~~~~~~~
+##      gcc -I"/usr/share/R/include" -DNDEBUG       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-0RQCNp/r-base-4.5.1=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -UNDEBUG -Wall -pedantic -g -O0 -c registration.c -o registration.o
+##      gcc -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o odinb3e2858c.so odin.o registration.o -L/usr/lib/R/lib -lR
+##      installing to /tmp/Rtmp5fggMt/devtools_install_6170474a8d97/00LOCK-file61703afc9e49/00new/odinb3e2858c/libs
+##      ** checking absolute paths in shared objects and dynamic libraries
+##   -  DONE (odinb3e2858c)
+## 
+\end{verbatim}
+
+\begin{verbatim}
+## i Loading odinb3e2858c
+\end{verbatim}
+
+\subsection{Host factors}\label{host-factors}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp }\OtherTok{=} \FunctionTok{sweep}\NormalTok{(}\AttributeTok{parsDf =} \FunctionTok{tibble}\NormalTok{(}
+  
+  \AttributeTok{ratio\_immune\_target =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.25}\NormalTok{,}\FloatTok{0.5}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{4}\NormalTok{), }\CommentTok{\# \textless{}\textless{} HOST FACTOR, duration and severity of disease, immune activity \& peak of virions, can lead to chronic carrier state}
+  
+  \AttributeTok{p\_propensity\_chronic =} \DecValTok{0}\NormalTok{, }\CommentTok{\#c(0,0.25, 0.5,0.75,1), \# \textless{}\textless{} HOST PROB CHRONIC}
+  
+  \AttributeTok{rate\_priming\_given\_infected =} \DecValTok{1}\NormalTok{, }\CommentTok{\#seq(0.7,1.3,0.1), \# c(0.25,0.5,1,2,4,8), \# severity roughly negatively linear with this. \textless{}\textless{} HOST FACTOR, duration, severity, and peak of virus, immunity fixed and no chrnoic disease effect}
+  
+  \AttributeTok{rate\_senescence\_given\_active =} \DecValTok{1}\SpecialCharTok{/}\DecValTok{150}\NormalTok{, }\CommentTok{\#1/800,}
+  \AttributeTok{rate\_target\_recovery =} \DecValTok{1}\SpecialCharTok{/}\DecValTok{7}\NormalTok{, }\CommentTok{\#1/c(1,3,7,15,30), \# \textless{}\textless{} HOST FACTOR, duration and severity of disease, no effect on peak viral load ? useful for asymptomatics}
+\NormalTok{))}
+
+\NormalTok{tmp }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{plot\_sweep}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{variable, }\StringTok{"ratio immune to target"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `summarise()` has grouped output by 'ratio_immune_target',
+## 'p_propensity_chronic', 'rate_priming_given_infected',
+## 'rate_senescence_given_active', 'rate_target_recovery', 'set', 'step'. You can
+## override using the `.groups` argument.
+\end{verbatim}
+
+\begin{verbatim}
+## [[1]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-4-1.pdf}}
+
+\begin{verbatim}
+## 
+## [[2]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-4-2.pdf}}
+
+\subsection{Viral factors}\label{viral-factors}
+
+rate of virion replication defines how many viral copies are produced
+per infected cells and also how quickly exposed cells transition to
+infected. It is a measure of how effiencetly the virus replicates once
+in the cell
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp }\OtherTok{=} \FunctionTok{sweep}\NormalTok{(}\AttributeTok{parsDf =} \FunctionTok{tibble}\NormalTok{(}
+  
+  \CommentTok{\# shortens GT? worsens severity}
+  \AttributeTok{rate\_virion\_replication =} \DecValTok{4}\NormalTok{, }\CommentTok{\#c(1,2,4,8,16,32), \#1, \#c(1.5,2,2.5), \#c(0.5,1,2,4), \# c(0.5,1,2,4,8), \textless{}\textless{} VIRAL FACTOR}
+  \CommentTok{\# shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?}
+  \AttributeTok{rate\_infection =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.25}\NormalTok{,}\FloatTok{0.5}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{8}\NormalTok{) }\CommentTok{\#1 \#rate\_virion\_replication, \#1, \#c(0.8, 0.9, 1, 1.1, 1.2, 2), \#c(3,2,1,0.5) \# 1/rate\_virion\_replication * 2, \#c(0.25,0.5,1,2,4,8), \# * seq(1,2,0.1),}
+  
+\NormalTok{))}
+
+\NormalTok{tmp }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{plot\_sweep}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{variable, }\StringTok{"infection rate"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `summarise()` has grouped output by 'rate_virion_replication',
+## 'rate_infection', 'set', 'step'. You can override using the `.groups` argument.
+\end{verbatim}
+
+\begin{verbatim}
+## [[1]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-5-1.pdf}}
+
+\begin{verbatim}
+## 
+## [[2]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-5-2.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp2 }\OtherTok{=} \FunctionTok{sweep}\NormalTok{(}\AttributeTok{parsDf =} \FunctionTok{tibble}\NormalTok{(}
+  
+  \CommentTok{\# shortens GT? worsens severity}
+  \AttributeTok{rate\_virion\_replication =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DecValTok{16}\NormalTok{,}\DecValTok{32}\NormalTok{), }\CommentTok{\#1, \#c(1.5,2,2.5), \#c(0.5,1,2,4), \# c(0.5,1,2,4,8), \textless{}\textless{} VIRAL FACTOR}
+  \CommentTok{\# shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?}
+  \AttributeTok{rate\_infection =} \DecValTok{4}\SpecialCharTok{/}\NormalTok{rate\_virion\_replication, }\CommentTok{\#rev(c(0.25,0.5,1,2,4,8)) \#1 \#rate\_virion\_replication, \#1, \#c(0.8, 0.9, 1, 1.1, 1.2, 2), \#c(3,2,1,0.5) \# 1/rate\_virion\_replication * 2, \#c(0.25,0.5,1,2,4,8), \# * seq(1,2,0.1),}
+  
+\NormalTok{))}
+
+\NormalTok{tmp2 }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{plot\_sweep}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{variable, }\StringTok{"virion replication rate"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `summarise()` has grouped output by 'rate_virion_replication',
+## 'rate_infection', 'set', 'step'. You can override using the `.groups` argument.
+\end{verbatim}
+
+\begin{verbatim}
+## [[1]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-6-1.pdf}}
+
+\begin{verbatim}
+## 
+## [[2]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-6-2.pdf}}
+
+The rate of infection defines how quickly virions enter cells. Things
+like spike protein mutations are likely to change this and this is the
+physiological candidate for a more infectious variant (although reduced
+efficiency of clearance could also a factor here).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tmp }\OtherTok{=} \FunctionTok{sweep}\NormalTok{(}\AttributeTok{parsDf =} \FunctionTok{tibble}\NormalTok{(}
+  
+  \CommentTok{\# shortens GT? worsens severity}
+  \AttributeTok{rate\_virion\_replication =} \DecValTok{4}\NormalTok{, }\CommentTok{\#c(1,2,4,8,16,32), \#1, \#c(1.5,2,2.5), \#c(0.5,1,2,4), \# c(0.5,1,2,4,8), \textless{}\textless{} VIRAL FACTOR}
+  \CommentTok{\# shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?}
+  \AttributeTok{rate\_infection =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.25}\NormalTok{,}\FloatTok{0.5}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{8}\NormalTok{) }\CommentTok{\#1 \#rate\_virion\_replication, \#1, \#c(0.8, 0.9, 1, 1.1, 1.2, 2), \#c(3,2,1,0.5) \# 1/rate\_virion\_replication * 2, \#c(0.25,0.5,1,2,4,8), \# * seq(1,2,0.1),}
+  
+\NormalTok{))}
+
+\NormalTok{tmp }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{plot\_sweep}\NormalTok{(}\SpecialCharTok{\textasciitilde{}}\NormalTok{variable, }\StringTok{"infection rate"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `summarise()` has grouped output by 'rate_virion_replication',
+## 'rate_infection', 'set', 'step'. You can override using the `.groups` argument.
+\end{verbatim}
+
+\begin{verbatim}
+## [[1]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-7-1.pdf}}
+
+\begin{verbatim}
+## 
+## [[2]]
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-7-2.pdf}}
+
+\subsection{Invasion and infection}\label{invasion-and-infection}
+
+Infection of the organism can be thought of as the conditions underwhich
+replication in host is established. This is analagous to R0 in a SEIR
+model. At the disease free equilibrium point we consider the next
+generation matrices of the infected classes E and I.
+
+\[
+\begin{align}
+\beta_{infcell} &= \beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S}}\bigg) \\
+S_E &= \beta_{infcell} \times S \\
+\beta_{E-} &= \gamma\beta_{neut} \times A + \beta_{EI} \\
+E_{-} &= \beta_{E-} \times E \\
+E_R &= \frac{\gamma\beta_{neut} \times A}{\beta_{E-}} \times E_{-} \\
+E_I &= \frac{\beta_{EI}}{\beta_{E-}} \times E_{-} \\
+I_R &= \beta_{neut} \times A \times I \\
+\frac{dS}{dt} &= \beta_{recov} R - S_E \\
+\frac{dE}{dt} &= S_E - E_{-} \\
+\frac{dI}{dt} &= E_I - I_R\\
+\frac{dR}{dt} &= E_R + I_R - \beta_{recov} R\\ 
+\end{align}
+\]
+
+linearize at disease free equilibrium, and assume known value for A
+
+S = 1, E=I=R=0;
+
+\[
+\begin{align}
+\dot{E} &= \beta_{infcell}I - (\gamma\beta_{neut} \times A + \beta_{EI}) \times E\\
+\dot{I} &= \beta_{EI} \times E - \beta_{neut} \times A \times I \\
+\end{align}
+\]
+
+\[
+\begin{align}
+F &= \begin{bmatrix}
+0 & \beta_{infcell}S_0\\
+0 & 0
+\end{bmatrix} \\
+V &= \begin{bmatrix}
+- (\gamma\beta_{neut} \times A + \beta_{EI}) & 0 \\
+\beta_{EI} & - \beta_{neut} \times A
+\end{bmatrix} \\
+\end{align}
+\]
+
+\[
+\begin{align}
+R_0 &= \frac{\beta_{EI}S_0\beta_{infcell}}{(\gamma\beta_{neut} \times A + \beta_{EI})(\beta_{neut} \times A)} \\
+R_0 &= \frac{\beta_{EI}S_0\beta_{inf} \times \bigg(1-e^{-\frac{V_{inf}}{S_0}}\bigg)}{(\gamma\beta_{neut} \times A + \beta_{EI})(\beta_{neut} \times A)} \\
+\end{align}
+\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mod }\OtherTok{=}\NormalTok{ ode}\SpecialCharTok{$}\FunctionTok{new}\NormalTok{()}
+\NormalTok{tmp }\OtherTok{=}\NormalTok{ mod}\SpecialCharTok{$}\FunctionTok{run}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{1}\NormalTok{))}
+\NormalTok{conditions }\OtherTok{=}\NormalTok{ tmp[}\DecValTok{2}\NormalTok{,}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{]}
+
+\NormalTok{R0 }\OtherTok{=} \ControlFlowTok{function}\NormalTok{(conditions, }\AttributeTok{params =}\NormalTok{ mod}\SpecialCharTok{$}\FunctionTok{contents}\NormalTok{()) \{}
+\NormalTok{  tmp }\OtherTok{=} \FunctionTok{c}\NormalTok{(conditions,params)}
+  \FunctionTok{with}\NormalTok{(tmp, \{}
+\NormalTok{    (rate\_infected\_given\_exposed }\SpecialCharTok{*}\NormalTok{ target\_susceptible }\SpecialCharTok{*}\NormalTok{ rate\_infection }\SpecialCharTok{*}\NormalTok{ (}\DecValTok{1}\SpecialCharTok{{-}}\FunctionTok{exp}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{virions}\SpecialCharTok{/}\NormalTok{target\_susceptible))) }\SpecialCharTok{/} 
+\NormalTok{      (((}\DecValTok{1}\SpecialCharTok{{-}}\NormalTok{p\_propensity\_chronic) }\SpecialCharTok{*}\NormalTok{ rate\_neutralization }\SpecialCharTok{*}\NormalTok{ immune\_active }\SpecialCharTok{+}\NormalTok{ rate\_infected\_given\_exposed) }\SpecialCharTok{*}\NormalTok{ (rate\_neutralization }\SpecialCharTok{*}\NormalTok{ immune\_active))}
+\NormalTok{  \})}
+\NormalTok{\}}
+
+
+
+\NormalTok{conditions[[}\StringTok{"immune\_active"}\NormalTok{]] }\OtherTok{=} \FloatTok{0.7}
+\NormalTok{conditions[[}\StringTok{"virions"}\NormalTok{]] }\OtherTok{=} \FloatTok{0.01}
+\FunctionTok{R0}\NormalTok{(conditions)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.004180742
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{y }\OtherTok{=}\NormalTok{ mod}\SpecialCharTok{$}\FunctionTok{run}\NormalTok{(}\FunctionTok{seq}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{100}\NormalTok{,}\FloatTok{0.1}\NormalTok{), }\AttributeTok{y=}\NormalTok{ conditions)}
+
+\FunctionTok{plot}\NormalTok{(y)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{in-host-ode_files/figure-latex/unnamed-chunk-8-1.pdf}}
+
+\end{document}

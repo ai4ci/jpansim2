@@ -5,7 +5,7 @@ import java.util.Optional;
 import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.inhost.ImmutableInHostPhenomenologicalState;
 import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState;
-import io.github.ai4ci.abm.inhost.ExposureModel.BiPhasicLogistic;
+import io.github.ai4ci.abm.inhost.InHostPhenomenologicalState.BiPhasicLogistic;
 import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.util.ReflectionUtils;

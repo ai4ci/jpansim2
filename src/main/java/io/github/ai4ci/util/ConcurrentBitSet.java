@@ -4,6 +4,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.function.Function;
 
+@Deprecated
 public class ConcurrentBitSet {
 
 	    private static final int WORD_SIZE = Byte.SIZE;

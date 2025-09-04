@@ -12,8 +12,11 @@ import org.apache.commons.statistics.distribution.PascalDistribution;
 import org.apache.commons.statistics.distribution.PoissonDistribution;
 
 import java.util.Optional;
-import java.util.Random;
 
+/**
+ * A thread local RNG provider, that can provide one shot samples from a 
+ * range of parameterised distributions.
+ */
 public class Sampler implements UniformRandomProvider {
 
 	private static ThreadLocal<Sampler> INSTANCE = ThreadLocal.withInitial(() -> new Sampler()); 

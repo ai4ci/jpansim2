@@ -8,15 +8,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
+import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.ExoticDistributions;
 import io.github.ai4ci.util.Sampler;
-import io.github.ai4ci.util.SplineInterpolator;
 
 @JsonTypeInfo(use = Id.NAME, requireTypeIdForSubtypes = OptBoolean.TRUE)
 @JsonSubTypes( {
@@ -34,8 +34,8 @@ public interface DemographicConfiguration extends Serializable {
 	 * network. 
 	 */
 	@JsonIgnore
-	@Value.Lazy default SplineInterpolator getEuclidianDistanceCDF() {
-		return ExoticDistributions.getEuclidianDistanceDistribution().getCDF();
+	@Value.Lazy default EmpiricalDistribution getEuclidianDistanceCDF() {
+		return ExoticDistributions.getEuclidianDistanceDistribution();
 	}
 	
 	/**
@@ -47,7 +47,7 @@ public interface DemographicConfiguration extends Serializable {
 		var dist = Math.sqrt(
 			Math.pow(one.getDemographic().getLocationX()-two.getDemographic().getLocationX(),2)+
 			Math.pow(one.getDemographic().getLocationY()-two.getDemographic().getLocationY(),2)
-		);
-		return 1-getEuclidianDistanceCDF().interpolate(dist);
+		) / Math.sqrt(2.0);
+		return 1 - getEuclidianDistanceCDF().getCumulative(dist);
 	}
 }

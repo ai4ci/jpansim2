@@ -15,6 +15,7 @@ import io.github.ai4ci.abm.mechanics.Abstraction;
 public interface FixedValueFunction extends Serializable, Abstraction.SimpleFunction {
 
 	double getValue();
+	
 	default double value(double x) {
 		return getValue();
 	}

@@ -5,7 +5,6 @@ import java.io.Serializable;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.mechanics.StateMachine.PolicyState;
-import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.util.DelayDistribution;
 
 @Value.Immutable
@@ -54,7 +53,7 @@ public interface OutbreakBaseline extends Serializable {
 	 * transmission will occur given a particular viral load. This is calibrated
 	 * using the viral load profile and an overall probability of per edge
 	 * transmission.
-	 * {@link Calibration#inferViralLoadTransmissionProbabilityFactor(Outbreak, double)}
+	 * {@link Calibration#inferViralLoadTransmissionParameter(Outbreak, double)}
 	 */
 	double getViralLoadTransmissibilityParameter();
 

@@ -2,17 +2,17 @@
 title: "In host viral load model"
 author: "Rob Challen"
 date: "`r Sys.Date()`"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-here::i_am("in-host-ode.qmd")
+here::i_am("in-host-ode.Rmd")
 library(tidyverse)
 
-# install.packages(
-#   c("odin","odin.dust","dust"),
-#   repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
+if (!requireNamespace("odin")) install.packages(
+  c("odin","odin.dust","dust"),
+  repos = c("https://mrc-ide.r-universe.dev", "https://cloud.r-project.org"))
 
 ```
 
@@ -36,7 +36,7 @@ viral challenge
 * Chronic infection state possible.
 
 
-```{r}
+```{r, include=FALSE}
 rendered = dtrackr::save_dot("
 digraph { 
   subgraph cluster_virions {
@@ -287,7 +287,7 @@ ode = #odin.dust::odin_dust({
 
 
 
-```{r}
+```{r, include=FALSE}
 run_to_step = function(mod, i, infectFn = \(.x) {if (.x %% 50 == 5) 0.02 else 0}, vaccFn = \(.x) 0) {
   
   infectFn = rlang::as_function(infectFn)
@@ -316,9 +316,6 @@ run_to_step = function(mod, i, infectFn = \(.x) {if (.x %% 50 == 5) 0.02 else 0}
   return(timeseries)
   
 }
-```
-
-```{r}
 
 # ts = run_to_step(mod,100)
 
@@ -345,7 +342,7 @@ sweep = function(parsDf = tibble::tibble(boot=1), maxtime = 399, mod = ode$new()
   )
 }
 
-plot_sweep = function(tmp, facets = ~variable) {
+plot_sweep = function(tmp, facets = ~variable, name) {
   
   tmp = tmp %>% 
     filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
@@ -360,24 +357,17 @@ plot_sweep = function(tmp, facets = ~variable) {
   ggplot(tmp,aes(x=step-5,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     facet_wrap(facets,scales = "free_y")+
-    guides(colour=guide_legend(position="bottom"))+
+    guides(colour=guide_legend(position="bottom", title=name))+
     coord_cartesian(xlim=c(NA,50))
   )
 } 
 
 
-
-```
-
-
-
-```{r}
-
-tmp = sweep(parsDf = tibble(
-  rate_virion_replication = seq(1,5,1)
-))
-
-tmp %>% plot_sweep()
+# tmp = sweep(parsDf = tibble(
+#   rate_virion_replication = seq(1,5,1)
+# ))
+# 
+# tmp %>% plot_sweep("virion replication rate")
 
 ```
 
@@ -397,7 +387,7 @@ tmp = sweep(parsDf = tibble(
   rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no effect on peak viral load ? useful for asymptomatics
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep(~variable, "ratio immune to target")
 
 
 
@@ -421,7 +411,7 @@ tmp = sweep(parsDf = tibble(
   
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep(~variable, "infection rate")
 ```
 
 
@@ -435,7 +425,7 @@ tmp2 = sweep(parsDf = tibble(
   
 ))
 
-tmp2 %>% plot_sweep(~variable)
+tmp2 %>% plot_sweep(~variable, "virion replication rate")
 
 ```
 
@@ -454,60 +444,60 @@ tmp = sweep(parsDf = tibble(
   
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep(~variable, "infection rate")
 ```
 
-## Peaks and phases
+<!-- ## Peaks and phases -->
 
-```{r}
+<!-- ```{r} -->
 
-tmp2 = sweep(parsDf = tibble(
-  
-  ratio_immune_target = 1, #c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chrnoic carrier state
-  
-  # shortens GT? worsens severity
-  rate_virion_replication = 4, #c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR
-  # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?
-  rate_infection = 1, #c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
-  rate_infected_given_exposed = 1, #rate_virion_replication, #rate_infection,
-  
-  rate_neutralization = rate_virion_replication * 1, #c(0.25,0.5,1,2,4),
-  rate_cellular_removal = rate_neutralization, # * c(0.25,0.5,1,2,4),
-  p_propensity_chronic = 0, #c(0,0.25, 0.5,0.75,1), # << HOST PROB CHRONIC
-  
-  rate_priming_given_infected = rnorm(50,1,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect
-  rate_active_given_priming = rate_priming_given_infected, #* c(1,2,4,8), #c(0.5,1,2,4,8),
-  
-  rate_senescence_given_active = 1/150, #1/800,
-  rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics
-))
+<!-- tmp2 = sweep(parsDf = tibble( -->
 
-# tmp2 %>% glimpse()
+<!--   ratio_immune_target = 1, #c(0.25,0.5,1,2,4), # << HOST FACTOR, duration and severity of disease, immune activity & peak of virions, can lead to chrnoic carrier state -->
 
-tmp3 = tmp2 %>% 
-  filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
-  mutate(phase = (step %/% 100)+1) %>%
-  group_by(across(-c(step,value,boot))) %>%
-  summarise(
-    peak = max(value),
-    minima = min(value)
-  ) %>%
-  glimpse()
+<!--   # shortens GT? worsens severity -->
+<!--   rate_virion_replication = 4, #c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR -->
+<!--   # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir? -->
+<!--   rate_infection = 1, #c(0.25,0.5,1,2,4,8) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1), -->
+<!--   rate_infected_given_exposed = 1, #rate_virion_replication, #rate_infection, -->
 
-ggplot(tmp3 %>% filter(variable == "virions", phase == 1))+
-  geom_density(aes(x=peak, colour=as.factor(phase)))+
-  facet_wrap(~variable,scales="free")
-  
+<!--   rate_neutralization = rate_virion_replication * 1, #c(0.25,0.5,1,2,4), -->
+<!--   rate_cellular_removal = rate_neutralization, # * c(0.25,0.5,1,2,4), -->
+<!--   p_propensity_chronic = 0, #c(0,0.25, 0.5,0.75,1), # << HOST PROB CHRONIC -->
 
-lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", phase == 1))
-lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", phase == 4))
+<!--   rate_priming_given_infected = rnorm(50,1,0.1), # c(0.25,0.5,1,2,4,8), # severity roughly negatively linear with this. << HOST FACTOR, durantion, severity, and peak of virus, immunity fixed and no chrnoic disease effect -->
+<!--   rate_active_given_priming = rate_priming_given_infected, #* c(1,2,4,8), #c(0.5,1,2,4,8), -->
 
-# ggplot(tmp3)+
-#   geom_density(aes(x=as.factor(set), ymin=minima,ymax=peak))+
-#   geom_errorbar(aes(x=as.factor(set), ymin=minima,ymax=peak))+
-#   facet_wrap(~variable,scales="free_x")
+<!--   rate_senescence_given_active = 1/150, #1/800, -->
+<!--   rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics -->
+<!-- )) -->
 
-```
+<!-- # tmp2 %>% glimpse() -->
+
+<!-- tmp3 = tmp2 %>%  -->
+<!--   filter(variable %in% c("virions","target_susceptible","immune_active")) %>% -->
+<!--   mutate(phase = (step %/% 100)+1) %>% -->
+<!--   group_by(across(-c(step,value,boot))) %>% -->
+<!--   summarise( -->
+<!--     peak = max(value), -->
+<!--     minima = min(value) -->
+<!--   ) %>% -->
+<!--   glimpse() -->
+
+<!-- ggplot(tmp3 %>% filter(variable == "virions", phase == 1))+ -->
+<!--   geom_density(aes(x=peak, colour=as.factor(phase)))+ -->
+<!--   facet_wrap(~variable,scales="free") -->
+
+
+<!-- lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", phase == 1)) -->
+<!-- lm(peak ~ rate_priming_given_infected, tmp3 %>% filter(variable == "virions", phase == 4)) -->
+
+<!-- # ggplot(tmp3)+ -->
+<!-- #   geom_density(aes(x=as.factor(set), ymin=minima,ymax=peak))+ -->
+<!-- #   geom_errorbar(aes(x=as.factor(set), ymin=minima,ymax=peak))+ -->
+<!-- #   facet_wrap(~variable,scales="free_x") -->
+
+<!-- ``` -->
 
 
 ## Invasion and infection

@@ -1,7 +1,5 @@
 package io.github.ai4ci.util;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;

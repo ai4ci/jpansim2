@@ -4,6 +4,7 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.util.EmpiricalDistribution;
 import io.github.ai4ci.util.HistogramDistribution;
 import io.github.ai4ci.util.Sampler;
 
@@ -17,7 +18,7 @@ public class TestEmpirical {
 					i -> Sampler.getSampler().normal(5, 2)
 		).toArray();
 		
-		HistogramDistribution dist = HistogramDistribution.fromData(samples);
+		EmpiricalDistribution dist = EmpiricalDistribution.fromData(samples);
 		
 		System.out.println(dist.getCentral());
 		System.out.println(dist.getCumulative(5));
