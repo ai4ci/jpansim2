@@ -1,0 +1,125 @@
+@startuml stochastic-model
+
+!define VIRIONS_COLOR #FF6B6B
+!define TARGETS_COLOR #4ECDC4
+!define IMMUNE_COLOR #40A040
+!define TRANSITION_COLOR #333333
+!define POSITIVE_COLOR #27AE60
+!define NEGATIVE_COLOR #E74C3C
+
+title InHostStochasticState - Stochastic In-Host Viral Dynamics Model
+
+skinparam state {
+    BackgroundColor<<Virions>> VIRIONS_COLOR
+    BackgroundColor<<Targets>> TARGETS_COLOR
+    BackgroundColor<<Immune>> IMMUNE_COLOR
+    BackgroundColor<<External>> #F7DC6F
+    FontSize 12
+    BorderColor #333333
+}
+
+skinparam arrow {
+    Color TRANSITION_COLOR
+    FontSize 10
+}
+
+' === VIRIONS COMPARTMENT ===
+state "Virions" as VirionsCompartment <<Virions>> {
+    note as Nvirions
+    <b>Virion Parameters:</b>
+    - rate_infection: Infection rate
+    - rate_virion_replication: Replication rate
+    - p_infection: Infection probability
+    - p_neutralization: Clearance probability
+    end note
+    state "Free Virions" as FreeVirions : Viral particles in circulation
+    state "Neutralized" as Neutralized : Cleared by immune system
+    state "Infecting" as Infecting : Binding to target cells
+    state "Produced" as Produced : New virions from infected cells
+    
+    FreeVirions --> Neutralized : p_neutralization
+    FreeVirions --> Infecting : p_infection
+    Produced --> FreeVirions : Viral replication
+    Infecting --> [*] : Successful infection
+    Neutralized --> [*] : Immune clearance
+}
+
+' === TARGET CELLS COMPARTMENT ===
+state "Target Cells" as TargetCompartment <<Targets>> {
+    note as Ntarget
+    <b>Target Parameters:</b>
+    - rate_target_recovery: Recovery rate
+    - p_infected_given_exposed: Progression rate
+    - p_target_cellular_removal: Immune clearance
+    - p_propensity_chronic: Chronic infection
+    end note
+    state "Susceptible" as Susceptible : Healthy target cells
+    state "Exposed" as Exposed : Latently infected
+    state "Infected" as Infected : Actively producing virions
+    state "Removed" as Removed : Dead/recovered cells
+    
+    [*] --> Susceptible
+    Susceptible --> Exposed : Virion interaction
+    Exposed --> Infected : p_infected_given_exposed
+    Exposed --> Removed : Immune clearance
+    Infected --> Removed : Cellular removal
+    Removed --> Susceptible : Target recovery
+}
+
+' === IMMUNE CELLS COMPARTMENT ===
+state "Immune Cells" as ImmuneCompartment <<Immune>> {
+    note as Nimmune
+    <b>Immune Parameters:</b>
+    - rate_priming_given_infected: Priming rate
+    - rate_active_given_priming: Activation rate
+    - rate_senescence_given_active: Waning rate
+    - immune_target_ratio: Immune:Target ratio
+    end note
+    state "Dormant" as Dormant : Naive/memory cells
+    state "Priming" as Priming : Antigen recognition
+    state "Active" as Active : Effector cells
+    state "Senescence" as Senescence : Waning immunity
+    
+    [*] --> Dormant
+    Dormant --> Priming : p_priming_given_infected
+    Priming --> Active : p_active_given_priming
+    Active --> Senescence : p_senescence_given_active
+    Senescence --> Dormant : Immune memory
+}
+
+' === EXTERNAL INPUTS ===
+state "External Inputs" as ExternalCompartment <<External>> {
+    note as Nexternal
+    <b>Model Features:</b>
+    - Discrete-time stochastic simulation
+    - Binomial/Poisson sampling for events
+    - Coverage problem for virion-target interaction
+    - Immune activity modulates clearance
+    - Support for chronic infections
+    - External inputs (exposure, immunization)
+    end note
+    state "Virion Exposure" as VirionExposure : External infection
+    state "Immunization" as Immunization : Vaccine/booster
+}
+
+' === CROSS-COMPARTMENT INTERACTIONS ===
+' Virions -> Targets (Positive: Viral replication)
+Infecting -[dashed,POSITIVE_COLOR]-> Exposed : target_newly_exposed
+Infected -[dashed,POSITIVE_COLOR]-> Produced : virions_added
+
+' Targets -> Immune (Positive: Immune activation)
+Exposed -[dashed,POSITIVE_COLOR]-> Priming : immune_start_priming
+Infected -[dashed,POSITIVE_COLOR]-> Priming : immune_start_priming
+
+' Immune -> Virions (Negative: Viral clearance)
+Active -[dashed,NEGATIVE_COLOR]-> Neutralized : virions_neutralized
+
+' Immune -> Targets (Negative: Cell removal)
+Active -[dashed,NEGATIVE_COLOR]-> Exposed : target_exposed_removal
+Active -[dashed,NEGATIVE_COLOR]-> Infected : target_infected_removed
+
+' External -> System (Positive: System inputs)
+VirionExposure -[dashed,POSITIVE_COLOR]-> FreeVirions : virionExposure
+Immunization -[dashed,POSITIVE_COLOR]-> Priming : immunePriming
+
+@enduml

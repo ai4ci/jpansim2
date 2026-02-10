@@ -1,0 +1,116 @@
+@startuml Lockdown State Machine Interactions
+
+!define POLICY_COLOR #4ECDC4
+!define BEHAVIOR_COLOR #FF6B6B
+!define DECISION_COLOR #45B7D1
+!define TRANSITION_COLOR #333333
+
+title Reactive Lockdown Policy and Isolation Behavior State Interactions
+
+skinparam state {
+    BackgroundColor<<Policy>> POLICY_COLOR
+    BackgroundColor<<Behavior>> BEHAVIOR_COLOR
+    BackgroundColor<<Decision>> DECISION_COLOR
+    FontSize 12
+    BorderColor #333333
+}
+
+skinparam arrow {
+    Color TRANSITION_COLOR
+    FontSize 10
+}
+
+' === POLICY STATE MACHINE ===
+state "Policy State Machine" as PolicyMachine <<Policy>> {
+    
+    state "MONITOR" as MonitorState <<Policy>> {
+        state "Routine Screening" as MonitorScreening : Performs population-wide\nscreening tests
+        state "Threshold Monitoring" as MonitorThreshold : Continuously monitors\ntest positivity rates
+    }
+    
+    state "LOCKDOWN" as LockdownState <<Policy>> {
+        state "Active Screening" as LockdownScreening : Continues screening\nto monitor effectiveness
+        state "Isolation Enforcement" as LockdownEnforcement : Enforces population-wide\nisolation measures
+    }
+    
+    MonitorState --> LockdownState : Lockdown triggered
+    LockdownState --> MonitorState : Lockdown released
+}
+
+' === BEHAVIOR STATE MACHINE ===
+state "Behavior State Machine" as BehaviorMachine <<Behavior>> {
+    
+    state "ISOLATE" as IsolateState <<Behavior>> : Immediately reduces mobility\nto minimum levels\n• Sets mobility to self-isolation depth\n• Branches from previous behavior
+    
+    state "WAIT" as WaitState <<Behavior>> : Maintains lockdown compliance\n• Applies compliance fatigue\n• Monitors for non-compliance
+    
+    state "RELEASE" as ReleaseState <<Behavior>> : Gradual behavior restoration\n• Sets mobility to 125% baseline\n• 10-day gradual restoration\n• Returns to pre-lockdown state
+    
+    IsolateState --> WaitState : Mobility reduced
+    WaitState --> ReleaseState : Lockdown released
+}
+
+' === DECISION NODES ===
+state "Lockdown Decision" as LockdownDecision <<Decision>> {
+    state "Check Start Threshold" as StartCheck : current.getLockdownTrigger()\n.confidentlyGreaterThan(\n    getLockdownStartTrigger(), 0.95)
+}
+
+state "Release Decision" as ReleaseDecision <<Decision>> {
+    state "Check Release Threshold" as ReleaseCheck : current.getLockdownTrigger()\n.confidentlyLessThan(\n    getLockdownReleaseTrigger(), 0.95)
+}
+
+state "Compliance Decision" as ComplianceDecision <<Decision>> {
+    state "Check Compliance" as ComplianceCheck : !person.isCompliant()
+}
+
+' === POLICY -> BEHAVIOR TRANSITIONS ===
+LockdownDecision --> IsolateState : branchPeopleTo(current, LockdownIsolation.ISOLATE)
+ReleaseDecision --> ReleaseState : branchPeopleTo(current, LockdownIsolation.RELEASE)
+
+' === BEHAVIOR TRANSITION LOGIC ===
+WaitState --> ComplianceDecision : Evaluate compliance
+ComplianceDecision --> WaitState : person.isCompliant()\ncomplianceFatigue(builder,person)
+ComplianceDecision --> ReleaseState : !person.isCompliant()\ntoLastBranchPoint(context)
+
+' === EXTERNAL INFLUENCES ===
+state "External Triggers" as External <<Policy>> {
+    state "Test Positivity" as TestPositivity : Monitored through\ncurrent.getLockdownTrigger()
+    state "Configuration" as Config : ModelNav.modelParam(current)\n.getLockdown[Start|Release]Trigger()
+}
+
+TestPositivity --> LockdownDecision : Provides trigger data
+Config --> LockdownDecision : Provides threshold values
+Config --> ReleaseDecision : Provides threshold values
+
+' === SCREENING OPERATIONS ===
+note right of MonitorState
+<b>Monitoring Operations:</b>
+- randomlyScreen(current, rng)
+- Population-wide testing
+- Test positivity calculation
+end note
+
+note right of LockdownState
+<b>Lockdown Operations:</b>
+- Continues screening
+- Isolation enforcement
+- Compliance monitoring
+end note
+
+' === BEHAVIOR IMPACT ===
+note right of BehaviorMachine
+<b>Behavior Changes:</b>
+• <b>ISOLATE</b>: decreaseSociabilityStrictly()
+• <b>WAIT</b>: complianceFatigue()
+• <b>RELEASE</b>: graduallyRestoreBehaviour(10,...)
+• Mobility modifier changes
+• Compliance level adjustments
+end note
+
+' === STATISTICAL CONFIDENCE ===
+note bottom of LockdownDecision
+<b>Statistical Confidence:</b>
+All threshold comparisons use\n95% confidence intervals to\nprevent premature decisions\nbased on random fluctuations
+end note
+
+@enduml

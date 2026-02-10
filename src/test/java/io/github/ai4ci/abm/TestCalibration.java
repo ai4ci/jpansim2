@@ -4,50 +4,32 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.DefaultConfiguration;
 import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.abm.behaviour.NonCompliant;
 import io.github.ai4ci.abm.policy.NoControl;
-import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
-import io.github.ai4ci.config.setup.PartialSetupConfiguration;
+import io.github.ai4ci.functions.DelayDistribution;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.DelayDistribution;
-import io.github.ai4ci.util.ImmutableDelayDistribution;
+import io.github.ai4ci.functions.ImmutableDelayDistribution;
 
 class TestCalibration {
 	
-	{
-		Configurator.initialize(new DefaultConfiguration());
-	    Configurator.setRootLevel(Level.INFO);
-	}
 	Outbreak out = TestUtils.mockOutbreak();
 	
 	@Test
 	void testR0() {
 		
-		
-		
-		Outbreak out2 = TestUtils.builder
-				.setSetupTweak(
-					PartialSetupConfiguration.builder()
-						.setNetwork(BarabasiAlbertConfiguration.DEFAULT
+		Outbreak out2 = TestUtils.defaultWithAdjustments(
+				setup -> setup.setNetwork(BarabasiAlbertConfiguration.DEFAULT
 								.withNetworkSize(500)
-								.withNetworkDegree(100)
-						)
-						.build())
-				.setExecutionTweak(
-					PartialExecutionConfiguration.builder()
+								.withNetworkDegree(100)),
+				exec -> exec
 						.setR0(3.0)
 						.setDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
-						.build()
-				)
-				.build().getOutbreak(); 
+				).getOutbreak(); 
 		
 		System.out.println("average social network degree: "+out2.getSocialNetwork().size()*2 / out2.getPopulationSize());
 		
@@ -109,7 +91,6 @@ class TestCalibration {
 		ImmutableDelayDistribution dd = (ImmutableDelayDistribution) InHostConfiguration.getInfectivityProfile(
 				out.getExecutionConfiguration(), param30, 100, 100);
 		dd = dd.withPAffected(0.4);
-		System.out.println(dd.totalHazard(0.2)+"\n");
 		
 		Arrays.stream(
 		InHostConfiguration.getViralLoadProfile(

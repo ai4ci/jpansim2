@@ -6,6 +6,14 @@ import java.util.stream.IntStream;
 import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.functions.EmpiricalDistribution;
+import io.github.ai4ci.functions.EmpiricalFunction;
+import io.github.ai4ci.functions.LinkFunction;
+import io.github.ai4ci.functions.ResampledDistribution;
+import io.github.ai4ci.functions.SimpleDistribution;
+import io.github.ai4ci.functions.ImmutableEmpiricalDistribution;
+import io.github.ai4ci.functions.ImmutableEmpiricalFunction;
+
 class TestDistribution {
 
 	static EmpiricalDistribution testAgeDist = ImmutableEmpiricalDistribution.builder()
@@ -40,7 +48,7 @@ class TestDistribution {
 				.setCumulativeProbability(0.1,0.5,0.75,0.9)
 				.setLink(LinkFunction.LOG)
 				.build();
-		System.out.println(dist.getCentral());
+		System.out.println(dist.getMean());
 		System.out.println(dist.sample());
 		System.out.println(dist.getMedian());
 		System.out.println(dist.getCumulative(25));
@@ -62,10 +70,10 @@ class TestDistribution {
 		ResampledDistribution dist = SimpleDistribution.gamma(5D, 2D).combine(
 				SimpleDistribution.beta(0.5, 0.2), (d1,d2) -> d1+d2);
 		
-		System.out.println(dist.getCentral());
+		System.out.println(dist.getMean());
 		System.out.println(dist.sample());
 		System.out.println(dist.getMedian());
-		System.out.println(dist.getInterpolation().getCentral());
+		System.out.println(dist.getInterpolation().getMean());
 		System.out.println(dist.getInterpolation().getMedian());
 		System.out.println(dist.getCumulative(2.5));
 		

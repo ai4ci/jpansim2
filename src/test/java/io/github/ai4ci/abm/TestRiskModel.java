@@ -3,18 +3,14 @@ package io.github.ai4ci.abm;
 import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
-import io.github.ai4ci.abm.mechanics.Updater;
-import io.github.ai4ci.config.PartialExecutionConfiguration;
 import io.github.ai4ci.config.inhost.MarkovStateModel;
+import io.github.ai4ci.flow.mechanics.Updater;
 
 public class TestRiskModel {
 
-	TestUtils config = ImmutableTestUtils.builder().setExecutionTweak(
-			PartialExecutionConfiguration.builder()
-				.setInHostConfiguration(MarkovStateModel.DEFAULT)
-				.build()
-		).build();
-		
+	TestUtils config = TestUtils.defaultWithExecution(
+		exec -> exec.setInHostConfiguration(MarkovStateModel.DEFAULT)
+	);
 
 @Test
 void testRiskModel() {

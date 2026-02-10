@@ -5,15 +5,24 @@ import java.lang.Thread.State;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.mariuszgromada.math.mxparser.License;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ai4ci.config.ExecutionConfiguration;
 import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.flow.output.SimulationExporter;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 
+/**
+ * There is one monitor thread running during the simulation. It keeps track
+ * of the number of threads in use and available memory. If there is available 
+ * memory it will poll for a new simulation to be created by the factory. If
+ * there are queued simulations ready to be run it will spawn a new thread and 
+ * execute them (individual simulations will be processed in parallel also).
+ */
 public class SimulationMonitor implements Runnable {
 
 	private static final long WAIT_FOR_MEMORY = 5*60*1000;
@@ -25,7 +34,7 @@ public class SimulationMonitor implements Runnable {
 	static Logger log = LoggerFactory.getLogger(SimulationMonitor.class);
 	
 	SimulationFactory factory;
-	StateExporter exporter;
+	SimulationExporter exporter;
 	
 	int duration;
 	
@@ -33,6 +42,9 @@ public class SimulationMonitor implements Runnable {
 	volatile private boolean halt = false;
 	
 	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory) throws IOException {
+		
+		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
+		
 		this.exporter = config.exporter(baseDirectory);
 		exporter.writeInputConfiguration(config);
 		List<SetupConfiguration> setups = config.getBatchSetupList();

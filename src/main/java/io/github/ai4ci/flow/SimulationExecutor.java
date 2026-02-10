@@ -1,12 +1,16 @@
 package io.github.ai4ci.flow;
 
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.abm.mechanics.Updater;
+import io.github.ai4ci.flow.mechanics.Updater;
+import io.github.ai4ci.flow.output.SimulationExporter;
 import io.github.ai4ci.util.PauseableThread;
 
 /**
  * Executes a single simulation to completion under supervision by the monitor.
- * The monitor 
+ * The monitor will throttle running simulations by pausing simulation threads
+ * if memory is getting tight. The executor does the main loop of exporting 
+ * data from the simulation (via {@link SimulationExporter}) and then incrementing the 
+ * time of the simulation (via {@link io.github.ai4ci.flow.mechanics.Updater}).
  */
 public class SimulationExecutor extends PauseableThread {
 
@@ -16,9 +20,9 @@ public class SimulationExecutor extends PauseableThread {
 	
 	Outbreak outbreak;
 	Updater updater;
-	StateExporter exporter;
+	SimulationExporter exporter;
 	
-	public SimulationExecutor(SimulationMonitor mon, Outbreak outbreak, StateExporter exporter, int toStep) {
+	public SimulationExecutor(SimulationMonitor mon, Outbreak outbreak, SimulationExporter exporter, int toStep) {
 		super("Simulation runner: "+outbreak.getUrn(), 9);
 		this.mon = mon;
 		this.outbreak = outbreak;

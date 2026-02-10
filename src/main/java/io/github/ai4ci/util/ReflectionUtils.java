@@ -9,21 +9,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import io.github.ai4ci.abm.PersonDemographic;
-import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
-import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
-import io.github.ai4ci.abm.mechanics.Abstraction.SimpleFunction;
-import io.github.ai4ci.config.DemographicAdjustment.Scale;
-import io.github.ai4ci.config.DemographicAdjustment.ScaleType;
-import io.github.ai4ci.config.PartialDemographicAdjustment;
 
+import org.immutables.datatype.Datatype;
+
+import io.github.ai4ci.abm.PersonDemographic;
+import io.github.ai4ci.config.Modification;
+import io.github.ai4ci.config.Scale;
+import io.github.ai4ci.config.execution.PartialDemographicAdjustment;
+import io.github.ai4ci.functions.Distribution;
+import io.github.ai4ci.functions.SimpleDistribution;
+import io.github.ai4ci.functions.SimpleFunction;
+
+/**
+ * Many of these utilities could be switched for immutable datatype approaches
+ * which would use code generation rather than reflection.
+ */
 public class ReflectionUtils {
 
 	/**
 	 * Find the immutable (or modifiable) implementation version of an interface
 	 * @param <X> the interface
-	 * @param clz
-	 * @return
+	 * @param clz the class of the interface (or the immutable or modifiable implementation)  
+	 * @return the immutable implementation of the interface
 	 */
 	public static <X> Class<?> immutable(Class<X> clz) {
 		if (clz.getSimpleName().startsWith("Immutable")) return clz;
@@ -36,6 +43,24 @@ public class ReflectionUtils {
 			throw new RuntimeException("No immutable found: "+tmp);
 		}
 		return immClz;
+	}
+	
+	/**
+	 * Find the datatype mirror class associated with an interface annotated 
+	 * with @Datatype. This is used to find the mirror class for an interface 
+	 * that is implemented by an immutable or modifiable class. 
+	 * @param <X> the interface tyoe
+	 * @param clz the class of the interface (or the immutable or modifiable implementation)
+	 * @return the datatype mirror class associated with the interface
+	 */
+	@SuppressWarnings("unchecked")
+	public static <X> Datatype<X> datatype(Class<X> clz) {
+		String tmp = clz.getPackageName()+".Datatype_"+clz.getSimpleName();
+		 try {
+			return (Datatype<X>) Class.forName(tmp).getConstructor().newInstance();
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			throw new RuntimeException("No datatype found: "+tmp);
+		}
 	}
 	
 	private static <X> Class<?> iface(Class<X> clz) {
@@ -51,11 +76,11 @@ public class ReflectionUtils {
 	
 	/**
 	 * Initialise an object based on class name, package and parameters
-	 * @param <X>
-	 * @param className
-	 * @param clzInPackage
-	 * @param params optionakl parameters
-	 * @return
+	 * @param <X> the type of the object being initialised
+	 * @param className the name of the class to initialise. This can be a simple name (e.g. "MarkovStateModel") or a fully qualified name (e.g. "io.github.ai4ci.config.inhost.MarkovStateModel"). If a simple name is provided, it will be resolved relative to the package of clzInPackage.
+	 * @param clzInPackage a class that is in the same package as the class to be initialised. This is used to resolve the package for simple class names.
+	 * @param params optional parameters to pass to the initialisation method. The method will look for a static factory method in the target class that matches the parameter types and returns an instance of the target class. If no such method is found, or if the factory method throws an exception, a RuntimeException will be thrown.
+	 * @return an instance of type X initialized by the factory method with the provided parameters.
 	 */
 	public static <X> X initialise(String className, Class<?> clzInPackage, Object... params) {
 		String base = clzInPackage.getPackageName();
@@ -106,7 +131,19 @@ public class ReflectionUtils {
 	 * with mapstruct for nested immutables. The problem here is that nested 
 	 * immutables need to be merged by constructing new immutables but mapstruct
 	 * assumes they can be merged directly using javabeans. By providing this 
-	 * method we can merge
+	 * method we can merge nested immutables by recursively merging them using 
+	 * builders, but we can still use mapstruct to merge the top level objects 
+	 * using javabeans. This could be substituted by a mirror based approach with
+	 * immutables datatype. 
+	 * 
+	 * @param <X> the type of the object being merged
+	 * @param base the base object to merge into
+	 * @param modifier the modifications to apply to the base object. Any non-null fields will
+	 * be merged into the base object. If a field is itself an immutable object 
+	 * and the modifier provides a modification for it, then the merge will be 
+	 * applied recursively to that field. For collections, the modifier's 
+	 * collection will be added to the base collection (if present) rather than replacing it.
+	 * @return a new object of type X with the modifications applied.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <X> X merge(X base, Modification<? extends X> modifier) {
@@ -150,6 +187,25 @@ public class ReflectionUtils {
 		
 	}
 	
+	/**
+	 * Apply demographic adjustments to a configuration object. This is similar to
+	 * merge but instead of replacing values with the modifier's values, it applies
+	 * a scaling factor to the base value based on the modifier and the person's
+	 * demographic. The modifier provides {@link SimpleFunction}s that take the person's age
+	 * and return a scaling factor. The base value is then scaled by this factor
+	 * according to the specified {@link Scale.ScaleType} (e.g. multiplicative, additive). This
+	 * allows us to apply age-based adjustments to parameters like incubation period
+	 * or case fatality rate based on the person's age.
+	 * 
+	 * @param <X>       the type of the object being modified
+	 * @param base      the base object to modify
+	 * @param modifiers the demographic adjustments to apply. This should be an
+	 *                  object that provides SimpleFunctions for each parameter that
+	 *                  needs to be adjusted, annotated with @Scale to specify how
+	 *                  the scaling should be applied.
+	 * @param demog 	the person's demographic information, which is used to compute the scaling
+	 * @return a new object of type X with the demographic adjustments applied.
+	 */
 	@SuppressWarnings("unchecked")
 	public static <X> X modify(X base, PartialDemographicAdjustment modifiers, PersonDemographic demog) {
 		try {
@@ -165,7 +221,7 @@ public class ReflectionUtils {
 					if (value.isPresent()) {
 						SimpleFunction ageAdjustment = (SimpleFunction) m.invoke(modifiers);
 						if (ageAdjustment != null) {
-							ScaleType scale = m.getAnnotation(Scale.class).value();
+							Scale.ScaleType scale = m.getAnnotation(Scale.class).value();
 							Object adjusted = adjust(value.get(), demog, ageAdjustment, scale);
 							set(builder, m.getName(), adjusted);
 						}
@@ -178,14 +234,14 @@ public class ReflectionUtils {
 		}
 	}
 	
-	private static Object adjust(Object object, PersonDemographic demog, SimpleFunction ageAdjustment, ScaleType scale) {
+	private static Object adjust(Object object, PersonDemographic demog, SimpleFunction ageAdjustment, Scale.ScaleType scale) {
 		if (demog.getAge() == Double.NaN) return object; 
 		double factor = ageAdjustment.value(demog.getAge());
 		if (object instanceof Distribution) {
 			double base = ((Distribution) object).sample();
-			return SimpleDistribution.point(ScaleType.scale(base,factor, scale));
+			return SimpleDistribution.point(Scale.ScaleType.scale(base,factor, scale));
 		} else if (object instanceof Double) {
-			return ScaleType.scale((Double) object, factor, scale);
+			return Scale.ScaleType.scale((Double) object, factor, scale);
 		}
 		throw new RuntimeException("Attempt to scale something not a number or distribution");
 	};
@@ -210,10 +266,13 @@ public class ReflectionUtils {
 	
 	/**
 	 * Get a getter method by field name
-	 * @param <X>
-	 * @param o any object
-	 * @param s the name of the field
-	 * @return am Optional<Method> that can be invoked to set the field of that name
+	 * 
+	 * @param <X> the type of the field
+	 * @param o   any object
+	 * @param s   the name of the field
+	 * @return an Optional containing the value of the field if it exists, or an
+	 *         empty Optional if the getter method does not exist or is not
+	 *         accessible.
 	 */
 	@SuppressWarnings("unchecked")
 	private static <X> Optional<X> get(Object o, String s) {
@@ -226,6 +285,13 @@ public class ReflectionUtils {
 		}
 	}
 	
+	/**
+	 * Set a value by field name
+	 * @param <X> the type of the field
+	 * @param o any object
+	 * @param s the name of the field
+	 * @param value the value to set
+	 */
 	private static void set(Object o, String s, Object value) throws NoSuchMethodException {
 		try {
 			setter(s, o.getClass(), value.getClass()).invoke(o, value);
@@ -258,7 +324,16 @@ public class ReflectionUtils {
     }
 	
 	/**
-	 * create a proxy for some interface that returns null for any invocation.
+	 * Create a proxy for some interface that returns null or default value for any invocation.
+	 * 
+	 * This is useful for testing and for creating stubs when we don't care about
+	 * the actual implementation. For example, we can create a null proxy for a
+	 * configuration interface when we want to test code that uses the configuration but we don't want to provide a real implementation of the configuration. The null proxy will return null for any method that returns an object, and will return default values for primitive return types (e.g. false for boolean, 0 for int, etc.). This allows us to focus on testing the code that uses the configuration without worrying about the details of the configuration itself.
+	 * 
+	 * @param <X> the type of the interface to proxy
+	 * @param clz the class of the interface to proxy
+	 * @return a proxy instance of the interface that returns null or default values for any method
+	 * 
 	 */
 	@SuppressWarnings("unchecked")
 	public static <X> X nullProxy(Class<X> clz) {

@@ -11,17 +11,70 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Outbreak;
-import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.util.Cloner;
 import io.github.ai4ci.util.PauseableThread;
 
 /**
- * Configuration, setup and baselining of simulations in this batch. This runs as a 
- * daemon thread and caches  
+ * Factory for pre-configuring and caching simulation instances for batch execution.
+ * 
+ * <p>This class operates as a daemon thread that prepares and caches configured
+ * {@link Outbreak} simulations before they are executed by {@link SimulationExecutor}.
+ * It handles the computationally intensive setup phase separately from execution
+ * to optimize resource utilization and enable parallel execution.
+ * 
+ * <h2>Factory Workflow</h2>
+ * <ol>
+ *   <li><b>Setup Configuration</b>: Creates base outbreak models from setup configurations</li>
+ *   <li><b>Execution Configuration</b>: Applies execution parameters to create runnable simulations</li>
+ *   <li><b>Caching</b>: Maintains a cache of ready-to-execute simulations</li>
+ *   <li><b>Delivery</b>: Provides simulations to {@link SimulationMonitor} for execution</li>
+ * </ol>
+ * 
+ * <h2>Configuration Matrix</h2>
+ * <p>The factory generates simulations for all combinations of setup and execution
+ * configurations, creating a complete experimental design matrix:
+ * \[
+ * N_{\text{simulations}} = N_{\text{setups}} \times N_{\text{executions}}
+ * \]
+ * 
+ * <h2>Caching Strategy</h2>
+ * <p>Uses a size-aware caching approach:
+ * <ul>
+ *   <li>Default cache size: {@link SimulationFactory#CACHE_SIZE} simulations</li>
+ *   <li>Automatic memory estimation using {@link Cloner#estimateSize(Object)}</li>
+ *   <li>Dynamic cache size adjustment based on available memory</li>
+ *   <li>Pause/resume behavior to prevent memory exhaustion</li>
+ * </ul>
+ * 
+ * <h2>Integration with SimulationMonitor</h2>
+ * <p>The factory coordinates closely with {@link SimulationMonitor}:
+ * <ul>
+ *   <li>Notifies monitor when simulations are ready for execution</li>
+ *   <li>Responds to monitor requests for simulation delivery</li>
+ *   <li>Accepts cache size adjustments from monitor based on system resources</li>
+ *   <li>Reports status and progress to monitor for oversight</li>
+ * </ul>
+ * 
+ * <h2>Performance Optimization</h2>
+ * <p>Key optimizations include:
+ * <ul>
+ *   <li>Model cloning to avoid redundant setup computations</li>
+ *   <li>Memory-efficient caching with size awareness</li>
+ *   <li>Background thread operation to overlap setup with execution</li>
+ *   <li>Batch processing of configuration combinations</li>
+ * </ul>
+ * 
+ * @see SimulationMonitor
+ * @see SimulationExecutor
+ * @see Outbreak
+ * @see SetupConfiguration
+ * @see ExecutionConfiguration
  */
 public class SimulationFactory extends PauseableThread {
 
+	/** Default cache size for pre-configured simulations */
 	public static int CACHE_SIZE = 2;
 	
 	static Logger log = LoggerFactory.getLogger(SimulationFactory.class);
@@ -29,8 +82,6 @@ public class SimulationFactory extends PauseableThread {
 	SimulationMonitor mon;
 	volatile ConcurrentLinkedQueue<Outbreak> queue; 
 	volatile AtomicInteger cacheSize = new AtomicInteger(CACHE_SIZE);
-//	List<SetupConfiguration> setups;
-//	List<ExecutionConfiguration> executions;
 	String urnBase;
 	long objSize=-1;
 	Iterator<Outbreak> builder;
@@ -40,7 +91,18 @@ public class SimulationFactory extends PauseableThread {
 	int execSize;
 	String activity = "starting";
 	
-	
+	/**
+	 * Starts the simulation factory with the provided configuration sets.
+	 * 
+	 * <p>Creates a complete experimental design by generating simulations for all
+	 * combinations of setup and execution configurations.
+	 * 
+	 * @param setups list of setup configurations for model structure
+	 * @param executions list of execution configurations for run parameters
+	 * @param urnBase base URN pattern for simulation identification
+	 * @param mon the simulation monitor that will execute the generated simulations
+	 * @return a started SimulationFactory instance
+	 */
 	public static SimulationFactory startFactory(
 			List<SetupConfiguration> setups, 
 			List<ExecutionConfiguration> executions,
@@ -53,6 +115,17 @@ public class SimulationFactory extends PauseableThread {
 		return tmp;
 	}
 	
+	/**
+	 * Constructs a simulation factory for the given configuration sets.
+	 * 
+	 * <p>Initializes the factory with configuration matrices and prepares the
+	 * iterator that will generate all simulation combinations.
+	 * 
+	 * @param setups list of setup configurations
+	 * @param executions list of execution configurations
+	 * @param urnBase base URN pattern for simulation identification
+	 * @param mon the simulation monitor for coordination
+	 */
 	private SimulationFactory(List<SetupConfiguration> setups, 
 			List<ExecutionConfiguration> executions, String urnBase,
 			SimulationMonitor mon) {
@@ -136,10 +209,21 @@ public class SimulationFactory extends PauseableThread {
 		// nothing to do here
 	}
 
+	/**
+	 * Unpauses the factory if cache is not full.
+	 * 
+	 * <p>Only resumes production if there is capacity in the cache to avoid
+	 * memory exhaustion from overproduction.
+	 */
 	public void unpause() {
 		if (!cacheFull()) super.unpause();
 	}
 	
+	/**
+	 * Checks if the simulation cache is full.
+	 * 
+	 * @return true if the cache has reached its configured capacity
+	 */
 	public boolean cacheFull() {
 		return this.queue.size() >= this.cacheSize.get();
 	}
@@ -178,24 +262,27 @@ public class SimulationFactory extends PauseableThread {
 	}
 	
 	/** 
-	 * There are no more simulations available. 
-	 * @return true if all the simulations have been created and consumed.
+	 * Checks if the factory has completed all simulations and the queue is empty.
+	 * 
+	 * @return true if all simulations have been created and consumed
 	 */
 	public boolean finished() {
 		return queue.isEmpty() && this.isComplete();
 	}
 	
 	/**
-	 * @return true if the factory is ready to deliver a configured simulation for execution
+	 * Checks if the factory has ready-to-execute simulations available.
+	 * 
+	 * @return true if the factory has simulations ready for execution
 	 */
 	public boolean ready() {
 		return !queue.isEmpty();
 	}
 	
 	/**
-	 * @return a configured simulation or null if the factory is finished or
-	 * not ready.
-	 * @param resume if paused (because the cache is full)
+	 * Delivers a configured simulation for execution.
+	 * 
+	 * @return a configured simulation or null if factory is finished or not ready
 	 */
 	Outbreak deliver() {
 		Outbreak out = queue.poll();
@@ -203,27 +290,33 @@ public class SimulationFactory extends PauseableThread {
 	}
 	
 	/**
-	 * Increase simulation queue if loads of memory and risk simulation waiting
-	 * for factory.
+	 * Increases the simulation cache size to improve throughput.
 	 * 
-	 * <br> TODO: Parallelise the simulation factory. 
-	 * The cache being part of the factory is a problem because we can't
-	 * parallelise it. Increasing the cache size probably wont improve 
-	 * performance if the factory is the limiting factor in the overall speed.
+	 * <p>Used when there is ample memory available and simulations are waiting
+	 * for factory production. Larger cache sizes allow better overlap between
+	 * setup and execution phases.
+	 * 
+	 * @param items the new cache size capacity
 	 */
 	public void increaseCacheSize(int items) {
 		this.cacheSize.set(items);
 	}
 	
 	/**
-	 * @return the rough size of a configured simulation (before it is executed)
-	 * if we know it yet.
+	 * Gets the estimated size of a configured simulation.
+	 * 
+	 * @return the rough size of a configured simulation if known, empty otherwise
 	 */
 	public OptionalLong getSimulationSize() {
 		if (objSize == -1) return OptionalLong.empty();
 		return OptionalLong.of(objSize);
 	}
 	
+	/**
+	 * Provides detailed status information about factory progress.
+	 * 
+	 * @return formatted status string with progress metrics and current activity
+	 */
 	public String status() {
 		return String.format(
 				"model %d/%d; execution %d/%d; queued %d/%d; %s - (%s)",

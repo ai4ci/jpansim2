@@ -1,0 +1,58 @@
+@startuml
+title Updater.update(Outbreak) — sequence diagram
+
+participant Caller as "Caller (ExecutionBuilder / Runner)"
+participant Updater as "io.github.ai4ci.abm.mechanics.Updater"
+participant Outbreak as "io.github.ai4ci.abm.Outbreak / ModifiableOutbreak"
+participant StateMachine as "StateMachine (Outbreak/Person)"
+participant Contacts as "PersonStateContacts (contactNetwork)"
+participant Calib as "Calibration"
+participant Person as "io.github.ai4ci.abm.Person / ModifiablePerson"
+participant PersonState as "ImmutablePersonState.Builder / PersonState"
+participant OutbreakState as "ImmutableOutbreakState.Builder / OutbreakState"
+participant Processors as "Outbreak/Person Processors (ModelOperation)"
+
+Caller -> Updater: update(outbreak)
+note right of Updater: 1) prepareUpdate(outbreak)
+Updater -> Outbreak: prepareUpdate(Outbreak)
+Outbreak -> OutbreakState: setNextState(Ephemeral.of(ImmutableOutbreakState.builder().from(getCurrentState()).setTime(+1)))
+Outbreak -> Outbreak: setNextHistory(Ephemeral.of(ImmutableOutbreakHistory.builder().from(MAPPER.createHistory(getCurrentState()))))
+Outbreak -> StateMachine: getStateMachine().prepareUpdate() : for outbreak
+Outbreak -> Person: for each person -> setNextState(ImmutablePersonState.builder().from(getCurrentState()).setTime(+1))
+Outbreak -> Person: for each person -> setNextHistory(ImmutablePersonHistory.builder().from(MAPPER.createHistory(getCurrentState())))
+Outbreak -> StateMachine: for each person -> getStateMachine().prepareUpdate() : for person
+
+note right of Updater: 2) updateHistory(outbreak)
+Updater -> Outbreak: updateHistory(Outbreak)
+Updater -> Contacts: contactNetwork(outbreak)
+Contacts -> Outbreak: iterate socialNetwork -> compute contacts & exposures (asExposure/contactProbability)
+Updater -> Outbreak: nextOutbreakHistory = outbreak.getNextHistory().get(); stateMachine.performHistoryUpdate(nextOutbreakHistory, outbreak.getCurrentState(), sampler)
+Outbreak -> Person: parallel for each person
+Person -> Updater: nextPersonHistory.setTodaysContacts(contactNetwork.getContactsForId(id))
+Person -> Updater: nextPersonHistory.setTodaysExposures(contactNetwork.getExposuresForId(id))
+Person -> StateMachine: person.getStateMachine().performHistoryUpdate(nextPersonHistory, person.getCurrentState(), sampler)
+
+note right of Updater: 3) switchHistory(outbreak)
+Updater -> Outbreak: switchHistory(Outbreak)
+Outbreak -> Person: for each person (synchronized) -> historyList.add(0, nextHistory.build()); nextHistory.clear()
+Outbreak -> OutbreakState: outbreak.getHistory().add(0, nextOutbreakHistory.build()); outbreak.setNextHistory(clear)
+
+note right of Updater: 4) updateState(outbreak)
+Updater -> Outbreak: updateState(Outbreak)
+Outbreak -> StateMachine: performStateUpdate(nextStateBuilder, currentState, sampler) : outbreak policy transitions
+Outbreak -> Processors: outbreakProcessors.forEach(p -> p.accept(nextState, outbreak, sampler))
+Outbreak -> Person: parallel for each person -> updateState(person)
+Person -> PersonState: ImmutablePersonState.Builder nextState = person.getNextState().get()
+Person -> StateMachine: m.getStateMachine().performStateUpdate(nextState, person.getCurrentState(), sampler) : behaviour transitions
+Person -> PersonState: nextState.setInHostModel(...update based on exposures...)
+Person -> PersonState: nextState.setRiskModel(...update...)
+Person -> Processors: personProcessors.forEach(p -> p.accept(nextState, person, sampler))
+
+note right of Updater: 5) switchState(outbreak)
+Updater -> Outbreak: switchState(Outbreak)
+Outbreak -> Person: for each person (synchronized) -> person.setCurrentState(person.getNextState().build()); person.setNextState(clear)
+Outbreak -> OutbreakState: outbreak.setCurrentState(outbreak.getNextState().build()); outbreak.setNextState(clear)
+
+Updater -> Caller: return outbreak
+
+@enduml

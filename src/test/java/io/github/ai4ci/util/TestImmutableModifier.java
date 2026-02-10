@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 import io.github.ai4ci.Data.Partial;
 import io.github.ai4ci.abm.ImmutablePersonDemographic;
 import io.github.ai4ci.abm.PersonDemographic;
-import io.github.ai4ci.abm.mechanics.Abstraction.Distribution;
-import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
-import io.github.ai4ci.config.PartialDemographicAdjustment;
+import io.github.ai4ci.config.Modification;
+import io.github.ai4ci.config.execution.PartialDemographicAdjustment;
+import io.github.ai4ci.functions.Distribution;
+import io.github.ai4ci.functions.FixedValueFunction;
+import io.github.ai4ci.functions.SimpleDistribution;
 
 public class TestImmutableModifier {
 

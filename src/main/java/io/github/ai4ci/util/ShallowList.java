@@ -11,6 +11,11 @@ import java.util.ArrayList;
  */
 public class ShallowList<X> extends ArrayList<X> {
 
+	/**
+	 * Combine this list with another, returning this list. This is a mutating operation, but allows chaining.
+	 * @param other the other list to combine with this one
+	 * @return this list, after combining with the other list
+	 */
 	public ShallowList<X> combine(ShallowList<X> other) {
 		if (other != null)
 			this.addAll(other);

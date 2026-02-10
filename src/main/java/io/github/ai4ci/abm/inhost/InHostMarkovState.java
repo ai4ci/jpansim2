@@ -32,17 +32,79 @@ import io.github.ai4ci.util.Sampler;
 public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 
 	// MarkovStateModel getConfig();
+	/**
+	 * Returns the current time step in the in-host progression.
+	 * @return the current time step (e.g., days since infection) in the in-host progression
+	 */
 	int getTime();
 	
 	// these next 3 are here because there is no easy way to access them within
 	// the top level experiment configuration outside of the config stage so
-	// we have to copy them. 
+	// we have to copy them.
+	
+	/**
+	 * Returns the infection-case rate (ICR) for this individual, which is the probability of developing symptoms given infection.
+	 * @return the infection-case rate (ICR) for this individual
+	 */
 	double getInfectionCaseRate();
+	
+	/**
+	 * Returns the infection-hospitalization rate (IHR) for this individual, which is the probability of hospitalization given infection.
+	 * @return the infection-hospitalization rate (IHR) for this individual
+	 */
 	double getInfectionHospitalisationRate();
+	
+	/**
+	 * Returns the infection-fatality rate (IFR) for this individual, which is the probability of death given infection.
+	 * @return the infection-fatality rate (IFR) for this individual
+	 */
 	double getInfectionFatalityRate();
 	
+	/**
+	 * Getters for the current disease and symptom states, and the Markov state
+	 * machine.
+	 *
+	 * <p>
+	 * These provide access to the individual's current position in the disease and
+	 * symptom progression, as well as the transition probabilities defined in the
+	 * Markov model. The disease and symptom states evolve independently according
+	 * to their respective transition rules, but are both influenced by the
+	 * underlying MarkovStateMachine which governs the probabilities of moving
+	 * between states.
+	 *
+	 * @return the current disease state, symptom state, and Markov state machine
+	 */
 	DiseaseState getDiseaseState();
+	
+	/**
+	 * The symptom state is conditional on the disease state, but evolves
+	 * independently according to its own transition probabilities defined in the
+	 * MarkovStateMachine. For example, an individual may be in the INFECTIOUS
+	 * disease state but remain ASYMPTOMATIC in terms of symptoms, and then
+	 * transition to SYMPTOMATIC based on the probability defined for that
+	 * transition. The symptom progression is thus a separate layer of the model
+	 * that captures clinical outcomes without directly affecting the underlying
+	 * disease state transitions.
+	 * 
+	 * @return the current symptom state of the individual
+	 */
 	SymptomState getSymptomState();
+	
+	/**
+	 * Returns the Markov state machine that defines the transition probabilities
+	 * for both disease and symptom progression. This machine encapsulates the
+	 * time-homogeneous transition rates between states, allowing for calibration
+	 * from epidemiological data. The transition probabilities govern how
+	 * individuals move through the disease states (e.g., from EXPOSED to
+	 * INFECTIOUS) and symptom states (e.g., from ASYMPTOMATIC to SYMPTOMATIC) on a
+	 * daily basis. The machine's methods are used in the update logic to determine
+	 * the next state based on the current state and random sampling.
+	 * 
+	 * @return the Markov state machine containing transition probabilities for
+	 *         disease and symptom progression
+	 * @see InHostMarkovStateMachine
+	 * 
+	 */
 	@Value.Redacted InHostMarkovStateMachine getMachine();
 	
 	/**
@@ -55,7 +117,35 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 	 * where transitions are governed by daily probabilities. Immunity is assumed to be complete while active.
 	 */
 	public static enum DiseaseState {
-		SUSCEPTIBLE, EXPOSED, INFECTIOUS, IMMUNE
+		/**
+		 * The individual is susceptible to infection and has no immunity. They can
+		 * transition to EXPOSED if exposed to infectious virions, or to IMMUNE if
+		 * immunized (e.g., vaccinated). This state represents the baseline risk of
+		 * infection.
+		 */
+		SUSCEPTIBLE, 
+		/**
+		 * The individual has been exposed to infectious virions but is not yet
+		 * infectious. They can transition to INFECTIOUS with probability \(
+		 * p_{\text{inf→inf}} \) or, in some models, back to SUSCEPTIBLE if the exposure
+		 * does not lead to infection. This state captures the incubation period before
+		 * viral shedding begins.
+		 */
+		EXPOSED, 
+		/**
+		 * The individual is actively infectious and can transmit the virus to others.
+		 * They can transition to IMMUNE upon recovery or, in some models, back to
+		 * SUSCEPTIBLE if immunity wanes. This state represents the period of active
+		 * infection and viral shedding.
+		 */
+		INFECTIOUS, 
+		/**
+		 * The individual has recovered from infection and is temporarily immune. They
+		 * can transition back to SUSCEPTIBLE if immunity wanes. This state represents
+		 * the post-infection period of protection against reinfection.
+		 */
+		IMMUNE
+		
 	}
 	
 	/**
@@ -69,7 +159,31 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 	 * on disease state and evolves independently.
 	 */
 	public static enum SymptomState {
-		ASYMPTOMATIC, SYMPTOMATIC, HOSPITALISED, DEAD
+		/**
+		 * The individual is infected but shows no symptoms. They can transition to
+		 * SYMPTOMATIC with probability \( p_s \) if they are in the INFECTIOUS disease state, or
+		 * remain ASYMPTOMATIC if they do not develop symptoms. This state captures
+		 * subclinical infections that may still contribute to transmission.
+		 */
+		ASYMPTOMATIC, 
+		/**
+		 * The individual is infected and shows symptoms. They can transition to
+		 * HOSPITALISED if symptoms worsen, or to ASYMPTOMATIC if they recover. This state
+		 * represents the period of symptomatic illness.
+		 */
+		SYMPTOMATIC, 
+		/**
+		 * The individual is infected and has severe symptoms requiring hospitalisation.
+		 * They can transition to DEAD if they deteriorate, or to ASYMPTOMATIC if they
+		 * recover. This state captures severe clinical outcomes.
+		 */
+		HOSPITALISED, 
+		/**
+		 * The individual has died from the infection. This is an absorbing state with no
+		 * transitions out. It represents the most severe outcome of the disease.
+		 */
+		DEAD
+		
 	}
 	
 	/**
@@ -90,9 +204,23 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 	@Value.Immutable
 	public static interface InHostMarkovStateMachine extends Serializable {
 		
+		/**
+		 * Returns the daily probability of transitioning from EXPOSED to INFECTIOUS.
+		 * @return 	the daily probability of an exposed individual becoming infectious
+		 */
 		double getPExposedInfectious();
 		// double getPExposedSusceptible();
+		
+		/**
+		 * Returns the daily probability of transitioning from INFECTIOUS to IMMUNE, and from IMMUNE to SUSCEPTIBLE.
+		 * @return the daily probability of recovery (INFECTIOUS → IMMUNE) and waning immunity (IMMUNE → SUSCEPTIBLE)
+		 */
 		double getPInfectiousImmune();
+		
+		/**
+		 * Returns the daily probability of transitioning from IMMUNE to SUSCEPTIBLE due to waning immunity.
+		 * @return the daily probability of waning immunity (IMMUNE → SUSCEPTIBLE)
+		 */
 		double getPImmuneSusceptible();
 		
 		/**
@@ -115,11 +243,34 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 		 */
 		double getPAsymptomaticSymptomatic();
 		
-		
+		/**
+		 * Returns the daily probabilities of transitions from symptomatic and hospitalised states to less severe or more severe states, calibrated to match population-level outcomes (e.g., IFR, HFR).
+		 * @return the daily probabilities of symptom progression and regression, including recovery and death, conditioned on current symptom state
+		 */
 		double getPSymptomaticAsymptomatic();
+		
+		/**
+		 * Returns the daily probability of transitioning from SYMPTOMATIC to HOSPITALISED, and from SYMPTOMATIC to DEAD.
+		 * @return the daily probabilities of worsening symptoms leading to hospitalisation or death
+		 */
 		double getPSymptomaticHospitalised();
+		
+		/**
+		 * Returns the daily probabilities of transitioning from SYMPTOMATIC to DEAD, and from HOSPITALISED to DEAD, calibrated to achieve the target infection-fatality rate (IFR) and hospital fatality rate (HFR) over the course of the disease.
+		 * @return the daily probabilities of death from symptomatic and hospitalised states, calibrated to match target IFR and HFR
+		 */
 		double getPSymptomaticDead();
+		
+		/**
+		 * Returns the daily probabilities of transitioning from HOSPITALISED to DEAD, and from HOSPITALISED to ASYMPTOMATIC (recovery), calibrated to achieve the target hospital fatality rate (HFR) and recovery rate over the course of hospitalisation.
+		 * @return the daily probabilities of death and recovery from hospitalisation, calibrated to match target HFR and recovery rates
+		 */
 		double getPHospitalisedDead();
+		
+		/**
+		 * Returns the daily probability of transitioning from HOSPITALISED to ASYMPTOMATIC (recovery), calibrated to achieve the target hospital recovery rate over the course of hospitalisation.
+		 * @return the daily probability of recovery from hospitalisation, calibrated to match target hospital recovery rates
+		 */
 		double getPHospitalisedAsymptomatic();
 		
 		/**
@@ -336,7 +487,14 @@ public interface InHostMarkovState extends InHostModelState<MarkovStateModel> {
 		
 		DiseaseState next;
 		if (this.getDiseaseState().equals(DiseaseState.SUSCEPTIBLE)) {
-			if (virionExposure > 0) next = DiseaseState.EXPOSED;
+			if (virionExposure > 0) {
+//				if (this.getMachine().getPExposedInfectious() == 1.0) {
+//					//Skip E if E->I duration is zero => pTransition = 1.
+//					next = DiseaseState.INFECTIOUS;
+//				} else {
+					next = DiseaseState.EXPOSED;
+//				}
+			}
 			else if (immunisationDose > 0) next = DiseaseState.IMMUNE;
 			else next = this.getMachine().updateDiseaseState(getDiseaseState(), sampler);
 		} else {

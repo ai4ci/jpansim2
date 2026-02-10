@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.immutables.value.Value;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,8 +14,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.github.ai4ci.Import;
+import io.github.ai4ci.util.Factor;
+import io.github.ai4ci.util.Inversion;
 import io.github.ai4ci.util.Repository;
+import io.github.ai4ci.util.Repository.Indexed;
+//import io.github.ai4ci.Data;
 
+
+// @Data.Repository()
+@Value.Style(
+	deepImmutablesDetection = false,
+	passAnnotations = {Import.class, Import.Id.class},
+	get = {"is*", "get*"} // Detect 'get' and 'is' prefixes in accessor methods
+)
 public class RepositoryTest {
 
     @TempDir
@@ -23,26 +36,39 @@ public class RepositoryTest {
     
     @Value.Immutable
     @Import("city.csv")
-    public static interface City {
-        @Import.Id int getId();
+    public static interface City extends Indexed<City> {
+        @Import.Id String getId();
         String getName();
         Country getCountry(); // Foreign key to Country
+        boolean isCapital();
+        
+        @Value.Lazy default Set<Person> getPeople() {
+        	return this.find(Person.class, Person::getCity);
+        }
+        
     }
     
     @Value.Immutable
     @Import("country.csv")
-    public static interface Country {
-    	@Import.Id int getId();
+    public static interface Country extends Indexed<Country> {
+    	@Import.Id String getId();
         String getName();
     }
     
     @Value.Immutable
     @Import("person.csv")
-    public interface Person {
-    	@Import.Id int getId();
+    public interface Person  extends Indexed<Person> {
+    	@Import.Id String getId();
         String getName();
         City getCity(); // Foreign key to City
+        GivenGender getGivenGender();
     }
+    
+    public static enum GivenGender implements Factor {
+		@Level("female") FEMALE,
+		@Level("male") MALE,
+		@Level("non binary") NON_BINARY
+}
 
     @BeforeEach
     void setup() throws Exception {
@@ -57,19 +83,19 @@ public class RepositoryTest {
               "3,Italy");
 
         write(dataDir.resolve("city.csv"),
-              "id,name,country",
-              "101,Paris,1",
-              "102,Marseille,1",
-              "103,Berlin,2",
-              "104,Hamburg,2",
-              "105,Rome,3");
+              "id,name,country,capital",
+              "101,Paris,1,TRUE",
+              "102,Marseille,1,FALSE",
+              "103,Berlin,2,TRUE",
+              "104,Hamburg,2,FALSE",
+              "105,Rome,3,TRUE");
 
         write(dataDir.resolve("person.csv"),
-              "id,name,city",
-              "1001,Alice,101",
-              "1002,Bob,103",
-              "1003,Charlie,105",
-              "1004,Diana,102");
+              "id,name,city,givenGender",
+              "1001,Alice,101,female",
+              "1002,Bob,103,male",
+              "1003,Charlie,101,female",
+              "1004,Diana,102,non binary");
     }
 
     private void write(Path file, String... lines) throws Exception {
@@ -78,12 +104,6 @@ public class RepositoryTest {
 
     @Test
     void testLoadAndLink() throws Exception {
-//        Repository repo = new Repository(dataDir);
-//
-//        // Load in dependency order: Country → City → Person
-//        repo.readCSV(Country.class);
-//        repo.readCSV(City.class);
-//        repo.readCSV(Person.class);
         
         Repository repo = Repository.loadAll(dataDir, Person.class, City.class, Country.class);
 
@@ -107,7 +127,33 @@ public class RepositoryTest {
         Country bobCountry = bobCity.getCountry();
 
         assertEquals("Bob", bob.getName());
+        assertEquals(GivenGender.MALE, bob.getGivenGender());
         assertEquals("Berlin", bobCity.getName());
         assertEquals("Germany", bobCountry.getName());
+        
+        System.out.println("Lookup by name");
+        City paris = repo.findOne("Paris", City.class, City::getName);
+        assertEquals(aliceCity, paris);
+        
+        System.out.println("Reverse lookup: parisiens");
+        Set<Person> people = paris.getPeople();
+        people.forEach(System.out::println);
+        
+        System.out.println("By Gender: males");
+        repo.findValues(GivenGender.MALE, Person.class, Person::getGivenGender)
+        	.forEach(System.out::println);
+        
+        City berlin = repo.findOne("Berlin", City.class, City::getName);
+        Person diana = repo.findOne("Diana", Person.class, Person::getName);
+        City mars = diana.getCity();
+        
+        assertEquals(berlin.getIndex(), mars.getIndex());
+        System.out.println(repo.toString());
     }
+    
+    @Test
+	void testCache() {
+		var cache = Inversion.<Integer,Integer>cache(x -> x % 10, IntStream.range(0, 100).boxed());
+		IntStream.range(0, 9).boxed().map(cache).forEach(System.out::println);
+	}
 }

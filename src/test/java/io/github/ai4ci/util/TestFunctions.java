@@ -4,6 +4,8 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.functions.ImmutableMathematicalFunction;
+
 class TestFunctions {
 
 	@Test

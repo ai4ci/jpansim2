@@ -12,6 +12,10 @@ import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.util.FastMath;
 import org.junit.jupiter.api.Test;
 
+import io.github.ai4ci.functions.EmpiricalFunction;
+import io.github.ai4ci.functions.LinkFunction;
+import io.github.ai4ci.functions.ImmutableEmpiricalFunction;
+
 public class TestEmpiricalFunction {
 
     private static final int NUM_POINTS = 30; // Number of sample points

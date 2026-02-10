@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  *
  * <p>This structure assumes two distinct phases:
  * <ol>
- *   <li><strong>Writing phase:</strong> Multiple threads may call {@link #put(Object)} concurrently.</li>
+ *   <li><strong>Writing phase:</strong> Multiple threads may call {@link #put(Object)} or {@link #update(int,Object)} concurrently.</li>
  *   <li><strong>Reading phase:</strong> After calling {@link #finish()}, only read operations are allowed via
  *       {@link #get(int)}, or streaming methods like {@link #stream()} and {@link #parallelStream()}.</li>
  * </ol>
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
  * <p>{@link #finish()} blocks until all pending writes have completed before returning the final array.</p>
  *
  * @param <X> the type of elements stored in this array
+ * @author Rob Challen
  */
 public class ThreadSafeArray<X> implements Serializable {
 
@@ -241,24 +242,24 @@ public class ThreadSafeArray<X> implements Serializable {
 
 	/**
 	 * Updates the value at the specified index, assuming the value already 
-	 * exists, and the initial loading phase is complete. 
+	 * exists, and the initial loading phase is complete but the 
+	 * array has not been finalised. 
 	 *
 	 * <p>This method is thread-safe and supports concurrent writes to different indices.</p>
 	 *
-	 * <p>Must be called after {@link #finish()} has been invoked, this method throws
-	 * a {@link WriteOnlyException}.</p>
-	 *
 	 * @param index the index at which to update the element
 	 * @param value the element to update
-	 * @throws WriteOnlyException if called after the array has not yet been finalized
+	 * @throws ReadOnlyException if called after the array has been finalized
+	 * @throws IndexOutOfBoundsException if the index is out of bounds
 	 */
 	public void update(int index, X value) {
-		if (!locked) throw new WriteOnlyException();
+		if (locked) throw new ReadOnlyException();
 		// Wait for any ongoing resize
 		while (updating.get()) Thread.onSpinWait();
 		// Write the value, will throw index out of bounds if index invalid
 		if (index >= pointer.get()) throw new IndexOutOfBoundsException();
 		//while (!writtenItems[index]) Thread.onSpinWait();
+		// Array update is atomic, so no need for additional synchronization here
 		this.data[index] = value;
 		//redundant writtenItems.set(index);
 	}

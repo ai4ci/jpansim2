@@ -1,0 +1,250 @@
+---
+title: "demographic-data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+here::i_am("demographic-data.Rmd")
+
+if (!requireNamespace("pak")) install.packages("pak")
+if (!requireNamespace("arear")) pak::pak("terminological/arear")
+
+
+library(tidyverse)
+
+.gg_pedantic()
+
+choose_directory = function(caption = 'Select data directory') {
+  if (exists('utils::choose.dir')) {
+    choose.dir(caption = caption) 
+  } else {
+    tcltk::tk_choose.dir(caption = caption)
+  }
+}
+
+# directory = "~/tmp/test"
+# if (!exists("directory")) directory = choose_directory()
+directory = fs::path_dir(here::here())
+
+```
+
+Geographic and demographic data is needed for the more complex simulations.
+This is reference data and used in the initial setup of the simulation. It is
+provided to the simulation as a set of CSV files, that are linked by unique keys.
+The data structure is also defined here and this file writes both data and 
+Java source files to the output directory.
+
+```{r}
+lad21 = readxl::read_excel(.cache_download("https://www.arcgis.com/sharing/rest/content/items/d1fab2d9fb0a4576a7e08f89ac7e0b72/data",.extn = ".xlsx"))
+lad21 = lad21 %>% transmute(
+  id = LAD21CD, name = LAD21NM
+)
+
+lad21Map = arear::downloadGeojson("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_GB_BUC_2022/FeatureServer/0/query") %>%
+  dplyr::rename(code = "LAD21CD",name = "LAD21NM")
+
+
+
+lad21centroids = lad21Map %>% sf::st_make_valid() %>% sf::st_centroid()
+# lad21centroids2 = lad21centroids %>% cross_join(lad21centroids, suffix = c(".source",".target")) %>% 
+#   mutate(distance = sf::st_distance(geometry.source, geometry.target))
+
+distMatrix = sf::st_distance(lad21centroids, lad21centroids)
+idMatrix = matrix(lad21centroids$code, nrow = length(lad21centroids$code), ncol = length(lad21centroids$code))
+
+lad21distances = tibble::tibble(
+  source = as.vector(t(idMatrix)),
+  target = as.vector(idMatrix),
+  distance = as.vector(distMatrix)
+)
+
+lad21Neighbours = arear::createNeighbourNetwork(lad21Map)
+```
+
+
+```{r}
+get_census = function(url, geog = c("ltla", "ctry", "lsoa","msoa","oa","rgn","ulta")) {
+  geog = match.arg(geog)
+  zip = .cache_download(url)
+  filename = zip::zip_list(zip) %>% 
+      filter(stringr::str_detect(filename,geog)) %>% 
+      pull(filename)
+  if (length(filename) == 0) stop("No file for geography: ",geog)
+  if (length(filename) > 1) stop("Multiple files for geography: ",geog)
+  csv = readr::read_csv(unz(zip,filename[[1]]))
+  return(csv)
+}
+
+
+
+# nms = c("aaaXXXbbb","aaaYYYYYbbb","aaaZbbb")
+# trim_common(nms)
+trim_common = function(nms) {
+  tmp = na.omit(unique(nms))
+  
+  trim_start = 1
+  while (
+    length(unique(stringr::str_sub(tmp,1,trim_start))) == 1
+  ) {
+    trim_start = trim_start+1
+  }
+  
+  trim_end = 1
+  while (
+    length(unique(stringr::str_sub(tmp,-trim_end,-1))) == 1
+  ) {
+    trim_end = trim_end+1
+  }
+  
+  return(trimws(stringr::str_sub(nms, trim_start, -trim_end)))
+}
+
+process_columns = function(df, colnames, delim=":", trim=colnames) {
+  
+  df = df %>% 
+    rename(geography_name = geography, geography = "geography code") %>%
+    tidyr::pivot_longer(cols = -c("geography","date","geography_name"),values_to = "count") %>%
+    mutate(name = trim_common(name)) %>%
+    mutate(total = ifelse(stringr::str_detect(name, "Total"), count, NA)) %>%
+    tidyr::fill(total) %>%
+    filter(is.na(total) | count != total)
+  
+  if (is.numeric(delim)) {
+    if (length(delim) == length(colnames)-1) delim = c(delim,10000)
+    names(delim)=colnames
+     df = df %>%
+      tidyr::separate_wider_position(cols = "name", widths=delim, too_few = "align_start")  
+  } else {
+   df = df %>%
+    tidyr::separate_wider_delim(cols = "name", delim=delim, too_few = "align_start", too_many = "merge", names = colnames) 
+  }
+  if (!isFALSE(trim)) df = df %>% mutate(across(any_of(trim), trim_common))
+  df = df %>% mutate(across(any_of(colnames), trimws))
+  return(df)
+}
+```
+
+
+```{r}
+
+geography = lad21
+
+distances = lad21distances %>% rename(source_geography = source, target_geography = target) %>% mutate(id=row_number())
+
+household = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts017.zip","ltla") %>%
+  process_columns(c("people")) %>% 
+  mutate(size = as.integer(gsub("[^0-9]","",people))) %>%
+  transmute(geography, count = as.integer(count), total = as.integer(total), size, id=row_number()) %>%
+  glimpse()
+
+# ageBy5yr = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts007a.zip","ltla")
+ageGender = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts009.zip","ltla") %>%
+  process_columns(c("gender", "age"), delim = ";") %>% 
+  filter(grepl("^[0-9]+ years?$",age) | age == "under 1 year") %>%
+  filter(gender != "All persons") %>%  
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            age = ifelse(age == "under 1 year", 0, as.integer(gsub("[^0-9]","",age))),
+            gender = as.factor(gender),
+            id=row_number()
+  )
+
+usualResidence = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts001.zip","ltla") %>%
+  process_columns(c("residence")) %>% 
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            residence = as.factor(residence),
+            id=row_number()
+  )
+
+ethnicity = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts021.zip","ltla") %>%
+  process_columns(c("group","subgroup")) %>% 
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            group = as.factor(group),
+            subgroup = as.factor(subgroup),
+            id=row_number()
+  ) %>%
+  glimpse()
+
+occupation = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts064.zip","ltla") %>%
+  process_columns(c("occupation_code","name"), delim=3) %>% 
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            occupation_name = as.factor(name),
+            id=row_number()
+  ) %>%
+  glimpse()
+
+industry = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts060.zip","ltla") %>%
+  process_columns(c("industry_code","industry_name"), delim=2) %>% 
+  filter(grepl("[A-Z]:",industry_code)) %>%
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            industry_name = as.factor(industry_name),
+            id=row_number()
+  ) %>%
+  glimpse()
+
+
+commuting = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts061.zip","ltla") %>%
+  process_columns(c("method")) %>% 
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            commuting_type = as.factor(method),
+            id=row_number()
+  ) %>%
+  glimpse()
+
+unemployment = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts066.zip","ltla") %>%
+  process_columns(c("student","employment","type","part_or_full")) %>% 
+  transmute(geography,count = as.integer(count), total = as.integer(total), 
+            student = as.factor(student),
+            employment = as.factor(employment),
+            employment_type = as.factor(type),
+            full_time = as.factor(part_or_full),
+            id=row_number()
+  ) %>%
+  glimpse()
+
+
+if (interactive()) {
+  if (tcltk::tk_messageBox(type = "okcancel", message = sprintf("write to: %s",directory)) == "ok") {
+    write_repository_data(directory, "io.github.ai4ci.config.refdata.UKCensus", geography, distances, unemployment, commuting, ethnicity,ageGender,industry)
+  }
+}
+
+
+# education = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts068.zip","ltla") %>%
+#   process_columns(c("school"), trim=FALSE) %>% glimpse()
+#   
+# 
+# communal_living = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts047.zip","ltla") %>%
+#   process_columns(c("resident_status","gender","age_group"), trim="age_group") %>% glimpse()
+#   
+# 
+# health = get_census("https://www.nomisweb.co.uk/output/census/2021/census2021-ts037asp.zip","ltla") %>%
+#   process_columns(c("health")) %>% glimpse()
+
+
+
+
+
+```
+
+
+```{r}
+
+zip = .cache_download("https://www.compare-school-performance.service.gov.uk/download-data?download=true&regions=0&filters=GIAS,CENSUS&fileformat=csv&year=2021-2022&meta=false", headers = c("User-Agent" = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1"))
+schools = readr::read_csv(unz(zip, "2021-2022/england_school_information.csv"))
+pupils = readr::read_csv(unz(zip, "2021-2022/england_census.csv"))
+pupils %>% glimpse()
+schools %>% glimpse()
+
+# schools = read.csv(.cache_download("https://explore-education-statistics.service.gov.uk/data-catalogue/data-set/bf165de6-3b9a-4014-83b5-232454343797/csv",.extn = ".csv"))
+
+```
+
+
+```{r}
+
+postcodes = arear::downloadGeojson("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/ONSPD_LATEST_UK/FeatureServer/1/query")
+
+# https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/ONSPD_LATEST_UK/FeatureServer&f=pgeojson
+
+```

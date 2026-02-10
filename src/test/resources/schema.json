@@ -1,6 +1,94 @@
 {
-  "$schema" : "http://json-schema.org/draft-07/schema#",
-  "definitions" : {
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$ref" : "#/$defs/ImmutableExperimentConfiguration",
+  "$defs" : {
+    "Distribution" : {
+      "anyOf" : [ {
+        "$ref" : "#/$defs/ImmutableBinomialDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutablePoissonDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableNegBinomialDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableGammaDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableNormalDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableLogNormalDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableLogitNormalDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableBetaDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableUnimodalBetaDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableUniformDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutablePointDistribution"
+      }, {
+        "$ref" : "#/$defs/ImmutableEmpiricalDistribution"
+      } ]
+    },
+    "ExecutionFacet" : {
+      "type" : "object"
+    },
+    "Exporters" : {
+      "type" : "string",
+      "enum" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
+    },
+    "ImmutableBatchConfiguration" : {
+      "type" : "object",
+      "properties" : {
+        "exporters" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/$defs/Exporters"
+          }
+        },
+        "simulationDuration" : {
+          "type" : "integer"
+        },
+        "urnBase" : {
+          "type" : "string"
+        }
+      }
+    },
+    "ImmutableBetaDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableBinomialDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableDiscreteFunction" : {
+      "type" : "object",
+      "properties" : {
+        "maximum" : {
+          "type" : "integer"
+        },
+        "minimum" : {
+          "type" : "integer"
+        },
+        "sum" : {
+          "type" : "number"
+        }
+      }
+    },
     "ImmutableEmpiricalDistribution" : {
       "type" : "object",
       "properties" : {
@@ -9,6 +97,9 @@
           "items" : {
             "type" : "number"
           }
+        },
+        "link" : {
+          "$ref" : "#/$defs/LinkFunction"
         },
         "maximum" : {
           "type" : "number"
@@ -28,8 +119,13 @@
       "type" : "object",
       "properties" : {
         "link" : {
-          "type" : "string",
-          "enum" : [ "NONE", "LOG", "LOGIT" ]
+          "$ref" : "#/$defs/LinkFunction"
+        },
+        "maximum" : {
+          "type" : "number"
+        },
+        "minimum" : {
+          "type" : "number"
         },
         "x" : {
           "type" : "array",
@@ -45,455 +141,40 @@
         }
       }
     },
-    "ImmutableFixedValueFunction" : {
+    "ImmutableEmpiricalKernel" : {
       "type" : "object",
       "properties" : {
-        "value" : {
-          "type" : "number"
-        }
-      }
-    },
-    "ImmutableMarkovStateModel" : {
-      "type" : "object",
-      "properties" : {
-        "immuneWaningHalfLife" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+        "link" : {
+          "$ref" : "#/$defs/LinkFunction"
         },
-        "incubationPeriod" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+        "maximum" : {
+          "type" : "integer"
         },
-        "infectiousDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+        "minimum" : {
+          "type" : "integer"
         },
-        "symptomDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        }
-      }
-    },
-    "ImmutablePhenomenologicalModel" : {
-      "type" : "object",
-      "properties" : {
-        "approxPeakImmuneResponse" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "approxPeakViralLoad" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneWaningHalfLife" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "incubationPeriod" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "incubationToPeakViralLoadDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "infectiousnessCutoff" : {
+        "sum" : {
           "type" : "number"
         },
-        "peakImmuneResponseDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+        "t" : {
+          "type" : "array",
+          "items" : {
+            "type" : "integer"
+          }
         },
-        "peakToRecoveryDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        }
-      }
-    },
-    "ImmutableRiskKernelInBuilt" : {
-      "type" : "object",
-      "properties" : {
-        "kernel" : {
-          "type" : "string",
-          "enum" : [ "DEFAULT_SYMPTOM_ONSET_KERNEL", "DEFAULT_TEST_SAMPLE_KERNEL", "DEFAULT_CONTACT_KERNEL" ]
-        }
-      }
-    },
-    "ImmutableRiskKernelProvided" : {
-      "type" : "object",
-      "properties" : {
-        "density" : {
+        "y" : {
           "type" : "array",
           "items" : {
             "type" : "number"
           }
-        },
-        "offset" : {
-          "type" : "integer"
         }
       }
     },
-    "ImmutableSimpleDistribution" : {
-      "type" : "object",
-      "properties" : {
-        "central" : {
-          "type" : "number"
-        },
-        "dispersion" : {
-          "type" : "number"
-        },
-        "type" : {
-          "type" : "string",
-          "enum" : [ "BINOM", "POIS", "NEG_BINOM", "GAMMA", "NORM", "LOG_NORM", "LOGIT_NORM", "UNIMODAL_BETA", "BETA", "POINT", "UNIFORM0", "RESAMPLE" ]
-        }
-      }
-    },
-    "ImmutableStochasticModel" : {
-      "type" : "object",
-      "properties" : {
-        "baselineViralInfectionRate" : {
-          "type" : "number"
-        },
-        "baselineViralReplicationRate" : {
-          "type" : "number"
-        },
-        "immuneActivationRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneTargetRatio" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneWaningRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "infectionCarrierProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "targetCellCount" : {
-          "type" : "integer"
-        },
-        "targetRecoveryRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "virionsDiseaseCutoff" : {
-          "type" : "integer"
-        }
-      }
-    },
-    "PartialDemographicAdjustment" : {
+    "ImmutableExecutionConfiguration" : {
       "type" : "object",
       "properties" : {
         "appUseProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "asymptomaticFraction" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "caseFatalityRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "caseHospitalisationRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "complianceProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "immuneWaningHalfLife" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "incubationPeriod" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "infectiousDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "maximumSocialContactReduction" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "peakToRecoveryDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        },
-        "symptomDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableEmpiricalFunction"
-          }, {
-            "$ref" : "#/definitions/ImmutableFixedValueFunction"
-          } ]
-        }
-      }
-    },
-    "PartialMarkovStateModel" : {
-      "type" : "object",
-      "properties" : {
-        "immuneWaningHalfLife" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "incubationPeriod" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "infectiousDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "symptomDuration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        }
-      }
-    },
-    "PartialPhenomenologicalModel" : {
-      "type" : "object",
-      "properties" : {
-        "approxPeakImmuneResponse" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "approxPeakViralLoad" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneWaningHalfLife" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "incubationPeriod" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "incubationToPeakViralLoadDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "infectiousnessCutoff" : {
-          "type" : "number"
-        },
-        "peakImmuneResponseDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "peakToRecoveryDelay" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        }
-      }
-    },
-    "PartialStochasticModel" : {
-      "type" : "object",
-      "properties" : {
-        "baselineViralInfectionRate" : {
-          "type" : "number"
-        },
-        "baselineViralReplicationRate" : {
-          "type" : "number"
-        },
-        "immuneActivationRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneTargetRatio" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "immuneWaningRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "infectionCarrierProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "targetCellCount" : {
-          "type" : "integer"
-        },
-        "targetRecoveryRate" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
-        },
-        "virionsDiseaseCutoff" : {
-          "type" : "integer"
-        }
-      }
-    },
-    "TestParameters" : {
-      "type" : "object"
-    },
-    "Value" : {
-      "type" : "string",
-      "enum" : [ "TEST_POSITIVITY", "SCREENING_TEST_POSITIVITY", "TEST_COUNT", "HOSPITAL_BURDEN" ]
-    }
-  },
-  "type" : "object",
-  "properties" : {
-    "batchConfig" : {
-      "type" : "object",
-      "properties" : {
-        "exporters" : {
-          "type" : "array",
-          "items" : {
-            "type" : "string",
-            "enum" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
-          }
-        },
-        "simulationDuration" : {
-          "type" : "integer"
-        },
-        "urnBase" : {
-          "type" : "string"
-        }
-      }
-    },
-    "executionConfig" : {
-      "type" : "object",
-      "properties" : {
-        "appUseProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         },
         "asymptomaticFraction" : {
           "type" : "number"
@@ -501,7 +182,7 @@
         "availableTests" : {
           "type" : "array",
           "items" : {
-            "$ref" : "#/definitions/TestParameters"
+            "$ref" : "#/$defs/TestParameters"
           }
         },
         "caseFatalityRate" : {
@@ -517,21 +198,13 @@
           "type" : "number"
         },
         "complianceProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         },
         "contactDetectedProbability" : {
           "type" : "number"
         },
         "contactProbability" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         },
         "defaultBehaviourModelName" : {
           "type" : "string"
@@ -540,25 +213,13 @@
           "type" : "string"
         },
         "demographicAdjustment" : {
-          "$ref" : "#/definitions/PartialDemographicAdjustment"
+          "$ref" : "#/$defs/PartialDemographicAdjustment"
         },
         "importationProbability" : {
           "type" : "number"
         },
         "inHostConfiguration" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableStochasticModel"
-          }, {
-            "$ref" : "#/definitions/ImmutablePhenomenologicalModel"
-          }, {
-            "$ref" : "#/definitions/ImmutableMarkovStateModel"
-          }, {
-            "$ref" : "#/definitions/PartialStochasticModel"
-          }, {
-            "$ref" : "#/definitions/PartialPhenomenologicalModel"
-          }, {
-            "$ref" : "#/definitions/PartialMarkovStateModel"
-          } ]
+          "$ref" : "#/$defs/InHostConfiguration"
         },
         "initialEstimateIncubationPeriod" : {
           "type" : "number"
@@ -582,14 +243,10 @@
           "type" : "number"
         },
         "lockdownTriggerValue" : {
-          "$ref" : "#/definitions/Value"
+          "$ref" : "#/$defs/Value"
         },
         "maximumSocialContactReduction" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         },
         "name" : {
           "type" : "string"
@@ -601,225 +258,421 @@
           "type" : "number"
         },
         "riskModelContactsKernel" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-          }, {
-            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-          } ]
+          "$ref" : "#/$defs/KernelFunction"
         },
         "riskModelSymptomKernel" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-          }, {
-            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-          } ]
+          "$ref" : "#/$defs/KernelFunction"
         },
         "riskModelTestKernel" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-          }, {
-            "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-          } ]
+          "$ref" : "#/$defs/KernelFunction"
         },
         "smartAppRiskTrigger" : {
           "type" : "number"
         },
         "symptomSensitivity" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         },
         "symptomSpecificity" : {
-          "anyOf" : [ {
-            "$ref" : "#/definitions/ImmutableSimpleDistribution"
-          }, {
-            "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-          } ]
+          "$ref" : "#/$defs/Distribution"
         }
       }
     },
-    "executionReplications" : {
-      "type" : "integer"
-    },
-    "facets" : {
-      "type" : "array",
-      "items" : {
-        "type" : "object",
-        "properties" : {
-          "modifications" : {
-            "type" : "array",
-            "items" : {
-              "type" : "object",
-              "properties" : {
-                "appUseProbability" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                },
-                "asymptomaticFraction" : {
-                  "type" : "number"
-                },
-                "availableTests" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/definitions/TestParameters"
-                  }
-                },
-                "caseFatalityRate" : {
-                  "type" : "number"
-                },
-                "caseHospitalisationRate" : {
-                  "type" : "number"
-                },
-                "complianceDeteriorationRate" : {
-                  "type" : "number"
-                },
-                "complianceImprovementRate" : {
-                  "type" : "number"
-                },
-                "complianceProbability" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                },
-                "contactDetectedProbability" : {
-                  "type" : "number"
-                },
-                "contactProbability" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                },
-                "defaultBehaviourModelName" : {
-                  "type" : "string"
-                },
-                "defaultPolicyModelName" : {
-                  "type" : "string"
-                },
-                "demographicAdjustment" : {
-                  "$ref" : "#/definitions/PartialDemographicAdjustment"
-                },
-                "importationProbability" : {
-                  "type" : "number"
-                },
-                "inHostConfiguration" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableStochasticModel"
-                  }, {
-                    "$ref" : "#/definitions/ImmutablePhenomenologicalModel"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableMarkovStateModel"
-                  }, {
-                    "$ref" : "#/definitions/PartialStochasticModel"
-                  }, {
-                    "$ref" : "#/definitions/PartialPhenomenologicalModel"
-                  }, {
-                    "$ref" : "#/definitions/PartialMarkovStateModel"
-                  } ]
-                },
-                "initialEstimateIncubationPeriod" : {
-                  "type" : "number"
-                },
-                "initialEstimateInfectionDuration" : {
-                  "type" : "number"
-                },
-                "initialEstimateSymptomSensitivity" : {
-                  "type" : "number"
-                },
-                "initialEstimateSymptomSpecificity" : {
-                  "type" : "number"
-                },
-                "initialScreeningProbability" : {
-                  "type" : "number"
-                },
-                "lockdownReleaseTrigger" : {
-                  "type" : "number"
-                },
-                "lockdownStartTrigger" : {
-                  "type" : "number"
-                },
-                "lockdownTriggerValue" : {
-                  "$ref" : "#/definitions/Value"
-                },
-                "maximumSocialContactReduction" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                },
-                "name" : {
-                  "type" : "string"
-                },
-                "organicRateOfMobilityChange" : {
-                  "type" : "number"
-                },
-                "r0" : {
-                  "type" : "number"
-                },
-                "riskModelContactsKernel" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-                  } ]
-                },
-                "riskModelSymptomKernel" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-                  } ]
-                },
-                "riskModelTestKernel" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableRiskKernelInBuilt"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableRiskKernelProvided"
-                  } ]
-                },
-                "smartAppRiskTrigger" : {
-                  "type" : "number"
-                },
-                "symptomSensitivity" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                },
-                "symptomSpecificity" : {
-                  "anyOf" : [ {
-                    "$ref" : "#/definitions/ImmutableSimpleDistribution"
-                  }, {
-                    "$ref" : "#/definitions/ImmutableEmpiricalDistribution"
-                  } ]
-                }
-              }
-            }
-          },
-          "name" : {
-            "type" : "string"
+    "ImmutableExperimentConfiguration" : {
+      "type" : "object",
+      "properties" : {
+        "batchConfig" : {
+          "$ref" : "#/$defs/ImmutableBatchConfiguration"
+        },
+        "executionConfig" : {
+          "$ref" : "#/$defs/ImmutableExecutionConfiguration"
+        },
+        "executionReplications" : {
+          "type" : "integer"
+        },
+        "facets" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/$defs/ExecutionFacet"
           }
+        },
+        "setupConfig" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/$defs/SetupFacet"
+          }
+        },
+        "setupReplications" : {
+          "type" : "integer"
         }
       }
     },
-    "setupConfig" : {
-      "type" : "array",
-      "items" : {
-        "type" : "object"
+    "ImmutableFixedValueFunction" : {
+      "type" : "object",
+      "properties" : {
+        "value" : {
+          "type" : "number"
+        }
       }
     },
-    "setupReplications" : {
-      "type" : "integer"
+    "ImmutableGammaDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableGaussianKernel" : {
+      "type" : "object",
+      "properties" : {
+        "maximum" : {
+          "type" : "integer"
+        },
+        "minimum" : {
+          "type" : "integer"
+        },
+        "mu" : {
+          "type" : "number"
+        },
+        "sigma" : {
+          "type" : "number"
+        },
+        "sum" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableLogNormalDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableLogitNormalDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "median" : {
+          "type" : "number"
+        },
+        "scale" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableMarkovStateModel" : {
+      "type" : "object",
+      "properties" : {
+        "immuneWaningHalfLife" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationPeriod" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectiousDuration" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "symptomDuration" : {
+          "$ref" : "#/$defs/Distribution"
+        }
+      }
+    },
+    "ImmutableMathematicalFunction" : {
+      "type" : "object"
+    },
+    "ImmutableNegBinomialDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableNormalDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        },
+        "sd" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutablePhenomenologicalModel" : {
+      "type" : "object",
+      "properties" : {
+        "approxPeakImmuneResponse" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "approxPeakViralLoad" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneWaningHalfLife" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationPeriod" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationToPeakViralLoadDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectiousnessCutoff" : {
+          "type" : "number"
+        },
+        "peakImmuneResponseDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "peakToRecoveryDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        }
+      }
+    },
+    "ImmutablePointDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutablePoissonDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "mean" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableStochasticModel" : {
+      "type" : "object",
+      "properties" : {
+        "baselineViralInfectionRate" : {
+          "type" : "number"
+        },
+        "baselineViralReplicationRate" : {
+          "type" : "number"
+        },
+        "immuneActivationRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneTargetRatio" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneWaningRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectionCarrierProbability" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "targetCellCount" : {
+          "type" : "integer"
+        },
+        "targetRecoveryRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "virionsDiseaseCutoff" : {
+          "type" : "integer"
+        }
+      }
+    },
+    "ImmutableUniformDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "max" : {
+          "type" : "number"
+        },
+        "min" : {
+          "type" : "number"
+        }
+      }
+    },
+    "ImmutableUnimodalBetaDistribution" : {
+      "type" : "object",
+      "properties" : {
+        "dispersion" : {
+          "type" : "number"
+        },
+        "mean" : {
+          "type" : "number"
+        }
+      }
+    },
+    "InHostConfiguration" : {
+      "anyOf" : [ {
+        "$ref" : "#/$defs/ImmutableStochasticModel"
+      }, {
+        "$ref" : "#/$defs/ImmutablePhenomenologicalModel"
+      }, {
+        "$ref" : "#/$defs/ImmutableMarkovStateModel"
+      }, {
+        "$ref" : "#/$defs/PartialStochasticModel"
+      }, {
+        "$ref" : "#/$defs/PartialPhenomenologicalModel"
+      }, {
+        "$ref" : "#/$defs/PartialMarkovStateModel"
+      } ]
+    },
+    "KernelFunction" : {
+      "anyOf" : [ {
+        "$ref" : "#/$defs/ImmutableEmpiricalKernel"
+      }, {
+        "$ref" : "#/$defs/ImmutableDiscreteFunction"
+      }, {
+        "$ref" : "#/$defs/ImmutableGaussianKernel"
+      } ]
+    },
+    "LinkFunction" : {
+      "type" : "string",
+      "enum" : [ "NONE", "LOG", "LOGIT" ]
+    },
+    "PartialDemographicAdjustment" : {
+      "type" : "object",
+      "properties" : {
+        "appUseProbability" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "asymptomaticFraction" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "caseFatalityRate" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "caseHospitalisationRate" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "complianceProbability" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "contactProbability" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "immuneWaningHalfLife" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "incubationPeriod" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "infectiousDuration" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "maximumSocialContactReduction" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "peakToRecoveryDelay" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        },
+        "symptomDuration" : {
+          "$ref" : "#/$defs/SimpleFunction"
+        }
+      }
+    },
+    "PartialMarkovStateModel" : {
+      "type" : "object",
+      "properties" : {
+        "immuneWaningHalfLife" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationPeriod" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectiousDuration" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "symptomDuration" : {
+          "$ref" : "#/$defs/Distribution"
+        }
+      }
+    },
+    "PartialPhenomenologicalModel" : {
+      "type" : "object",
+      "properties" : {
+        "approxPeakImmuneResponse" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "approxPeakViralLoad" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneWaningHalfLife" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationPeriod" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "incubationToPeakViralLoadDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectiousnessCutoff" : {
+          "type" : "number"
+        },
+        "peakImmuneResponseDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "peakToRecoveryDelay" : {
+          "$ref" : "#/$defs/Distribution"
+        }
+      }
+    },
+    "PartialStochasticModel" : {
+      "type" : "object",
+      "properties" : {
+        "baselineViralInfectionRate" : {
+          "type" : "number"
+        },
+        "baselineViralReplicationRate" : {
+          "type" : "number"
+        },
+        "immuneActivationRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneTargetRatio" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "immuneWaningRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "infectionCarrierProbability" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "targetCellCount" : {
+          "type" : "integer"
+        },
+        "targetRecoveryRate" : {
+          "$ref" : "#/$defs/Distribution"
+        },
+        "virionsDiseaseCutoff" : {
+          "type" : "integer"
+        }
+      }
+    },
+    "SetupFacet" : {
+      "type" : "object"
+    },
+    "SimpleFunction" : {
+      "anyOf" : [ {
+        "$ref" : "#/$defs/ImmutableEmpiricalFunction"
+      }, {
+        "$ref" : "#/$defs/ImmutableFixedValueFunction"
+      }, {
+        "$ref" : "#/$defs/ImmutableMathematicalFunction"
+      } ]
+    },
+    "TestParameters" : {
+      "type" : "object"
+    },
+    "Value" : {
+      "type" : "string",
+      "enum" : [ "TEST_POSITIVITY", "SCREENING_TEST_POSITIVITY", "TEST_COUNT", "HOSPITAL_BURDEN" ]
     }
   }
 }

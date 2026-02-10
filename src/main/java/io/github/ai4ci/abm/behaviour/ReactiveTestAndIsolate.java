@@ -1,25 +1,33 @@
 package io.github.ai4ci.abm.behaviour;
 
-import static io.github.ai4ci.abm.mechanics.StateUtils.complianceFatigue;
-import static io.github.ai4ci.abm.mechanics.StateUtils.decreaseSociabilityIfCompliant;
-import static io.github.ai4ci.abm.mechanics.StateUtils.resetBehaviour;
-import static io.github.ai4ci.abm.mechanics.StateUtils.seekPcrIfSymptomatic;
-import static io.github.ai4ci.util.ModelNav.modelState;
+import static io.github.ai4ci.abm.ModelNav.modelState;
+import static io.github.ai4ci.flow.mechanics.StateUtils.complianceFatigue;
+import static io.github.ai4ci.flow.mechanics.StateUtils.decreaseSociabilityIfCompliant;
+import static io.github.ai4ci.flow.mechanics.StateUtils.resetBehaviour;
+import static io.github.ai4ci.flow.mechanics.StateUtils.seekPcrIfSymptomatic;
 
 import io.github.ai4ci.abm.ImmutablePersonHistory;
 import io.github.ai4ci.abm.ImmutablePersonState;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult.Result;
-import io.github.ai4ci.abm.mechanics.StateMachine.BehaviourState;
-import io.github.ai4ci.abm.mechanics.StateMachineContext;
-import io.github.ai4ci.abm.mechanics.StateUtils.DefaultNoTesting;
+import io.github.ai4ci.flow.mechanics.State;
+import io.github.ai4ci.flow.mechanics.StateMachineContext;
+import io.github.ai4ci.flow.mechanics.StateUtils.DefaultNoTesting;
 import io.github.ai4ci.util.Sampler;
 
+/**
+ * Reactive test and isolate behaviour model. This is the behaviour of a person who
+ * will seek a test if they have symptoms, and then self isolate if they are
+ * positive. This is a common policy for many diseases, and is used as a baseline
+ * for comparison with other compliant behaviour models.
+ * 
+ * @author Rob Challen
+ */
 public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 
 	/**
 	 * Patient will probably test if they have symptoms, then wait for the
-	 * result. They will self isolate if they are positive
+	 * result. They will self isolate if they are positive.
 	 */
 	REACTIVE_PCR {
 
@@ -30,7 +38,7 @@ public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 		}
 
 		@Override
-		public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
 			if ( context.isReactivelyTestedToday() ) { 
 				decreaseSociabilityIfCompliant(builder, person);
@@ -41,9 +49,9 @@ public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 		}
 		
 	},
-	
+	/** Awaiting PCR result. If positive then self isolate, if negative then return to normal behaviour */
 	AWAIT_PCR {
-		public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
 			if (person.isLastTestExactly(Result.PENDING)) return AWAIT_PCR;
 			if (person.isLastTestExactly(Result.POSITIVE)) return SELF_ISOLATE;
@@ -51,10 +59,10 @@ public enum ReactiveTestAndIsolate implements BehaviourModel, DefaultNoTesting {
 			return REACTIVE_PCR;
 		}
 	},
-	
+	/** Self isolating. Will stay in this state for the duration of the infectious period, then return to normal behaviour. */
 	SELF_ISOLATE {
 		@Override
-		public BehaviourState nextState(ImmutablePersonState.Builder builder, 
+		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
 				PersonState person, StateMachineContext context, Sampler rng) {
 			if (!person.isCompliant()) {
 				resetBehaviour(builder,person);

@@ -23,8 +23,8 @@ import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult;
+import io.github.ai4ci.functions.DelayDistribution;
 import io.github.ai4ci.util.Binomial;
-import io.github.ai4ci.util.DelayDistribution;
 
 @Mapper(
 		builder = @Builder(buildMethod = "build"),
@@ -33,7 +33,7 @@ import io.github.ai4ci.util.DelayDistribution;
 		imports = {Calibration.class}
 )
 public abstract class CSVMapper {
-	 
+ 
 	public static CSVMapper INSTANCE = Mappers.getMapper( CSVMapper.class );
 	
 	@Mapping(target= "personId", source="entity.id")

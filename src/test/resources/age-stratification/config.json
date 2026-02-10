@@ -15,16 +15,22 @@
         "networkDegree" : 100
       },
       "demographics" : {
+        "@type" : "age-stratified",
+        "contactProximityBias" : 2.0,
         "ageDistribution" : {
+          "@type" : "empirical",
           "minimum" : 0.0,
           "maximum" : 120.0,
           "x" : [ 18.0, 45.0, 65.0, 85.0 ],
-          "cumulativeProbability" : [ 0.1, 0.5, 0.75, 0.9 ]
+          "cumulativeProbability" : [ 0.1, 0.5, 0.75, 0.9 ],
+          "link" : "NONE"
         },
         "oddsContactFromAgeDifference" : {
           "x" : [ 0.0, 10.0, 25.0, 40.0, 60.0, 70.0 ],
           "y" : [ 2.0, 0.5, 1.5, 0.5, 1.0, 0.5 ],
-          "link" : "LOG"
+          "link" : "LOG",
+          "minimum" : 0.0,
+          "maximum" : 70.0
         }
       }
     }
@@ -38,57 +44,58 @@
     "caseFatalityRate" : 0.01,
     "initialScreeningProbability" : 0.01,
     "contactProbability" : {
-      "type" : "UNIFORM0",
-      "central" : 0.5
+      "@type" : "unimodal-beta",
+      "mean" : 0.5,
+      "dispersion" : 0.25
     },
     "contactDetectedProbability" : 0.9,
     "complianceProbability" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.99,
+      "@type" : "unimodal-beta",
+      "mean" : 0.99,
       "dispersion" : 0.1
     },
     "appUseProbability" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.97,
+      "@type" : "unimodal-beta",
+      "mean" : 0.97,
       "dispersion" : 0.1
     },
     "inHostConfiguration" : {
       "@type" : "phenomenological",
       "infectiousnessCutoff" : 0.2,
       "incubationPeriod" : {
-        "type" : "LOG_NORM",
-        "central" : 4.0,
-        "dispersion" : 2.0
+        "@type" : "log-normal",
+        "mean" : 4.0,
+        "sd" : 2.0
       },
       "approxPeakViralLoad" : {
-        "type" : "UNIMODAL_BETA",
-        "central" : 0.5,
+        "@type" : "unimodal-beta",
+        "mean" : 0.5,
         "dispersion" : 0.1
       },
       "incubationToPeakViralLoadDelay" : {
-        "type" : "LOG_NORM",
-        "central" : 2.0,
-        "dispersion" : 1.0
+        "@type" : "log-normal",
+        "mean" : 2.0,
+        "sd" : 1.0
       },
       "peakToRecoveryDelay" : {
-        "type" : "LOG_NORM",
-        "central" : 6.0,
-        "dispersion" : 3.0
+        "@type" : "log-normal",
+        "mean" : 6.0,
+        "sd" : 3.0
       },
       "approxPeakImmuneResponse" : {
-        "type" : "UNIMODAL_BETA",
-        "central" : 0.5,
+        "@type" : "unimodal-beta",
+        "mean" : 0.5,
         "dispersion" : 0.1
       },
       "peakImmuneResponseDelay" : {
-        "type" : "LOG_NORM",
-        "central" : 20.0,
-        "dispersion" : 4.0
+        "@type" : "log-normal",
+        "mean" : 20.0,
+        "sd" : 4.0
       },
       "immuneWaningHalfLife" : {
-        "type" : "LOG_NORM",
-        "central" : 300.0,
-        "dispersion" : 10.0
+        "@type" : "log-normal",
+        "mean" : 300.0,
+        "sd" : 10.0
       }
     },
     "availableTests" : [ {
@@ -107,13 +114,13 @@
       "limitOfDetection" : 0.1
     } ],
     "symptomSensitivity" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.5,
+      "@type" : "unimodal-beta",
+      "mean" : 0.5,
       "dispersion" : 0.1
     },
     "symptomSpecificity" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.95,
+      "@type" : "unimodal-beta",
+      "mean" : 0.95,
       "dispersion" : 0.1
     },
     "initialEstimateInfectionDuration" : 10.0,
@@ -121,17 +128,32 @@
     "initialEstimateSymptomSensitivity" : 0.5,
     "initialEstimateSymptomSpecificity" : 0.95,
     "riskModelSymptomKernel" : {
-      "kernel" : "DEFAULT_SYMPTOM_ONSET_KERNEL"
+      "@type" : "gaussian",
+      "maximum" : 7,
+      "minimum" : -3,
+      "sum" : 5.0,
+      "mu" : 2.0,
+      "sigma" : 3.0
     },
     "riskModelTestKernel" : {
-      "kernel" : "DEFAULT_TEST_SAMPLE_KERNEL"
+      "@type" : "gaussian",
+      "maximum" : 11,
+      "minimum" : -5,
+      "sum" : 10.0,
+      "mu" : 2.0,
+      "sigma" : 3.0
     },
     "riskModelContactsKernel" : {
-      "kernel" : "DEFAULT_CONTACT_KERNEL"
+      "@type" : "gaussian",
+      "maximum" : 10,
+      "minimum" : 0,
+      "sum" : 7.5,
+      "mu" : 0.0,
+      "sigma" : 3.0
     },
     "maximumSocialContactReduction" : {
-      "type" : "UNIMODAL_BETA",
-      "central" : 0.25,
+      "@type" : "unimodal-beta",
+      "mean" : 0.25,
       "dispersion" : 0.1
     },
     "defaultBehaviourModelName" : "Test",
@@ -145,6 +167,22 @@
     "importationProbability" : 0.0,
     "smartAppRiskTrigger" : 0.05,
     "demographicAdjustment" : {
+      "asymptomaticFraction" : {
+        "fXExpression" : "exp(-(x-45)/20*lg(2))"
+      },
+      "caseHospitalisationRate" : {
+        "fXExpression" : "exp((x-45)/15*lg(2))"
+      },
+      "caseFatalityRate" : {
+        "fXExpression" : "exp((x-45)/10*lg(2))"
+      },
+      "contactProbability" : {
+        "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 75.0 ],
+        "y" : [ 2.0, 1.0, 1.5, 1.25, 0.8, 1.2 ],
+        "link" : "LOG",
+        "minimum" : 0.0,
+        "maximum" : 75.0
+      },
       "complianceProbability" : {
         "value" : 1.0
       },
@@ -157,7 +195,9 @@
       "peakToRecoveryDelay" : {
         "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 65.0 ],
         "y" : [ 1.0, 0.5, 0.5, 0.75, 1.0, 2.0 ],
-        "link" : "LOG"
+        "link" : "LOG",
+        "minimum" : 0.0,
+        "maximum" : 65.0
       },
       "incubationPeriod" : {
         "value" : 1.0
@@ -165,7 +205,9 @@
       "immuneWaningHalfLife" : {
         "x" : [ 0.0, 5.0, 15.0, 25.0, 45.0, 65.0, 85.0 ],
         "y" : [ 1.0, 2.0, 2.0, 1.5, 1.0, 0.5, 0.25 ],
-        "link" : "LOG"
+        "link" : "LOG",
+        "minimum" : 0.0,
+        "maximum" : 85.0
       }
     }
   },

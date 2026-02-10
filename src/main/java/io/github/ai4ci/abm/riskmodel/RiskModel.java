@@ -8,25 +8,68 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.abm.Contact;
+import io.github.ai4ci.abm.ModelNav;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.TestResult;
 import io.github.ai4ci.abm.riskmodel.ImmutableRiskModel.Builder;
-import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.util.Conversions;
-import io.github.ai4ci.util.ModelNav;
 
 /**
- * Establish an individuals risk on a given day. Risk on a give n day is a 
+ * Bayesian risk estimation model for determining individual infectious probability.
+ * 
+ * <h2>Overview</h2>
+ * <p> Establishes an individual's risk on a given day. Risk on a given day is a 
  * function of the day of contact and the day on which the risk is estimated
- * (usually this is going to be now). The reason for this is that evidence
- * changes over time, as new information is obtained. For example given a 
+ * (usually this is going to be now). The risk is based on both direct evidence 
+ * from tests and symptoms and indirect evidence from contacts. Because results
+ * from tests are delayed and symptoms evolve over time the risk has to be recalculated
+ * every day, as new information emerges about the index person but also about
+ * their contacts.
+ * 
+ * <p> For example given a 
  * contact on day X, if the exposer develops symptoms on day X+1 (and reports 
  * them) then the risk to the exposee as calculated on day X+1 will be more than
- * on day X. Because of this there is a limited amount you can precalculate as
+ * on day X. Because of this there is a limited amount you can pre-calculate as
  * the answer will depend on observations that may or may not have happened yet.
  * What we can calculate is what the results of symptoms today mean for contacts
- * in the past and what tests taken today mean for 
+ * in the past and how tests taken today impact risk to contacts in the past.  
+ * 
+ * <p>This model calculates an individual's risk of being infectious on a given day based on:
+ * <ul>
+ *   <li>Direct evidence: symptoms and test results through time</li>
+ *   <li>Indirect evidence: contact tracing and exposure history</li>
+ * </ul>
+ * 
+ * <p>The risk evolves over time as new information becomes available. Calculations follow
+ * Bayesian updating principles with log-odds formulations for computational stability.
+ * 
+ * <h2>Bayesian Framework</h2>
+ * <p>Risk is calculated using Bayes' theorem with log-odds transformation:
+ * \[
+ * \text{posterior odds} = \text{prior odds} \times \text{likelihood ratio}
+ * \]
+ * In log-odds space this becomes:
+ * \[
+ * \log\left(\frac{p}{1-p}\right)_{\text{posterior}} = \log\left(\frac{p}{1-p}\right)_{\text{prior}} + \log(\text{likelihood ratio})
+ * \]
+ * 
+ * <h2>Evidence Sources</h2>
+ * <p>The model uses three types of convolution filters to weight evidence over time:
+ * <ul>
+ *   <li><b>Symptom Kernel</b>: Temporal weighting of symptom reporting</li>
+ *   <li><b>Test Kernel</b>: Temporal weighting of test results including delays</li>
+ *   <li><b>Contacts Kernel</b>: Temporal weighting of exposure risk from contacts</li>
+ * </ul>
+ * 
+ * <h2>Temporal Evolution</h2>
+ * <p>Evidence accumulation follows a dynamic programming approach where:
+ * \[
+ * \mathbf{logOdds}_{t} = f(\mathbf{logOdds}_{t-1}, \text{new evidence}_t)
+ * \]
+ * Each day's risk estimate incorporates both new evidence and re-evaluation of past evidence
+ * in light of new developments.
  */
 @Value.Immutable
 public interface RiskModel extends Serializable {
@@ -34,23 +77,44 @@ public interface RiskModel extends Serializable {
 	public Logger log = LoggerFactory.getLogger(RiskModel.class);
 	
 	
-	// This is 1 here because the symptoms are only recorded if the person
-	// has already been tested as compliant && is symptomatic. It is still 
-	// possible if compliant 
-	// that the person won't report negative symptoms in which case the absence
-	// of symptoms is not informative. The whole risk model is very sensitive to 
-	// these values along with the kernels
-	double PROB_REPORTING_POSITIVE_SYMPTOMS = 1;
-	double PROB_REPORTING_NEGATIVE_SYMPTOMS = 0.02;
 	
+	/**
+	 * Probability of reporting symptoms when symptomatic (app compliance).
+	 * This represents reporting sensitivity through symptom reporting mechanisms.
+	 * <p> This is 1 here because the symptoms are only recorded if the person
+	 * has already been tested as compliant and is symptomatic. It is still 
+	 * possible if compliant 
+	 * that the person won't report negative symptoms in which case the absence
+	 * of symptoms is not informative. The whole risk model is very sensitive to 
+	 * these values along with the kernels
+	 */
+	double PROB_REPORTING_POSITIVE_SYMPTOMS = 1;
+	
+	/**
+	 * Probability of symptom absence being reported when asymptomatic.
+	 * Represents the specificity of symptom absence reporting.
+	 */
+	double PROB_REPORTING_NEGATIVE_SYMPTOMS = 0.02;
+
+	/** @return the person entity associated with this risk model */
 	Person getEntity();
 	
-	@Value.Redacted Kernel getSymptomKernel();
-	@Value.Redacted Kernel getTestKernel();
-	@Value.Redacted Kernel getContactsKernel();
+	/** @return convolution filter for symptom evidence weighting */
+	@Value.Redacted ConvolutionFilter getSymptomKernel();
+	
+	/** @return convolution filter for test evidence weighting */
+	@Value.Redacted ConvolutionFilter getTestKernel();
+	
+	/** @return convolution filter for contact exposure evidence weighting */
+	@Value.Redacted ConvolutionFilter getContactsKernel();
 	
 	/** 
-	 * What is this evidence of this person being infectious 0..N days in the past
+	 * Array of direct log-odds evidence for infectiousness on past days.
+	 * Index 0 represents today, increasing indices represent further in the past.
+	 * Calculated as: 
+         * \[\log\left(\frac{p(\text{infectious}|evidence)}{1-p(\text{infectious}|evidence)}\right)\]
+         * 
+         * <p> What is this evidence of this person being infectious 0..N days in the past
 	 * judged today expressed as a log odds, based on symptoms and test results
 	 * that are available today.
 	 */
@@ -58,7 +122,17 @@ public interface RiskModel extends Serializable {
 	
 	
 	/** 
-	 * What is this individuals risk of infection today based on a prior?
+	 * Probability of being infectious today, incorporating all available evidence.
+	 * 
+	 * <p>Calculated using Bayesian updating with logistic transformation:
+	 * \[
+	 * p_{\text{infectious}} = \text{expit}\left(\log\left(\frac{p_{\text{prior}}}{1-p_{\text{prior}}}\right) + LR_{\text{direct}} + LR_{\text{indirect}}\right)
+	 * \]
+	 * where \(\text{expit}(x) = \frac{e^x}{1 + e^x}\) is the logistic function.
+	 * 
+	 * <p>Uses a small prior (0.0025) to prevent numerical issues with extreme log-odds.
+	 * 
+	 * @return probability of infectiousness today ∈ [0,1]
 	 */
 	@Value.Lazy default double getProbabilityInfectiousToday() {
 		double prior = 0.0025;
@@ -73,19 +147,36 @@ public interface RiskModel extends Serializable {
 	};
 	
 	/** 
-	 * What is this individuals odds ratio of infection today compared to the
-	 * baseline of the population
+	 * Log-odds of infectiousness today relative to baseline population prevalence.
+	 * 
+	 * <p>Represents the combined evidence from direct measurements and contact exposures:
+	 * \[
+	 * LR_{\text{total}} = LR_{\text{direct}}(0) + LR_{\text{indirect}}
+	 * \]
+	 * <p>What is the longest it is worth holding information about infection risk
+	 * for? The contacts kernel retrospectiveSize is one sensible limit. Beyond that there
+	 * is no value to the information anyway for determining future risk. Is this 
+	 * 
+	 * @return combined log-likelihood ratio for infectiousness today
 	 */
 	@Value.Lazy default double getLogOddsInfectiousToday() {
 		return getDirectLogOddsInPast(0) + 
 			getIndirectLogOdds();
 	};
 	
+	/** @return current simulation time step */
 	int getTime();
 	
-	// What is the longest it is worth holding information about infection risk
-	// for? The conacts kernel retrospectiveSize is one sensible limit. Beyond that there
-	// is no value to the information anyway for determining future risk. Is this 
+	/**
+	 * Maximum temporal window for evidence retention.
+	 * 
+	 * <p>Determined by the largest retrospective size among the convolution kernels:
+	 * \[
+	 * \text{maxLength} = \max(\text{symptomKernel.retrospectiveSize}, \text{testKernel.retrospectiveSize}, \text{contactsKernel.retrospectiveSize})
+	 * \]
+	 * 
+	 * @return maximum number of days to retain evidence
+	 */
 	@Value.Derived default int getMaxLength() {
 		return Math.max(Math.max(
 				getContactsKernel().retrospectiveSize(),
@@ -93,7 +184,14 @@ public interface RiskModel extends Serializable {
 				getTestKernel().retrospectiveSize());
 	}
 	
-	// truncated copy of array
+	/**
+	 * Shift evidence array one day forward, adding today's slot at index 0.
+	 * Past evidence beyond maxLength is truncated. This is only possible
+	 * for direct evidence as indirect evidence is recalculated each day.
+	 * 
+	 * @param old previous day's evidence array
+	 * @return new array with updated timing
+	 */
 	private double[] copyOf(double[] old) {
 		int len = Math.min(old.length+1, getMaxLength());
 		double[] out = new double[len];
@@ -102,10 +200,30 @@ public interface RiskModel extends Serializable {
 	}
 	
 	/**
+	 * Update direct log-odds evidence with new information from today.
+	 * 
+	 * <p>Implements a temporal Bayesian filter that:
+	 * 1. Shifts previous evidence forward in time
+	 * 2. Incorporates new symptom evidence using symptom kernel convolution
+	 * 3. Incorporates new test evidence using test kernel convolution
+	 * 
 	 * Logic here is complex. We are updating what we know about the past given
 	 * the extra information that becomes available today. The old directLogOdds
 	 * array is 0..N days in the past from yesterday. We shift this one additional
 	 * day and set todays directLogOdds to 0 using copyOf
+     *
+	 * <p>Symptom evidence convolution:
+	 * \[
+	 * LR_{\text{new}}[0] += \sum_{i=0}^{N_{\text{retro}}} \text{symptomLR}(i) \times K_{\text{symptom}}(i)
+	 * \]
+	 * \[
+	 * LR_{\text{new}}[j] += \sum_{j=1}^{N_{\text{prosp}}} \text{symptomLR}(today) \times K_{\text{symptom}}(-j)
+	 * \]
+	 * 
+	 * <p>Test evidence follows similar convolution patterns accounting for result delays.
+	 * 
+	 * @param old previous day's evidence array
+	 * @return updated evidence array incorporating today's information
 	 */
 	private double[] updateDirectLogOdds(double[] old) {
 		
@@ -113,8 +231,7 @@ public interface RiskModel extends Serializable {
 		// point and we can reuse that (since results are not updated in this model).
 		double[] newer = copyOf(old);
 		// Additional information from symptoms today:
-		Kernel symptoms = getSymptomKernel();
-		
+		ConvolutionFilter symptoms = getSymptomKernel();
 		
 		// old symptoms inform new time point (today). the symptoms are relevant up
 		// to the size of the future part of the kernel. Todays symptoms also included here
@@ -145,7 +262,7 @@ public interface RiskModel extends Serializable {
 		// inform the period around the test sample date.
 		// we do this as before in two stages. all previous tests and how they 
 		// inform today.
-		Kernel tests = getTestKernel();
+		ConvolutionFilter tests = getTestKernel();
 		for (int i=0; i < tests.retrospectiveSize(); i++) {
 			Optional<PersonHistory> ph = this.getEntity().getHistory(i);
 			double density = tests.getDensity(i);
@@ -187,17 +304,28 @@ public interface RiskModel extends Serializable {
 	}
 	
 	/** 
+	 * Indirect log-odds from contact exposures.
+	 * 
+	 * <p>Calculates risk contribution from contact tracing:
+	 * \[
+	 * LR_{\text{indirect}} = \sum_{i=0}^{N_{\text{contacts}}} \sum_{\text{contact}\in\text{contacts}_i} LR_{\text{contact}}(i) \times K_{\text{contacts}}(i)
+	 * \]
+	 * 
+	 * <p>Unlike direct evidence, contact risk is recalculated daily rather than
+	 * updated incrementally, as contact risk evolves with changing contact states.
 	 * What will the evidence be for this person being infectious today 
 	 * as a result of their past contacts. This value is would change retrospectively 
 	 * if you estimated it again the next day as the contacts test results and 
 	 * symptoms change. However this is only useful information if we are interested
 	 * in contacts of contacts. We are no so we do the simpler thing which is
 	 * look at recent contacts and get an estimate for today only.
+     *
+	 * @return log-likelihood ratio from contact exposures
 	 */
 	@Value.Lazy default double getIndirectLogOdds() {
 		// double[] newer = new double[getMaxLength()];
 		
-		Kernel contacts = getContactsKernel();
+		ConvolutionFilter contacts = getContactsKernel();
 		
 		// old contacts inform new time points, but old contacts change also. 
 		// Unlike symptoms and tests we don't get new information about the 
@@ -240,11 +368,33 @@ public interface RiskModel extends Serializable {
 		return logOdds;
 	};
 	
+	/**
+	 * Retrieve direct log-odds evidence for a specific past day.
+	 * 
+	 * @param i days in the past (0 = today, 1 = yesterday, etc.)
+	 * @return log-odds evidence for infectiousness on that day
+	 */
 	default double getDirectLogOddsInPast(int i) {
 		if (i<0 || i >= this.getDirectLogOdds().length) return 0;
 		return this.getDirectLogOdds()[i];
 	};
 
+	/**
+	 * Calculate symptom log-likelihood ratio for Bayesian updating.
+	 * 
+	 * <p>For symptomatic reports:
+	 * \[
+	 * LR_{\text{symptom}} = \log\left(\frac{\text{sensitivity}}{1 - \text{specificity}}\right) \times P_{\text{report}}
+	 * \]
+	 * 
+	 * <p>For asymptomatic reports:
+	 * \[
+	 * LR_{\text{no-symptom}} = \log\left(\frac{1 - \text{sensitivity}}{\text{specificity}}\right) \times P_{\text{no-report}}
+	 * \]
+	 * 
+	 * @param isKnownSymptomatic whether symptoms were reported
+	 * @return log-likelihood ratio for infectiousness given symptom evidence
+	 */
 	private double symptomLogLik(boolean isKnownSymptomatic) {
 		// At the moment this is not adjusted for the probability of app usage
 		double sens = ModelNav.modelState(this.getEntity()).getPresumedSymptomSensitivity();
@@ -259,23 +409,44 @@ public interface RiskModel extends Serializable {
 				Math.log((1 - sens) / (spec)) * PROB_REPORTING_NEGATIVE_SYMPTOMS;
 	}
 	
+	/**
+	 * Initialize a new risk model for a person with configured convolution kernels.
+	 * 
+	 * <p>Sets up temporal weighting functions from execution configuration:
+	 * - Symptom kernel: \(K_{\text{symptom}}(t)\)
+	 * - Test kernel: \(K_{\text{test}}(t)\) 
+	 * - Contacts kernel: \(K_{\text{contacts}}(t) / \text{expectedContacts}\)
+	 * 
+	 * @param person the individual to model
+	 * @return initialized risk model ready for evidence accumulation
+	 */
 	static RiskModel initialise(Person person) {
 		ExecutionConfiguration config = ModelNav.modelParam(person);
 		double meanContacts = ModelNav.modelBase(person).getExpectedContactsPerPersonPerDay();
 		return ImmutableRiskModel.builder()
 				.setEntity(person)
 				.setTime(person.getOutbreak().getCurrentState() == null ? 0 : person.getOutbreak().getCurrentState().getTime())
-				.setSymptomKernel(config.getRiskModelSymptomKernel().kernel())
-				.setTestKernel(config.getRiskModelTestKernel().kernel())
-				.setContactsKernel(config.getRiskModelContactsKernel().kernel().scale(1/meanContacts))
+				.setSymptomKernel(ConvolutionFilter.from(config.getRiskModelSymptomKernel()))
+				.setTestKernel(ConvolutionFilter.from(config.getRiskModelTestKernel()))
+				.setContactsKernel(ConvolutionFilter.from(config.getRiskModelContactsKernel()).scale(1/meanContacts))
 				.build();
 	};
 	
 	/**
+	 * Update risk model to current day with new evidence.
+	 * 
 	 * Update the risk model to the current day, based on the current state of
 	 * the person. (The risk model is most likely immutable so this will be a new one).
 	 * This is called during the update cycle at the point that the history
 	 * is updated..
+	 * <p>Performs one step of temporal Bayesian filtering:
+	 * \[
+	 * \mathbf{evidence}_{t} = \text{update}(\mathbf{evidence}_{t-1}, \text{observations}_t)
+	 * \]
+	 * 
+	 * <p>Called during the daily update cycle when new history becomes available.
+	 * 
+	 * @return updated risk model with incremented time and new evidence incorporated
 	 */
 	default RiskModel update() {
 		Builder tmp = ImmutableRiskModel.builder().from(this);

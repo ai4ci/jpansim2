@@ -6,9 +6,9 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.Person;
-import io.github.ai4ci.abm.builders.DefaultPersonInitialiser;
-import io.github.ai4ci.config.ExecutionConfiguration;
+import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
+import io.github.ai4ci.flow.builders.DefaultPersonInitialiser;
 import io.github.ai4ci.util.Sampler;
 
 /**
@@ -57,6 +57,8 @@ import io.github.ai4ci.util.Sampler;
  *
  * <p>This interface ensures that regardless of the internal model, downstream components (e.g., transmission,
  * calibration, severity mapping) can interact uniformly with the in-host state.
+ * 
+ * @param <CFG> the type of in-host configuration used to initialize the model state
  */
 public interface InHostModelState<CFG extends InHostConfiguration> extends Serializable {
 
@@ -105,6 +107,10 @@ public interface InHostModelState<CFG extends InHostConfiguration> extends Seria
 	 */
 	@Value.NonAttribute double getImmuneActivity();
 	
+	/**
+	 * The time step counter for the in-host model, representing the number of updates since initialization.
+	 * @return the current time step (integer, starting at 0)
+	 */
 	int getTime();
 	
 	/**

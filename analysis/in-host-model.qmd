@@ -377,7 +377,7 @@ sweep = function(parsDf = tibble::tibble(boot=1), maxtime = 399,...) {
   full_params(mod) %>% inner_join(tmp, by="set")
 }
 
-plot_sweep = function(tmp, facets = ~variable) {
+plot_sweep_2 = function(tmp, facets = ~variable) {
   
   tmp = tmp %>% 
     filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
@@ -406,7 +406,7 @@ tmp = sweep(parsDf = tibble(
   rate_virion_replication = seq(1,5,1)
 ))
 
-tmp %>% plot_sweep()
+tmp %>% plot_sweep_2()
 
 ```
 
@@ -426,7 +426,7 @@ tmp = sweep(parsDf = tibble(
   rate_target_recovery = 1/7, #1/c(1,3,7,15,30), # << HOST FACTOR, duration and severity of disease, no efffect on peak viral load ? useful for asymptomatics
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep_2(~variable)
 
 
 
@@ -437,7 +437,7 @@ tmp %>% plot_sweep(~variable)
 
 rate of virion replication defines how many viral copies are produced per 
 infected cells and also how quickly exposed cells transition to infected.
-It is a measure of how effiencetly the virus replicates once in the cell
+It is a measure of how efficiently the virus replicates once in the cell
 
 ```{r}
 
@@ -450,7 +450,7 @@ tmp = sweep(parsDf = tibble(
   
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep_2(~variable)
 
 
 tmp2 = sweep(parsDf = tibble(
@@ -462,7 +462,7 @@ tmp2 = sweep(parsDf = tibble(
   
 ))
 
-tmp2 %>% plot_sweep(~variable)
+tmp2 %>% plot_sweep_2(~variable)
 
 ```
 
@@ -481,7 +481,7 @@ tmp = sweep(parsDf = tibble(
   
 ))
 
-tmp %>% plot_sweep(~variable)
+tmp %>% plot_sweep_2(~variable)
 ```
 
 ## Peaks and phases

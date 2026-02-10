@@ -1,0 +1,72 @@
+@startuml
+title Model configuration — sequence diagram
+
+participant "AbstractModelBuilder" as Builder
+participant "SetupConfiguration" as Setup
+participant "ExecutionConfiguration" as Exec
+participant "ModifiableOutbreak" as Outbreak
+participant "PersonContainer\n(ThreadSafeArray<Person>)" as People
+participant "SocialRelationshipList" as Network
+participant "ModelNav" as ModelNav
+participant "Calibration" as Calib
+participant "Person (per-agent)" as Person
+participant "ImmutableOutbreakBaseline" as OBBase
+participant "ImmutablePersonBaseline" as PBBase
+participant "ImmutableOutbreakState" as OBState
+participant "PersonState" as PState
+
+note over Builder,Setup: Stage 1 — setupOutbreak
+
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.doSetupOutbreak(ModifiableOutbreak, SetupConfiguration, Sampler)
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.setupOutbreak(ModifiableOutbreak, SetupConfiguration, Sampler)
+Builder -> Setup: read spatial/population inputs
+Builder -> People: create PersonContainer(size, ids)
+Builder -> Network: construct SocialRelationshipList(network)
+Outbreak --> Builder: outbreak with SetupConfiguration, People, Network
+
+note over Builder,Outbreak: Stage 2 — baselineOutbreak
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.doBaselineOutbreak(ImmutableOutbreakBaseline.Builder, Outbreak, Sampler)
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.baselineOutbreak(ImmutableOutbreakBaseline.Builder, Outbreak, Sampler)
+Outbreak -> Exec: io.github.ai4ci.abm.Outbreak.getExecutionConfiguration()
+Builder -> Exec: read disease params, tests, vaccines (outbreak.getExecutionConfiguration())
+Builder -> Calib: io.github.ai4ci.abm.Calibration (consult / deriveScalars)
+Builder -> OBBase: ImmutableOutbreakBaseline.builder()
+OBBase --> Outbreak: io.github.ai4ci.abm.Outbreak.setBaseline(ImmutableOutbreakBaseline)
+
+note over Builder,Person: Stage 3 — baselinePerson (loop per agent)
+loop for each Person in People
+  Builder -> Person: io.github.ai4ci.abm.builders.AbstractModelBuilder.doBaselinePerson(ImmutablePersonBaseline.Builder, Person, Sampler)
+  Builder -> Person: io.github.ai4ci.abm.builders.AbstractModelBuilder.baselinePerson(ImmutablePersonBaseline.Builder, Person, Sampler)
+  Person -> ModelNav: io.github.ai4ci.util.ModelNav.modelParam(Person) / modelBase(Person)
+  ModelNav -> Exec: returns io.github.ai4ci.config.ExecutionConfiguration (e.g. getTestParameters())
+  Builder -> Calib: sample/adjust person modifiers (susceptibility/transmissibility)
+  Builder -> PBBase: ImmutablePersonBaseline.builder()
+  PBBase --> Person: io.github.ai4ci.abm.Person.setBaseline(ImmutablePersonBaseline)
+end
+
+note over Builder,Outbreak: Stage 4 — initialiseOutbreak
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.doInitialiseOutbreak(ImmutableOutbreakState.Builder, Outbreak, Sampler)
+Builder -> Outbreak: io.github.ai4ci.abm.builders.AbstractModelBuilder.initialiseOutbreak(ImmutableOutbreakState.Builder, Outbreak, Sampler)
+Builder -> Exec: read runtime schedules, policies, initial seeds (outbreak.getExecutionConfiguration())
+Builder -> OBState: ImmutableOutbreakState.builder()
+OBState --> Outbreak: io.github.ai4ci.abm.Outbreak.setCurrentState(ImmutableOutbreakState)
+
+note over Builder,Person: Stage 5 — initialisePerson (loop per agent)
+loop for each Person in People
+  Builder -> Person: io.github.ai4ci.abm.builders.AbstractModelBuilder.doInitialisePerson(ImmutablePersonState.Builder, Person, Sampler)
+  Builder -> Person: io.github.ai4ci.abm.builders.AbstractModelBuilder.initialisePerson(ImmutablePersonState.Builder, Person, Sampler)
+  Person -> PBBase: io.github.ai4ci.abm.Person.getBaseline()
+  Person -> OBState: io.github.ai4ci.abm.Person.getOutbreak().getCurrentState()
+  Builder -> Person: seed infection / in-host initial conditions
+  Builder -> PState: ImmutablePersonState.builder()
+  PState --> Person: io.github.ai4ci.abm.Person.setState(ImmutablePersonState)
+end
+
+note over Exec,Person: Runtime mappings available
+Exec -> Person: defines available tests, vaccine eligibility, screening probs
+Calib -> Person: provides calibrated modifiers to match population metrics
+
+note over Builder,People: Result
+Builder --> Outbreak: configured Outbreak ready to run (people + baselines + states)
+
+@enduml

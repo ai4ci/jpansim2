@@ -10,8 +10,35 @@ import org.duckdb.DuckDBAppender;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class DuckDBUtil {
+/**
+ * Utility class for DuckDB database operations and type mapping.
+ * <p>
+ * This class provides functionality for appending Java objects to DuckDB tables
+ * and generating SQL CREATE TABLE statements based on Java class metadata.
+ * The class handles type mapping between Java types and DuckDB SQL types,
+ * supporting primitive types, wrapper classes, and common Java types.
+ * 
+ * @author Rob Challen
+ * @see org.duckdb.DuckDBAppender
+ * @see com.fasterxml.jackson.annotation.JsonProperty
+ */
 
+public class DuckDBUtil {
+	
+	
+
+	/**
+	 * Appends a Java object to a DuckDB table using type-specific appender methods.
+	 * <p>
+	 * This method performs type-based dispatch to invoke the appropriate DuckDBAppender
+	 * method for the given object type. Supported types include primitive types, their wrapper classes, BigDecimal,
+	 * LocalDateTime, and String. If the object type is not supported, an IllegalArgumentException is thrown.
+	 *
+	 * @param appender the DuckDBAppender instance to append data to
+	 * @param value the object to append, must be of a supported type
+	 * @throws IllegalArgumentException if the object type is not supported
+	 * @throws RuntimeException if a SQLException occurs during appending
+	 */
 	public static void append(DuckDBAppender appender, Object value) {
 		try {
 			if (value instanceof Boolean) {
@@ -42,6 +69,18 @@ public class DuckDBUtil {
 		}
 	}
 
+	/**
+	 * Generates a CREATE TABLE SQL statement for a given Java class.
+	 * <p>
+	 * This method constructs SQL DDL statements dynamically by analysing methods
+	 * annotated with {@link JsonProperty} in the specified class. The generated
+	 * SQL creates a table with columns corresponding to each annotated property.
+	 *
+	 * @param <X> the class type parameter
+	 * @param type the Java class to generate SQL for
+	 * @param tableName the name of the table to create
+	 * @return a complete CREATE TABLE SQL statement
+	 */
 	public static <X> String createSql(Class<X> type, String tableName) {
 		return "CREATE TABLE "+tableName+" ("+
 				Arrays.stream(type.getMethods())
@@ -54,6 +93,21 @@ public class DuckDBUtil {
 		;
 	}
 
+	/**
+	 * Maps Java class types to corresponding DuckDB SQL types.
+	 * <p>
+	 * This function implements the type mapping covering both primitive
+	 * types and their corresponding wrapper classes, plus additional Java types
+	 * commonly used in database applications.
+	 * <p>
+	 * The mapping logic handles primitive types first, then falls back to
+	 * wrapper classes and common Java types. Unsupported types result in an
+	 * IllegalArgumentException being thrown.
+	 *
+	 * @param clazz the Java class to map to a DuckDB type
+	 * @return the corresponding DuckDB SQL type as a string
+	 * @throws IllegalArgumentException if clazz is null or unsupported
+	 */
 	public static String mapToDuckDBType(Class<?> clazz) {
 		if (clazz == null) {
 			throw new IllegalArgumentException("Class cannot be null");

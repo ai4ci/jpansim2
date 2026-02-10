@@ -12,9 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.TestUtils;
-import io.github.ai4ci.abm.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
-import io.github.ai4ci.config.setup.PartialSetupConfiguration;
+import io.github.ai4ci.flow.mechanics.ModelOperation.BiFunction;
 import io.github.ai4ci.util.SparseDecomposition.SparseMatrix;
 import io.github.ai4ci.util.SparseDecomposition.SparseMatrixBuilder;
 
@@ -208,15 +207,12 @@ public class TestEigenValue {
     
     @Test
     void testSocialNetworkEigen() {
-    	Outbreak out2 = TestUtils.builder
-				.setSetupTweak(
-					PartialSetupConfiguration.builder()
+    	Outbreak out2 = TestUtils.defaultWithSetup(
+				setup -> setup
 						.setNetwork(BarabasiAlbertConfiguration.DEFAULT
 								.withNetworkSize(10000)
 								.withNetworkDegree(100)
-						)
-						.build())
-				.build().getOutbreak(); 
+						)).getOutbreak(); 
     	
     	var build = SparseMatrix.builder();
     	out2.getSocialNetwork().stream().forEach(sr -> {

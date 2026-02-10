@@ -348,7 +348,8 @@ plot_sweep = function(tmp, facets = ~variable, name) {
     filter(variable %in% c("virions","target_susceptible","immune_active")) %>%
     group_by(across(-c(value,boot))) %>%
     summarise(value = mean(value))
-  
+  plt_data = tmp %>% pivot_wider(names_from = variable, values_from=value)
+
   list(
   ggplot(tmp,aes(x=step-5,y=value,colour = as.factor(set),group=interaction(as.factor(set))))+
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
@@ -358,7 +359,10 @@ plot_sweep = function(tmp, facets = ~variable, name) {
     geom_line()+guides(colour = guide_legend(override.aes = list(alpha=1)))+
     facet_wrap(facets,scales = "free_y")+
     guides(colour=guide_legend(position="bottom", title=name))+
-    coord_cartesian(xlim=c(NA,50))
+    coord_cartesian(xlim=c(NA,50)),
+  ggplot(plt_data, aes(x=virions, y=immune_active, colour = as_factor(set),group=interaction(as.factor(set))))+geom_path()
+  
+  
   )
 } 
 
@@ -421,7 +425,7 @@ tmp2 = sweep(parsDf = tibble(
   # shortens GT? worsens severity
   rate_virion_replication = c(1,2,4,8,16,32), #1, #c(1.5,2,2.5), #c(0.5,1,2,4), # c(0.5,1,2,4,8), << VIRAL FACTOR
   # shorten GT worsen severity ?higher values lead to chronic disease, if exposed are not cleared as more cellular reservoir?
-  rate_infection = 4/rate_virion_replication, #rev(c(0.25,0.5,1,2,4,8)) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
+  #rate_infection = 4/rate_virion_replication, #rev(c(0.25,0.5,1,2,4,8)) #1 #rate_virion_replication, #1, #c(0.8, 0.9, 1, 1.1, 1.2, 2), #c(3,2,1,0.5) # 1/rate_virion_replication * 2, #c(0.25,0.5,1,2,4,8), # * seq(1,2,0.1),
   
 ))
 

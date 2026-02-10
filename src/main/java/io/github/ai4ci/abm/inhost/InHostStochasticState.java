@@ -32,30 +32,209 @@ import io.github.ai4ci.util.Sampler;
  *
  * @see <a href="https://stats.stackexchange.com/questions/93852/sum-of-bernoulli-variables-with-different-success-probabilities">Poisson Binomial Distribution</a>
  * @see <a href="https://math.stackexchange.com/questions/32800/probability-distribution-of-coverage-of-a-set-after-x-randomly-independently">Set Coverage Problem</a>
+ * 
+ * <img src="stochastic-model.png" alt="Diagram of InHostStochasticState compartments and transitions"  />
+ * 
  */
 @Value.Immutable
 public interface InHostStochasticState extends InHostModelState<StochasticModel> {
 
+	/**
+	 * Gets the total number of target cells available for viral infection.
+	 * 
+	 * <p>This represents the fixed pool size of susceptible cells that can be infected.
+	 * The total target count remains constant throughout the simulation, with individual
+	 * cells transitioning between susceptible, exposed, infected, and removed states.
+	 * 
+	 * @return the total number of target cells
+	 */
 	int getTargets();
+	
+	/**
+	 * Gets the ratio of immune cells to target cells in the system.
+	 * 
+	 * <p>This ratio determines the baseline immune capacity relative to the target
+	 * cell population. Higher ratios indicate stronger innate immune responses.
+	 * 
+	 * @return the immune-to-target cell ratio
+	 */
 	double getImmuneTargetRatio();
+	
+	/**
+	 * Gets the activation rate for immune cell priming in response to infection.
+	 * 
+	 * <p>This rate controls how quickly dormant immune cells transition to priming
+	 * state when exposed to infected or exposed target cells. Higher rates lead
+	 * to faster immune response initiation.
+	 * 
+	 * @return the immune activation rate
+	 */
 	double getImmuneActivationRate();
+	
+	/**
+	 * Gets the waning rate for active immune cells transitioning to senescence.
+	 * 
+	 * <p>This rate determines how quickly active effector immune cells lose their
+	 * effectiveness and transition to a senescent state. Lower rates result in
+	 * longer-lasting immune protection.
+	 * 
+	 * @return the immune waning rate
+	 */
 	double getImmuneWaningRate();
+	
+	/**
+	 * Gets the probability that an exposed cell becomes a chronic infection carrier.
+	 * 
+	 * <p>This probability determines whether exposed cells avoid immune clearance
+	 * and remain in a latent reservoir, potentially leading to persistent or
+	 * chronic infections.
+	 * 
+	 * @return the chronic infection carrier probability
+	 */
 	double getInfectionCarrierProbability();
+	
+	/**
+	 * Gets the recovery rate for removed target cells returning to susceptible state.
+	 * 
+	 * <p>This rate controls the regeneration of target cells from the removed pool,
+	 * representing tissue repair and cell turnover processes. Higher rates lead
+	 * to faster recovery of susceptible cell populations.
+	 * 
+	 * @return the target cell recovery rate
+	 */
 	double getTargetRecoveryRate();
+	
+	/**
+	 * Gets the current simulation time step.
+	 * 
+	 * <p>Represents the discrete time index in the simulation. Each time step
+	 * typically corresponds to one day in the infection progression timeline.
+	 * 
+	 * @return the current time step
+	 */
 	int getTime();
 	
+	/**
+	 * Gets the current count of free viral particles (virions) in circulation.
+	 * 
+	 * <p>This includes both infectious and non-infectious viral particles.
+	 * Virions can infect target cells, be neutralized by immune cells,
+	 * or be produced by infected cells.
+	 * 
+	 * @return the current virion count
+	 */
 	int getVirions();
+	
+	/**
+	 * Gets the count of newly produced virions in the current time step.
+	 * 
+	 * <p>This represents the viral replication output from infected target cells.
+	 * Used to distinguish between newly produced virions and those from
+	 * previous time steps or external exposure.
+	 * 
+	 * @return the count of newly produced virions
+	 */
 	int getVirionsProduced();
+	
+	/**
+	 * Gets the count of susceptible target cells available for infection.
+	 * 
+	 * <p>These are healthy cells that can be infected by viral particles.
+	 * The susceptible pool decreases as cells become exposed and increases
+	 * as removed cells recover.
+	 * 
+	 * @return the count of susceptible target cells
+	 */
 	int getTargetSusceptible();
+	
+	/**
+	 * Gets the count of exposed (latently infected) target cells.
+	 * 
+	 * <p>These cells have been infected but are not yet actively producing
+	 * virions. They may progress to infected state, be cleared by immune
+	 * response, or remain as chronic carriers.
+	 * 
+	 * @return the count of exposed target cells
+	 */
 	int getTargetExposed();
+	
+	/**
+	 * Gets the count of infected target cells actively producing virions.
+	 * 
+	 * <p>These cells are the primary source of new viral particles through
+	 * replication. They contribute to disease severity and can be cleared
+	 * by immune response or cellular removal processes.
+	 * 
+	 * @return the count of infected target cells
+	 */
 	int getTargetInfected();
+	
+	/**
+	 * Gets the total number of immune cells in the system.
+	 * 
+	 * <p>Calculated as the product of target cells and immune-target ratio.
+	 * Represents the total immune capacity, distributed across dormant,
+	 * priming, and active states.
+	 * 
+	 * @return the total immune cell count
+	 */
 	@Value.Default default Integer getImmune() {
 		return (int) (this.getTargets() * this.getImmuneTargetRatio());
 	};
+	
+	/**
+	 * Gets the count of immune cells in priming state.
+	 * 
+	 * <p>Priming cells have recognized antigen but are not yet fully active
+	 * effectors. They represent the intermediate stage in immune activation
+	 * between dormant and active states.
+	 * 
+	 * @return the count of priming immune cells
+	 */
 	int getImmunePriming();
+	
+	/**
+	 * Gets the count of active effector immune cells.
+	 * 
+	 * <p>Active immune cells are responsible for viral neutralization and
+	 * infected cell clearance. Their activity level modulates infection
+	 * and clearance rates throughout the simulation.
+	 * 
+	 * @return the count of active immune cells
+	 */
 	int getImmuneActive();
+	
+	/**
+	 * Gets the baseline viral replication rate.
+	 * 
+	 * <p>This rate controls how quickly infected cells produce new viral
+	 * particles. Higher rates lead to faster viral load increase and
+	 * more rapid infection progression.
+	 * 
+	 * @return the baseline viral replication rate
+	 */
 	@Value.Redacted double getBaselineViralReplicationRate();
+	
+	/**
+	 * Gets the baseline viral infection rate.
+	 * 
+	 * <p>This rate controls how efficiently viral particles infect susceptible
+	 * target cells. Higher rates lead to more rapid target cell depletion
+	 * and faster infection progression.
+	 * 
+	 * @return the baseline viral infection rate
+	 */
 	@Value.Redacted double getBaselineViralInfectionRate();
+	
+	/**
+	 * Gets the disease cutoff value for virion normalization.
+	 * 
+	 * <p>This parameter defines the reference virion count used to normalize
+	 * viral load measurements. It represents a clinically relevant threshold
+	 * for disease severity assessment.
+	 * 
+	 * @return the virion disease cutoff value
+	 */
 	@Value.Redacted int getVirionsDiseaseCutoff();
 	
 	/**
@@ -166,7 +345,7 @@ public interface InHostStochasticState extends InHostModelState<StochasticModel>
 	 * (<a href="https://math.stackexchange.com/questions/32800">see reference</a>).
 	 *
 	 * <p>From these interacting targets, a binomial sample determines how many become <i>exposed</i>,
-	 * with probability \( p_{\text{infection}} = 1 - e^{-r_{\text{infect}} \cdot S/T} \).
+	 * with probability \( p_{\text{infection}} = 1 - e^{-r_{\text{infect}} \cdot S/T} \ ).
 	 *
 	 * <p><u>Immune Dynamics</u></p>
 	 * Immune activation depends on the burden of exposed and infected cells:

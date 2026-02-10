@@ -4,6 +4,12 @@ package io.github.ai4ci.util;
  * A pauseable daemon thread which will can be required to go into a waiting
  * state after each execution of the loop. This is basically a thread which
  * executes a while loop, with pause, resume and halt functions.
+ * 
+ * The thread will repeatedly call doLoop() until isComplete() is true, or the
+ * thread is halted. If the thread is paused, it will wait until unpaused or
+ * halted. Once complete or halted, it will call shutdown() and exit.
+ * 
+ * 
  */
 public abstract class PauseableThread extends Thread {
 	
@@ -32,10 +38,28 @@ public abstract class PauseableThread extends Thread {
 //		Runtime.getRuntime().addShutdownHook(shutdownHook);
 	}
 	
+	/**
+	 * Check if the thread is currently waiting in a paused state. This can be used
+	 * to check if the thread is paused, but can also be true if the thread is in
+	 * the process of pausing (i.e. it has executed pause() but has not yet entered
+	 * the waiting state). Note that this does not necessarily mean the thread is
+	 * paused, as it could be in the process of resuming (i.e. it has been unpaused
+	 * but has not yet exited the waiting state).
+	 * 
+	 * @return true if the thread is currently waiting in a paused state, false
+	 *         otherwise. Note that this can be true even if the thread is not
+	 *         paused, if it is in the process of pausing.
+	 */
 	public boolean isWaiting() {
 		return waiting;
 	}
 	
+	/**
+	 * Threads can be halted by calling this method. This will cause the thread to
+	 * exit its loop and proceed to shutdown. If the thread is currently paused, it
+	 * will be unpaused to allow it to exit. If the thread is already complete, this
+	 * does nothing.
+	 */
 	public void halt() {
 		halt = true;
 		unpause();
@@ -59,6 +83,12 @@ public abstract class PauseableThread extends Thread {
 		synchronized(trigger) {this.trigger.notifyAll();}
 	}
 	
+	/**
+	 * Run the thread. This will repeatedly call doLoop() until isComplete() is
+	 * true, or the thread is halted. If the thread is paused, it will wait until
+	 * unpaused or halted. Once complete or halted, it will call shutdown() and
+	 * exit.
+	 */
 	public void run() {
 		setup();
 		while(!halt && !isComplete()) {
@@ -80,6 +110,13 @@ public abstract class PauseableThread extends Thread {
 		return;
 	}
 	
+	/**
+	 * Get the approximate current status of the thread. This can be "running", "pausing", 
+	 * "paused", "resuming", "halting", "halted" or "complete". Note that the 
+	 * thread can be in the process of pausing or resuming, so the status may not
+	 * always reflect the current state of the thread.
+	 * @return the current status of the thread
+	 */
 	public String status() {
 		if (isComplete()) return "complete";
 		if (halt && this.getState().equals(State.TERMINATED)) return "halted";
@@ -95,6 +132,7 @@ public abstract class PauseableThread extends Thread {
 	 * Constructor can be used to set up shared resources.
 	 */
 	public abstract void setup();
+	
 	/**
 	 * Repeatedly called while the thread is not paused or halting. This can 
 	 * interact with resources shared with other threads but needs to be 
@@ -102,11 +140,14 @@ public abstract class PauseableThread extends Thread {
 	 * `while (!isComplete()) {doLoop();}`
 	 */
 	public abstract void doLoop();
+	
 	/**
-	 * Signify the thread loop is complete and proceed to shutdown. This is
+	 * Signify the thread loop is complete and can proceed to shutdown. This is
 	 * checked even if the thread is paused.
+	 * @return true if the thread loop is complete and the thread should proceed to shutdown, false otherwise
 	 */
 	public abstract boolean isComplete();
+	
 	/**
 	 * Shutdown the thread. This must close down any resources and exit without
 	 * error.

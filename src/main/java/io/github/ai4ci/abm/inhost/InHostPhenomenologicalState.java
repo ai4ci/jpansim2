@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.util.Conversions;
 import io.github.ai4ci.util.Sampler;
@@ -55,12 +52,52 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 public interface InHostPhenomenologicalState extends InHostModelState<PhenomenologicalModel> {
 	
-	static Logger log = LoggerFactory.getLogger(InHostPhenomenologicalState.class);
+	// static Logger log = LoggerFactory.getLogger(InHostPhenomenologicalState.class);
 	
+	/**
+	 * Returns the biphasic logistic model used to compute viral load dynamics.
+	 * This model is calibrated from clinical parameters and defines the shape of the viral load curve
+	 * following each exposure. It is used by the {@link ExposureModel} to compute the viral load contribution
+	 * of each exposure at any given time.
+	 * 
+	 * @return the biphasic logistic model for viral load dynamics
+	 */
 	BiPhasicLogistic getViralLoadModel();
+	
+	/**
+	 * Returns the biphasic logistic model used to compute immune response dynamics.
+	 * This model is similarly calibrated and defines the shape of the immune response curve
+	 * following each exposure. It is used by the {@link ExposureModel} to compute the immune activity
+	 * contribution of each exposure at any given time.
+	 * 
+	 * @return the biphasic logistic model for immune response dynamics
+	 */
 	BiPhasicLogistic getImmunityModel();
+	
+	/**
+	 * Returns the list of exposures that have occurred up to the current time.
+	 * Each exposure is represented by an {@link ExposureModel} that captures its timing, dose and
+	 * immune context. The list is used to compute the overall viral load and immune activity by
+	 * aggregating contributions from all exposures.
+	 *
+	 * @return a list of exposure models representing past infection or vaccination events
+	 */
 	@Value.Redacted List<ExposureModel> getExposures();
+	
+	/**
+	 * Returns the viral load threshold above which the person is considered infectious.
+	 * This cutoff is used to normalize the viral load and to determine infectiousness in transmission models.
+	 *
+	 * @return the viral load cutoff for infectiousness
+	 */
 	double getInfectiousnessCutoff();
+	
+	/**
+	 * Returns the current time step in the in-host model.
+	 * Time is measured in discrete units (e.g., days) since the start of the infection or simulation.
+	 *
+	 * @return the current time step
+	 */
 	int getTime();
 	
 	/**
@@ -238,12 +275,45 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	@Value.Immutable
 	public static interface ExposureModel extends Serializable {
 		
+		/**
+		 * Minimum immune activity threshold below which an exposure is considered irrelevant for future immune boosting.
+		 */
 		double MIN_IMMUNE_ACTIVITY = 0.001D;
 			
+		/**
+		 * Returns the time step at which this exposure occurred.
+		 * @return the time of exposure
+		 */
 		public int getExposureTime();
+		
+		/**
+		 * Returns the normalized exposure dose for this event.
+		 * @return the normalized exposure level (relative to infectious dose)
+		 */
 		public double getNormalisedExposure();
+		
+		/**
+		 * Returns the immune activity at the time of exposure.
+		 * This value is used to calibrate the decay offset of the response curve.
+		 *
+		 * @return the immune activity at the time of exposure
+		 */
 		public double getImmuneActivityAtExposure();
+		
+		/**
+		 * Returns the temporal offset applied to the growth phase of the response curve.
+		 * This offset shifts the growth curve in time to match the initial viral load at exposure.
+		 *
+		 * @return the growth phase offset
+		 */
 		double getGrowthOffset();
+		
+		/**
+		 * Returns the temporal offset applied to the decay phase of the response curve.
+		 * This offset shifts the decay curve to align with the immune activity at exposure.
+		 *
+		 * @return the decay phase offset
+		 */
 		double getDecayOffset();
 		
 		/**
@@ -284,6 +354,17 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 			return model.unadjusted(time-getExposureTime()); 
 		}
 		
+		/** Determines whether this exposure is no longer relevant for immune boosting.
+		 *
+		 * <p>An exposure is considered irrelevant if the time since exposure exceeds the point at which
+		 * the immune response has waned below 1% of its peak. This is computed using the inverse logistic
+		 * function to find the time at which the decay phase falls below the threshold, and comparing it
+		 * to the current time.
+		 *
+		 * @param time the current time step
+		 * @param model the biphasic logistic model for immune dynamics
+		 * @return true if this exposure is irrelevant for future immune boosting, false otherwise
+		 */
 		default boolean isIrrelevant(int time, BiPhasicLogistic model) {
 			return this.getExposureTime() + 
 					BiPhasicLogistic.invF(0.99,model.getDecayRate(),model.getDecayTime()) < time;
@@ -360,11 +441,39 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 	@Value.Immutable
 	public static interface BiPhasicLogistic extends Serializable {
 		
+		/**
+		 * Returns the growth rate parameter \( r_g \) of the logistic function.
+		 * @return the growth rate
+		 */
 		double getGrowthRate();
+		
+		/**
+		 * Returns the growth midpoint \( s_g \) of the logistic function.
+		 * @return the growth time (midpoint)
+		 */
 		double getGrowthTime();
+		
+		/**
+		 * Returns the decay rate parameter \( r_d \) of the logistic function.
+		 * @return the decay rate
+		 */
 		double getDecayRate();
+		
+		/**
+		 * Returns the decay midpoint \( s_d \) of the logistic function.
+		 * @return the decay time (midpoint)
+		 */
 		double getDecayTime();
 		
+		/**
+		 * Computes the unit scaling factor for the logistic function, defined as the value of the growth phase at time zero:
+		 * \[
+		 * \text{unit} = f(0; r_g, s_g) = \frac{1}{1 + \exp(-r_g(-s_g))}
+		 * \]
+		 * This represents the baseline viral load corresponding to a normalized exposure dose of 1.
+		 *
+		 * @return the unit scaling factor for the logistic function
+		 */
 		@Value.Derived default double getUnit() {
 			return f(0, getGrowthRate(), getGrowthTime());
 		}
@@ -391,6 +500,17 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 			return tmp;
 		}
 		
+		/**
+		 * The characteristic time \( s \) (midpoint) of the logistic function
+		 * two points \( (x_1, y_1) \), \( (x_2, y_2) \).
+		 * 
+		 * @param x1 time point
+		 * @param y1 value at time point \(0 \lt y1 \lt 1\)
+		 * @param x2 second time point
+		 * @param y2 second value \(0 \lt y2 \lt 1\)
+		 * @return the midpoint \( s \) corresponding to the given point and rate
+		 * @throws RuntimeException if the computed midpoint is negative
+		 */
 		public static double time(double x1,double y1,double x2,double y2) {
 			double r = rate(x1,y1,x2,y2);
 			return 1/r * log((1-y1)/y1) + x1;
@@ -452,7 +572,14 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 		 * </ul>
 		 *
 		 * The square root of \( y_{\text{peak}} \) is used to stabilize the logistic fit.
-		 *
+		 * @param onsetTime time of symptom onset
+		 * @param peakDelay delay from onset to peak viral load
+		 * @param postPeakDuration duration from peak viral load to recovery threshold
+		 * @param thresholdLevel viral load level corresponding to the detection threshold (0 \lt threshold
+		 * level \lt 1)
+		 * @param peakLevel viral load level corresponding to the peak (0 \lt peak level
+		 * \lt 1)
+		 * 
 		 * @return a calibrated {@link BiPhasicLogistic} model
 		 */
 		public static BiPhasicLogistic calibrateViralLoad(
@@ -479,7 +606,12 @@ public interface InHostPhenomenologicalState extends InHostModelState<Phenomenol
 		 *
 		 * The decay phase is calibrated from \( I_{\text{peak}} \) to \( I_{\text{peak}}/2 \)
 		 * over \( t_{\text{half}} \) days.
-		 *
+		 * 
+		 * @param peakTime time of peak immune response
+		 * @param peakLevel peak immune activity level (0 \lt peak level \lt
+		 * 1)
+		 * @param halfLife half-life of immune activity (time to decay from peak to half
+		 * peak level)
 		 * @return a calibrated {@link BiPhasicLogistic} model for immune dynamics
 		 */
 		public static BiPhasicLogistic calibrateImmuneActivity(

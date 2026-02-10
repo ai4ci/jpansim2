@@ -16,6 +16,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.github.ai4ci.functions.EmpiricalDistribution;
+import io.github.ai4ci.functions.LinkFunction;
+import io.github.ai4ci.functions.ImmutableEmpiricalDistribution;
+
 public class TestEmpiricalDistribution {
 
     static Stream<Arguments> linkFunctionTestCases() {
@@ -134,7 +138,7 @@ public class TestEmpiricalDistribution {
 		assertThat(integral).isCloseTo(1, byLessThan(0.001));
 
         // Test: Central tendency near expected mean
-        assertThat(dist.getCentral())
+        assertThat(dist.getMean())
             .isCloseTo(expectedMean, byLessThan(tol));
     }
     

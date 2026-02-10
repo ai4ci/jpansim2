@@ -6,7 +6,7 @@
 
 	<groupId>io.github.ai4ci</groupId>
 	<artifactId>jpansim2</artifactId>
-	<version>0.2.5</version>
+	<version>0.3.0</version>
 	<!-- git commit ...; git tag vX.Y.Z; git push origin <dash><dash>tags -->
 	<packaging>jar</packaging>
 
@@ -20,7 +20,7 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<m2e.apt.activation>jdt_apt</m2e.apt.activation>
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
-		<org.immutables.version>2.10.1</org.immutables.version>
+		<org.immutables.version>2.12.1</org.immutables.version>
 		<com.fasterxml.jackson.version>2.17.0</com.fasterxml.jackson.version>
 	</properties>
 
@@ -103,6 +103,11 @@
 			<artifactId>jackson-dataformat-csv</artifactId>
 			<version>${com.fasterxml.jackson.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-jsonSchema</artifactId>
+			<version>${com.fasterxml.jackson.version}</version>
+		</dependency>
 
 		<!-- JGRAPHT network -->
 		<dependency>
@@ -126,6 +131,12 @@
 		<dependency>
 			<groupId>org.immutables</groupId>
 			<artifactId>annotate</artifactId>
+			<version>${org.immutables.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.immutables</groupId>
+			<artifactId>datatype</artifactId>
 			<version>${org.immutables.version}</version>
 			<scope>provided</scope>
 		</dependency>
@@ -173,13 +184,11 @@
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
 			<version>4.38.0</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
 			<version>4.38.0</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.ejml</groupId>
@@ -263,20 +272,36 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.11.2</version>
+				<version>3.12.0</version>
 				<configuration>
 					<linksource>true</linksource>
 					<sourceFileExcludes>
 						<sourceFileExclude>**/Immutable*.java</sourceFileExclude>
 						<sourceFileExclude>**/Modifiable*.java</sourceFileExclude>
 						<sourceFileExclude>**/*Impl.java</sourceFileExclude>
+						<sourceFileExclude>**/Partial*.java</sourceFileExclude>
+						<sourceFileExclude>**/*._Partial*.java</sourceFileExclude>
+						<sourceFileExclude>**/*._Partial*.java</sourceFileExclude>
 					</sourceFileExcludes>
+					<javadocDirectory>${project.build.directory}/reports/apidocs</javadocDirectory>
+					<doclet>nl.talsmasoftware.umldoclet.UMLDoclet</doclet>
+					<!-- https://github.com/talsma-ict/umldoclet/blob/develop-v1/docs/USAGE.md -->
+					<docletArtifact>
+						<groupId>nl.talsmasoftware</groupId>
+						<artifactId>umldoclet</artifactId>
+						<version>2.2.4</version>
+					</docletArtifact>
+					<!--<docletArtifact>
+			       <groupId>org.apidesign.javadoc</groupId>
+			       <artifactId>codesnippet-doclet</artifactId>
+			       <version>1.1</version>
+			     </docletArtifact>
+                -->
 					<additionalOptions>
 						<additionalOption>--allow-script-in-comments</additionalOption>
-						<additionalOption>
-							-header '&lt;script
-							type="text/javascript"
-							src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
+						<additionalOption>-header '&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
+						<additionalOption>-umlExcludedTypeReferences "java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
+						<additionalOption>-umlCustomDirective "left to right direction"</additionalOption>
 					</additionalOptions>
 				</configuration>
 			</plugin>
@@ -294,10 +319,11 @@
 							<goal>java</goal>
 						</goals>
 						<configuration>
-							<mainClass>io.github.ai4ci.util.InterfaceSchemaGenerator</mainClass>
+							<mainClass>
+								io.github.ai4ci.util.InterfaceSchemaGenerator</mainClass>
 							<classpathScope>compile</classpathScope>
 							<arguments>
-								<argument>io.github.ai4ci.config.geography</argument>
+								<argument>io.github.ai4ci.config.refdata</argument>
 								<argument>${basedir}/analysis/schemas.R</argument>
 							</arguments>
 						</configuration>
@@ -305,6 +331,70 @@
 				</executions>
 			</plugin>
 
+			<plugin>
+				<groupId>com.github.davidmoten</groupId>
+				<artifactId>plantuml-maven-plugin</artifactId>
+				<version>0.2.14</version>
+				<executions>
+					<execution>
+						<id>generate-diagrams</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<sources>
+						<directory>${basedir}/src/main/java</directory>
+						<includes>
+							<include>**/*.puml</include>
+						</includes>
+						<excludes>
+							<exclude>**/ignore-me.puml</exclude>
+						</excludes>
+					</sources>
+					<outputDirectory>
+						${project.build.directory}/generated-diagrams</outputDirectory>
+					<formats>
+						<format>png</format>
+					</formats>
+					<preserveDirectoryStructure>true</preserveDirectoryStructure>
+					<generateMarkdownIndex>false</generateMarkdownIndex>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.4.0</version>
+				<executions>
+					<execution>
+						<id>copy-diagrams-to-apidocs</id>
+						<!-- run during the 'site' phase (after javadoc
+						generation if this block is listed after the javadoc
+						plugin) -->
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<!-- target location inside the generated apidocs -->
+							<outputDirectory>
+								${project.build.directory}/reports/apidocs</outputDirectory>
+							<resources>
+								<resource>
+									<!-- where plantuml already writes images -->
+									<directory>
+										${project.build.directory}/generated-diagrams</directory>
+									<includes>
+										<include>**/*.png</include>
+										<include>**/*.svg</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>

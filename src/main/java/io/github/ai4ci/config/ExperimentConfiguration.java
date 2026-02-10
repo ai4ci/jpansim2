@@ -1,6 +1,7 @@
 package io.github.ai4ci.config;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,23 +21,64 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.google.common.io.Files;
 
-import io.github.ai4ci.abm.mechanics.Abstraction.Modification;
-import io.github.ai4ci.config.ExperimentFacet.ExecutionFacet;
-import io.github.ai4ci.config.ExperimentFacet.SetupFacet;
+
+import io.github.ai4ci.config.execution.ExecutionConfiguration;
+import io.github.ai4ci.config.execution.ImmutableExecutionConfiguration;
 import io.github.ai4ci.config.setup.ImmutableSetupConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
-import io.github.ai4ci.flow.StateExporter;
+import io.github.ai4ci.flow.output.SimulationExporter;
 import io.github.ai4ci.util.ReflectionUtils;
 
 
+/**
+ * Central configuration interface for JPanSim2 experiments.
+ * 
+ * <p>This immutable configuration interface defines all parameters needed to run
+ * an experiment in JPanSim2, including:
+ * <ul>
+ *   <li>Batch job configurations (via {@link BatchConfiguration})</li>
+ *   <li>Setup configurations (via {@link SetupConfiguration} and {@link SetupFacet})</li>
+ *   <li>Execution configurations (via {@link ExecutionConfiguration} and {@link ExecutionFacet})</li>
+ *   <li>Replication counts for both setup and execution phases</li>
+ * </ul>
+ *
+ * <p>Key features:
+ * <ul>
+ *   <li>Supports SLURM parallelisation through batch configuration</li>
+ *   <li>Provides methods for generating configuration subsets per batch node</li>
+ *   <li>Includes JSON serialisation/deserialisation capabilities</li>
+ *   <li>Allows configuration composition through facets and modifications</li>
+ * </ul>
+ *
+ * <p>Example usage:
+ * <pre>{@code
+ * ExperimentConfiguration config = ExperimentConfiguration.readConfig(path);
+ * BatchConfiguration batchConfig = config.getBatchConfig();
+ * List<SetupConfiguration> setups = config.getBatchSetupList();
+ * }</pre>
+ *
+ * @author Rob Challen
+ * @see BatchConfiguration
+ * @see SetupConfiguration
+ * @see ExecutionConfiguration
+ */
 @Value.Immutable @Value.Modifiable
 @JsonSerialize(as = ImmutableExperimentConfiguration.class)
 @JsonDeserialize(as = ImmutableExperimentConfiguration.class)
 public interface ExperimentConfiguration {
 
 
+	/**
+	 * Default immutable configuration instance used when no other configuration is provided.
+	 * Includes:
+	 * <ul>
+	 *   <li>Defaults from {@link BatchConfiguration#DEFAULT}</li>
+	 *   <li>Single setup facet with {@link SetupConfiguration#DEFAULT}</li>
+	 *   <li>{@link ExecutionConfiguration#DEFAULT}</li>
+	 *   <li>1 replication for both setup and execution</li>
+	 * </ul>
+	 */
 	ImmutableExperimentConfiguration DEFAULT = ImmutableExperimentConfiguration.builder()
 			.setBatchConfig(BatchConfiguration.DEFAULT)
 			.setSetupConfig(
@@ -52,17 +94,55 @@ public interface ExperimentConfiguration {
 			.build();
 
 
+	/**
+	 * Gets the batch configuration parameters for SLURM job parallelisation.
+	 * @return Immutable batch configuration instance
+	 * @see BatchConfiguration
+	 */
 	ImmutableBatchConfiguration getBatchConfig();
+
+	/**
+	 * Gets the list of setup facets defining possible experiment configurations.
+	 * Each facet contains a base configuration and optional modifications.
+	 * @return List of setup configuration facets
+	 * @see SetupFacet
+	 */
 	List<SetupFacet> getSetupConfig();
+
+	/**
+	 * Gets the number of replications to generate for each setup configuration.
+	 * @return Number of setup replications (minimum 1)
+	 */
 	int getSetupReplications();
+
+	/**
+	 * Gets the base execution configuration before modifications.
+	 * @return Immutable base execution configuration
+	 * @see ExecutionConfiguration
+	 */
 	ImmutableExecutionConfiguration getExecutionConfig();
-	List<ImmutableExecutionFacet> getFacets();
+
+	/**
+	 * Gets the list of execution facets containing modifications to apply.
+	 * Facets are processed in order with each modification building on previous results.
+	 * @return List of execution configuration facets
+	 * @see ExecutionFacet
+	 */
+	List<ExecutionFacet> getFacets();
+
+	/**
+	 * Gets the number of replications to generate for each execution configuration.
+	 * @return Number of execution replications (minimum 1)
+	 */
 	int getExecutionReplications();
 
 	/**
-	 * Generate a subset of the experiment setups that are relevant to this 
-	 * SLURM node if there is more than one node. If this is  
-	 * @return
+	 * Generates a subset of experiment setups relevant to the current SLURM node.
+	 * When running in a multi-node SLURM batch job, this method splits the full
+	 * setup list into chunks and returns only the portion assigned to this node.
+	 *
+	 * @return List of setup configurations for this batch node
+	 * @see #getSetup()
 	 */
 	@JsonIgnore
 	default List<SetupConfiguration> getBatchSetupList() {
@@ -86,6 +166,18 @@ public interface ExperimentConfiguration {
 
 	}
 
+	/**
+	 * Generates all setup configurations by applying all modifications from
+	 * setup facets and expanding replications. This includes:
+	 * <ul>
+	 *   <li>Applying all modifications from setup facets</li>
+	 *   <li>Generating replicated configurations when replications > 1</li>
+	 *   <li>Ensuring each configuration has a unique name</li>
+	 * </ul>
+	 *
+	 * @return Complete list of setup configurations with modifications applied
+	 * @throws RuntimeException if any modification lacks a name
+	 */
 	@JsonIgnore
 	default List<SetupConfiguration> getSetup() {
 
@@ -99,19 +191,19 @@ public interface ExperimentConfiguration {
 			if (facet.getModifications().isEmpty()) tmp.add(base);
 			else {
 				for (Modification<? extends SetupConfiguration> mod: facet.getModifications()) {
-	
+		
 					if (mod.self().getName() == null) throw new RuntimeException("Modifications must have a value for name");
-	
+		
 					SetupConfiguration modified = (SetupConfiguration) 
-	//						ConfigMerger.INSTANCE
-	//						.mergeConfiguration(
+		//					ConfigMerger.INSTANCE
+		//					.mergeConfiguration(
 							((ImmutableSetupConfiguration) ReflectionUtils.merge(
 									base, mod
 							))
 							.withName(
 									facet.getDefault().getName()+":"+mod.self().getName()
-									);
-	
+								);
+		
 					tmp.add(modified);
 				}
 			}
@@ -129,6 +221,18 @@ public interface ExperimentConfiguration {
 
 	}
 
+	/**
+	 * Generates all execution configurations by applying all modifications from
+	 * execution facets and expanding replications. This includes:
+	 * <ul>
+	 *   <li>Applying all modifications from execution facets</li>
+	 *   <li>Generating replicated configurations when replications > 1</li>
+	 *   <li>Ensuring each configuration has a unique name</li>
+	 * </ul>
+	 *
+	 * @return Complete list of execution configurations with modifications applied
+	 * @throws RuntimeException if any modification lacks a name
+	 */
 	@JsonIgnore
 	default List<ExecutionConfiguration> getExecution() {
 
@@ -172,18 +276,40 @@ public interface ExperimentConfiguration {
 
 	}
 
+	/**
+	 * Serializes this configuration to JSON and writes it to the specified path.
+	 * If the path doesn't end with '.json', creates a 'config.json' file in the
+	 * specified directory. Creates parent directories if needed.
+	 *
+	 * @param directoryOrFile Path to directory or file for output
+	 * @throws StreamWriteException on JSON serialization errors
+	 * @throws DatabindException on data binding issues
+	 * @throws IOException on file system errors
+	 * @see #readConfig(Path)
+	 */
 	default void writeConfig(Path directoryOrFile) throws StreamWriteException, DatabindException, IOException {
 		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.registerModules(new GuavaModule());
 		om.setSerializationInclusion(Include.NON_NULL);
-		if (!Files.getFileExtension(directoryOrFile.toString()).equals("json")) {
+		if (!directoryOrFile.endsWith(".json")) {
 			directoryOrFile = directoryOrFile.resolve("config.json");
 		}
-		Files.createParentDirs(directoryOrFile.toFile());
+		Files.createDirectories(directoryOrFile.getParent());
 		om.writeValue(directoryOrFile.toFile(), this);
 	}
 
+	/**
+	 * Reads and deserializes an ExperimentConfiguration from a JSON file.
+	 * Supports JSON with comments and handles Guava collection types.
+	 *
+	 * @param file Path to JSON configuration file
+	 * @return Deserialized ExperimentConfiguration
+	 * @throws StreamWriteException on JSON parsing errors
+	 * @throws DatabindException on data binding issues
+	 * @throws IOException on file system errors
+	 * @see #writeConfig(Path)
+	 */
 	static ExperimentConfiguration readConfig(Path file) throws StreamWriteException, DatabindException, IOException {
 		ObjectMapper om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
@@ -194,6 +320,14 @@ public interface ExperimentConfiguration {
 		return rt;
 	}
 
+	/**
+	 * Creates a new configuration with the specified setup configuration.
+	 * Replaces any existing setup configurations with a single facet containing
+	 * the provided configuration as its default.
+	 *
+	 * @param config The new setup configuration to use
+	 * @return New ExperimentConfiguration instance
+	 */
 	default ImmutableExperimentConfiguration withSetupConfig(SetupConfiguration config) {
 		return ImmutableExperimentConfiguration.builder().from(this)
 				.setSetupConfig(
@@ -202,12 +336,27 @@ public interface ExperimentConfiguration {
 				.build();
 	}
 
+	/**
+	 * Creates a new configuration with the specified execution configuration.
+	 *
+	 * @param config The new execution configuration to use
+	 * @return New ExperimentConfiguration instance
+	 */
 	default ImmutableExperimentConfiguration withExecutionConfig(ImmutableExecutionConfiguration config) {
 		return ImmutableExperimentConfiguration.builder().from(this)
 				.setExecutionConfig(config)
 				.build();
 	}
 
+	/**
+	 * Creates a new configuration with an additional execution facet containing
+	 * the specified modifications. The facet will be named with the provided
+	 * name parameter.
+	 *
+	 * @param name Name for the new execution facet
+	 * @param config Modifications to include in the new facet
+	 * @return New ExperimentConfiguration instance
+	 */
 	default ImmutableExperimentConfiguration withFacet(String name, PartialExecutionConfiguration... config) {
 		return ImmutableExperimentConfiguration.builder().from(this)
 				.addFacets(
@@ -219,14 +368,31 @@ public interface ExperimentConfiguration {
 				.build();
 	}
 
+	/**
+	 * Creates a SimulationExporter configured for this experiment's batch settings.
+	 * The exporter will use the batch-specific output directory if running in a
+	 * multi-node SLURM batch job.
+	 *
+	 * @param baseDirectory Root directory for output files
+	 * @return Configured SimulationExporter instance
+	 * @see #getBatchDirectoryPath(Path)
+	 */
 	@JsonIgnore
-	default StateExporter exporter(Path baseDirectory) {
-		return StateExporter.of(
+	default SimulationExporter exporter(Path baseDirectory) {
+		return SimulationExporter.of(
 				getBatchDirectoryPath(baseDirectory), 
 				Arrays.stream(getBatchConfig().getExporters()).map(e ->e.getSelector()).collect(Collectors.toList())
 				);
 	}
 
+	/**
+	 * Gets the batch-specific output directory path. In multi-node SLURM jobs,
+	 * this returns a subdirectory named with the batch number. Otherwise returns
+	 * the base directory unchanged.
+	 *
+	 * @param baseDirectory Root directory for output files
+	 * @return Batch-specific output directory path
+	 */
 	@JsonIgnore
 	default Path getBatchDirectoryPath(Path baseDirectory) {
 		if (this.getBatchConfig().getBatchTotal()<=1) return baseDirectory; 
