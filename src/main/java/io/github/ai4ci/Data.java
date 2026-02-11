@@ -52,44 +52,6 @@ import io.github.ai4ci.flow.output.Export;
 public @interface Data {
 
 	/**
-	 * Standard immutable value type style with full Immutables feature support.
-	 *
-	 * <p>
-	 * This style configures immutable types with:
-	 * <ul>
-	 * <li>Standard getter patterns: {@code is*} for booleans, {@code get*} for
-	 * others</li>
-	 * <li>Builder initialization with {@code set*} methods</li>
-	 * <li>Deep immutables detection for nested immutable types</li>
-	 * <li>{@code with*} methods for creating modified copies</li>
-	 * <li>Automatic toBuilder() implementation</li>
-	 * <li>Custom hashCode, equals, and toString underrides</li>
-	 * <li>Pluralization support with custom dictionary</li>
-	 * <li>Export and Import annotation pass-through</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <b>Target Usage:</b> General-purpose immutable data transfer objects and
-	 * domain models requiring full Immutables feature set.
-	 *
-	 * @see Export
-	 * @see Import
-	 */
-	@Target({ ElementType.PACKAGE, ElementType.TYPE })
-	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
-	@JsonSerialize(typing = Typing.DYNAMIC)
-	@JsonDeserialize
-	@SuppressWarnings("immutables")
-	@Value.Style(get = { "is*", "get*" }, // Detect 'get' and 'is' prefixes in accessor methods
-			init = "set*", // Builder initialization methods will have 'set' prefix
-			deepImmutablesDetection = true, with = "with*", toBuilder = "toBuilder", strictBuilder = false, underrideHashCode = "hash", underrideEquals = "equality", underrideToString = "print", strictModifiable = false, passAnnotations = {
-					Export.class, Import.class }, isSet = "initialised*", depluralize = true, // enable feature
-			depluralizeDictionary = { "person:people" } // specifying dictionary of exceptions
-	)
-	public static @interface Style {
-	}
-
-	/**
 	 * Mutable value type style for modifiable data structures.
 	 *
 	 * <p>
@@ -107,22 +69,30 @@ public @interface Data {
 	 * </ul>
 	 *
 	 * <p>
-	 * <b>Target Usage:</b> Mutable data structures and configuration objects where
-	 * immutability is not required.
+	 * <b>Target Usage:</b> Mutable data structures and configuration objects
+	 * where immutability is not required.
 	 */
 	@Target({ ElementType.PACKAGE, ElementType.TYPE })
-	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
+	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
-	@Value.Style(get = { "is*", "get*" }, // Detect 'get' and 'is' prefixes in accessor methods
-			init = "set*", // Builder initialization methods will have 'set' prefix
-			create = "new", deepImmutablesDetection = true, with = "with*", toBuilder = "toBuilder", strictBuilder = false, strictModifiable = false, underrideHashCode = "hash", underrideEquals = "equality", underrideToString = "print", passAnnotations = {
-			// CsvColumn.class
-			}, isSet = "initialised*", depluralize = true, // enable feature
-			depluralizeDictionary = { "person:people" } // specifying dictionary of exceptions
+	@Value.Style(
+			get = { "is*", "get*" },
+			init = "set*",
+			create = "new",
+			deepImmutablesDetection = true,
+			with = "with*",
+			toBuilder = "toBuilder",
+			strictBuilder = false,
+			strictModifiable = false,
+			underrideHashCode = "hash",
+			underrideEquals = "equality",
+			underrideToString = "print",
+			isSet = "initialised*",
+			depluralize = true,
+			depluralizeDictionary = { "person:people" }
 	)
-	public static @interface Mutable {
-	}
+	public static @interface Mutable {}
 
 	/**
 	 * Partial value type style for configuration modifications and patches.
@@ -142,8 +112,8 @@ public @interface Data {
 	 * <li>Builder initialization with {@code set*} methods</li>
 	 * <li>No deep immutables detection (performance optimization)</li>
 	 * <li>DemographicAdjustment.Scale annotation pass-through</li>
-	 * <li>Type naming pattern: {@code _Partial*} for abstract, {@code Partial*} for
-	 * immutable</li>
+	 * <li>Type naming pattern: {@code _Partial*} for abstract, {@code Partial*}
+	 * for immutable</li>
 	 * <li>Custom hashCode, equals, and toString underrides</li>
 	 * <li>Pluralization support with custom dictionary</li>
 	 * <li>Validation disabled for partial objects</li>
@@ -156,20 +126,26 @@ public @interface Data {
 	 * @see Scale
 	 */
 	@Target({ ElementType.PACKAGE, ElementType.TYPE })
-	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
+	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
-	@Value.Style(get = { "is*", "get*" }, // Detect 'get' and 'is' prefixes in accessor methods
-			init = "set*", // Builder initialization methods will have 'set' prefix
-			deepImmutablesDetection = false, passAnnotations = {
-					Scale.class }, typeAbstract = "_Partial*", typeImmutable = "Partial*", strictModifiable = false, depluralize = true, // enable
-																																			// feature
-			underrideHashCode = "hash", underrideEquals = "equality", underrideToString = "print", depluralizeDictionary = {
-					"person:people" }, // specifying dictionary of exceptions
-			validationMethod = ValidationMethod.NONE)
+	@Value.Style(
+			get = { "is*", "get*" },
+			init = "set*",
+			deepImmutablesDetection = false,
+			passAnnotations = { Scale.class },
+			typeAbstract = "_Partial*",
+			typeImmutable = "Partial*",
+			strictModifiable = false,
+			depluralize = true,
+			underrideHashCode = "hash",
+			underrideEquals = "equality",
+			underrideToString = "print",
+			depluralizeDictionary = { "person:people" },
+			validationMethod = ValidationMethod.NONE
+	)
 	@SuppressWarnings("immutables")
-	public static @interface Partial {
-	}
+	public static @interface Partial {}
 
 	/**
 	 * Repository-style configuration for data access objects and persistence
@@ -196,16 +172,75 @@ public @interface Data {
 	 * @see Import
 	 */
 	@Target({ ElementType.PACKAGE, ElementType.TYPE })
-	@Retention(RetentionPolicy.CLASS) // Make it class retention for incremental compilation
+	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
-	@Value.Style(get = { "is*", "get*" }, // Detect 'get' and 'is' prefixes in accessor methods
-			init = "set*", // Builder initialization methods will have 'set' prefix
-			deepImmutablesDetection = false, with = "with*", toBuilder = "toBuilder", strictBuilder = false, underrideHashCode = "hash", underrideEquals = "equality", underrideToString = "print", strictModifiable = false, passAnnotations = {
-					Export.class, Import.class }, isSet = "initialised*", depluralize = true, // enable feature
-			depluralizeDictionary = { "person:people" } // specifying dictionary of exceptions
+	@Value.Style(
+			get = { "is*", "get*" },
+			init = "set*",
+			deepImmutablesDetection = false,
+			with = "with*",
+			toBuilder = "toBuilder",
+			strictBuilder = false,
+			underrideHashCode = "hash",
+			underrideEquals = "equality",
+			underrideToString = "print",
+			strictModifiable = false,
+			passAnnotations = { Export.class, Import.class },
+			isSet = "initialised*",
+			depluralize = true,
+			depluralizeDictionary = { "person:people" }
 	)
-	public static @interface Repository {
-	}
+	@SuppressWarnings("immutables:from")
+	public static @interface Repository {}
+
+	/**
+	 * Standard immutable value type style with full Immutables feature support.
+	 *
+	 * <p>
+	 * This style configures immutable types with:
+	 * <ul>
+	 * <li>Standard getter patterns: {@code is*} for booleans, {@code get*} for
+	 * others</li>
+	 * <li>Builder initialization with {@code set*} methods</li>
+	 * <li>Deep immutables detection for nested immutable types</li>
+	 * <li>{@code with*} methods for creating modified copies</li>
+	 * <li>Automatic toBuilder() implementation</li>
+	 * <li>Custom hashCode, equals, and toString underrides</li>
+	 * <li>Pluralization support with custom dictionary</li>
+	 * <li>Export and Import annotation pass-through</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * <b>Target Usage:</b> General-purpose immutable data transfer objects and
+	 * domain models requiring full Immutables feature set.
+	 *
+	 * @see Export
+	 * @see Import
+	 */
+	@Target({ ElementType.PACKAGE, ElementType.TYPE })
+	@Retention(RetentionPolicy.CLASS)
+	@JsonSerialize(typing = Typing.DYNAMIC)
+	@JsonDeserialize
+	@SuppressWarnings("immutables:from")
+	@Value.Style(
+			// Detect 'get' and 'is' prefixes in accessor methods
+			get = { "is*", "get*" },
+			// Builder initialization methods will have 'set' prefix
+			init = "set*",
+			deepImmutablesDetection = true,
+			with = "with*",
+			toBuilder = "toBuilder",
+			strictBuilder = false,
+			underrideHashCode = "hash",
+			underrideEquals = "equality",
+			underrideToString = "print",
+			strictModifiable = false,
+			passAnnotations = { Export.class, Import.class },
+			isSet = "initialised*",
+			depluralize = true,
+			depluralizeDictionary = { "person:people" }
+	)
+	public static @interface Style {}
 
 }

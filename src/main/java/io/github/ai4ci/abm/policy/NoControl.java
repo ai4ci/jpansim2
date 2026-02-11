@@ -19,8 +19,10 @@ public enum NoControl implements PolicyModel {
 	 */
 	DEFAULT {
 		@Override
-		public State.PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,
-				Sampler rng) {
+		public State.PolicyState nextState(
+				Builder builder, OutbreakState current, StateMachineContext context,
+				Sampler rng
+		) {
 			return DEFAULT;
 		}
 	};

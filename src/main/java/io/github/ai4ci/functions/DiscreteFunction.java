@@ -1,4 +1,5 @@
 package io.github.ai4ci.functions;
+
 import java.io.Serializable;
 
 import org.immutables.value.Value;
@@ -30,52 +31,61 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(as = ImmutableDiscreteFunction.class)
 @JsonDeserialize(as = ImmutableDiscreteFunction.class)
 public interface DiscreteFunction extends Serializable, KernelFunction {
-	
+
 	/**
-	 * A univariate mathematical function as a String containing `t` as the 
+	 * A univariate mathematical function as a String containing `t` as the
 	 * parameter. Supported expressions are described here:
 	 * https://mathparser.org/mxparser-math-collection
+	 *
 	 * @return the function expression.
 	 */
 	String getFTExpression();
-	
-	/** The following methods are derived from the function expression and are not
-	 * intended to be set directly. They are ignored during JSON serialization.
-	 * @return the time argument and the parsed expression derived from the function expression.
+
+	/**
+	 * The parsed expression is derived from the function expression and the time
+	 * argument. It is not intended to be set directly and is ignored during JSON
+	 * serialization.
+	 *
+	 * @return the parsed expression derived from the function expression and the
+	 *         time argument.
 	 */
-	@JsonIgnore
-	@Value.Derived 
-	default Argument getTimeArgument() {
-		return new Argument("t");
-	}
-	
-	/** The parsed expression is derived from the function expression and the time argument.
-	 * It is not intended to be set directly and is ignored during JSON serialization.
-	 * @return
-	 */
-	@JsonIgnore
-	@Value.Derived 
+	@JsonIgnore @Value.Derived
 	default Expression getParsed() {
 		mXparser.disableUlpRounding();
 		mXparser.disableCanonicalRounding();
 		mXparser.disableAlmostIntRounding();
-		Argument t = getTimeArgument(); 
-		return new Expression(getFTExpression(), t);
+		var t = this.getTimeArgument();
+		return new Expression(this.getFTExpression(), t);
 	}
-	
+
 	/**
-	 * Evaluate the function at a given integer time `t`. This method sets the value of the time argument and then calculates the result using the parsed expression.
+	 * The following methods are derived from the function expression and are not
+	 * intended to be set directly. They are ignored during JSON serialization.
+	 *
+	 * @return the time argument and the parsed expression derived from the
+	 *         function expression.
+	 */
+	@JsonIgnore @Value.Derived
+	default Argument getTimeArgument() { return new Argument("t"); }
+
+	/**
+	 * Evaluate the function at a given integer time `t`. This method sets the
+	 * value of the time argument and then calculates the result using the parsed
+	 * expression.
+	 *
 	 * @param t the time at which to evaluate the function.
 	 * @return the result of evaluating the function at time `t`.
-	 * @throws IllegalArgumentException if the function expression is invalid or if evaluation fails.
+	 * @throws IllegalArgumentException if the function expression is invalid or
+	 *                                  if evaluation fails.
 	 * @see #getFTExpression()
-	 * 
+	 *
 	 */
+	@Override
 	default double rawValue(int t) {
-		Argument xArg = getTimeArgument();
-		xArg.setArgumentValue((double) t);
-		double result = getParsed().calculate();
+		var xArg = this.getTimeArgument();
+		xArg.setArgumentValue(t);
+		var result = this.getParsed().calculate();
 		return result;
 	}
-	
+
 }

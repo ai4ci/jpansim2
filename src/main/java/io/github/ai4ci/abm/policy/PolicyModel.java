@@ -16,8 +16,9 @@ import io.github.ai4ci.util.Sampler;
 public interface PolicyModel extends State.PolicyState {
 
 	@Override
-	default public void updateHistory(ImmutableOutbreakHistory.Builder builder, OutbreakState person,
-			StateMachineContext context, Sampler rng) {
-	}
+	default public void updateHistory(
+			ImmutableOutbreakHistory.Builder builder, OutbreakState person,
+			StateMachineContext context, Sampler rng
+	) {}
 
 }

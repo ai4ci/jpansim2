@@ -26,73 +26,94 @@ import io.github.ai4ci.util.Sampler;
  * infection (e.g. due to a contact notification) and compliant, and then self
  * isolate if they test positive. This is used as a baseline for comparison with
  * other compliant behaviour models.
- * 
+ *
  * @author Rob Challen
  */
 public enum SmartAgentTesting implements BehaviourModel, DefaultNoTesting {
-	
+
 	/**
-	 * Patient will probably get a PCR test if they have symptoms, then wait for the
-	 * result. They will also test if they are at high risk of infection (e.g. due
-	 * to a contact notification) and compliant, and then wait for the result.
+	 * Patient will probably get a PCR test if they have symptoms, then wait for
+	 * the result. They will also test if they are at high risk of infection
+	 * (e.g. due to a contact notification) and compliant, and then wait for the
+	 * result.
 	 */
 	REACTIVE_PCR {
 
 		@Override
-		public void updateHistory(ImmutablePersonHistory.Builder builder, 
-				PersonState person, StateMachineContext context, Sampler rng) {
-			
-			if (isSymptomaticAndCompliant(person, 2) || isHighRiskOfInfectionAndCompliant(person, 
-						ModelNav.modelParam(person).getSmartAppRiskTrigger()
-					)  ) {
-				if (isPCRTestingAllowed(person)) doPCR(builder,person,context);
-			}
-			
+		public State.BehaviourState nextState(
+				ImmutablePersonState.Builder builder, PersonState person,
+				StateMachineContext context, Sampler rng
+		) {
+			if (context.isReactivelyTestedToday()) {
+				decreaseSociabilityIfCompliant(builder, person);
+				return AWAIT_PCR;
+			} else
+				return REACTIVE_PCR;
 		}
 
 		@Override
-		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
-				PersonState person, StateMachineContext context, Sampler rng) {
-			if ( context.isReactivelyTestedToday() ) { 
-				decreaseSociabilityIfCompliant(builder,person);
-				return AWAIT_PCR;
-			} else {
-				return REACTIVE_PCR;
+		public void updateHistory(
+				ImmutablePersonHistory.Builder builder, PersonState person,
+				StateMachineContext context, Sampler rng
+		) {
+
+			if (isSymptomaticAndCompliant(person, 2)
+					|| isHighRiskOfInfectionAndCompliant(
+							person,
+							ModelNav.modelParam(person).getSmartAppRiskTrigger()
+					)) {
+				if (isPCRTestingAllowed(person)) {
+					doPCR(builder, person, context);
+				}
 			}
+
 		}
-		
+
 	},
-	
-	/** Patient is awaiting the result of a PCR test. If they test positive they will self isolate, if they test negative they will return to normal behaviour. */
+
+	/**
+	 * Patient is awaiting the result of a PCR test. If they test positive they
+	 * will self isolate, if they test negative they will return to normal
+	 * behaviour.
+	 */
 	AWAIT_PCR {
-		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
-				PersonState person, StateMachineContext context, Sampler rng) {
+		@Override
+		public State.BehaviourState nextState(
+				ImmutablePersonState.Builder builder, PersonState person,
+				StateMachineContext context, Sampler rng
+		) {
 			if (person.isLastTestExactly(Result.PENDING)) return AWAIT_PCR;
 			if (person.isLastTestExactly(Result.POSITIVE)) return SELF_ISOLATE;
-			resetBehaviour(builder,person);
+			resetBehaviour(builder, person);
 			return REACTIVE_PCR;
 		}
 	},
-	
-	/** Patient is self isolating. They will return to normal behaviour after the presumed infectious period, or if they are not compliant. */
+
+	/**
+	 * Patient is self isolating. They will return to normal behaviour after the
+	 * presumed infectious period, or if they are not compliant.
+	 */
 	SELF_ISOLATE {
 		@Override
-		public State.BehaviourState nextState(ImmutablePersonState.Builder builder, 
-				PersonState person, StateMachineContext context, Sampler rng) {
+		public State.BehaviourState nextState(
+				ImmutablePersonState.Builder builder, PersonState person,
+				StateMachineContext context, Sampler rng
+		) {
 			if (!person.isCompliant()) {
-				resetBehaviour(builder,person);
+				resetBehaviour(builder, person);
 				return Symptomatic.DEFAULT;
 			}
 			if (!person.isSymptomatic()) {
-				if (rng.periodTrigger(modelState(person).getPresumedInfectiousPeriod(),0.95)) {
-					resetBehaviour(builder,person);
+				if (rng.periodTrigger(
+						modelState(person).getPresumedInfectiousPeriod(), 0.95
+				)) {
+					resetBehaviour(builder, person);
 					return REACTIVE_PCR;
 				}
 			}
-			complianceFatigue(builder,person);
+			complianceFatigue(builder, person);
 			return SELF_ISOLATE;
-		}		
+		}
 	};
-	
-	
+
 }

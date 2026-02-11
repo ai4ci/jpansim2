@@ -55,19 +55,29 @@ import io.github.ai4ci.flow.SimulationMonitor;
  */
 public class JPanSim2 {
 
+	private static Path expand(Path path) {
+		if (path.startsWith("~" + File.separator)) {
+			path = Paths.get(
+					System.getProperty("user.home"), path.toString().substring(1)
+			);
+		}
+		return path;
+	}
+
 	/**
 	 * The main entry point for a command line or SLURM batch job.
 	 *
-	 * @throws InterruptedException if the simulation is interrupted by the user or
-	 *                              a batch system signal. The simulation will
+	 * @throws InterruptedException if the simulation is interrupted by the user
+	 *                              or a batch system signal. The simulation will
 	 *                              attempt to save progress before exiting when
 	 *                              interrupted.
-	 * @throws IOException          if the output directory cannot be created or the
-	 *                              configuration file cannot be read.
+	 * @throws IOException          if the output directory cannot be created or
+	 *                              the configuration file cannot be read.
 	 * @param args the command line arguments; see the class-level Javadoc for
 	 *             accepted options and usage notes.
 	 */
-	public static void main(String... args) throws IOException, InterruptedException {
+	public static void main(String... args)
+			throws IOException, InterruptedException {
 
 		var dir = SystemUtils.getUserDir().toPath();
 		var configFile = dir.resolve("config.json");
@@ -75,15 +85,17 @@ public class JPanSim2 {
 		// define options via CLI
 		var options = new Options();
 
-		var outputPath = Option.builder("o").longOpt("output").argName("output").hasArg(true)
-				.converter(Converter.PATH)
-				.desc("The path to the output directory. Defaults to the current working directory.").required(false)
-				.build();
+		var outputPath = Option.builder("o").longOpt("output").argName(
+				"output"
+		).hasArg(true).converter(Converter.PATH).desc(
+				"The path to the output directory. Defaults to the current working directory."
+		).required(false).build();
 
-		var configPath = Option.builder("c").longOpt("config").argName("config").hasArg(true)
-				.converter(Converter.PATH)
-				.desc("The path to the configuration file. Defaults to \"config.json\" in the output directory.")
-				.required(false).build();
+		var configPath = Option.builder("c").longOpt("config").argName(
+				"config"
+		).hasArg(true).converter(Converter.PATH).desc(
+				"The path to the configuration file. Defaults to \"config.json\" in the output directory."
+		).required(false).build();
 
 		options.addOption(outputPath);
 		options.addOption(configPath);
@@ -107,8 +119,11 @@ public class JPanSim2 {
 
 		} catch (ParseException e) {
 			System.out.println(e.getMessage());
-			helper.printHelp("Usage:", "JPanSim2 command line options.", options,
-					"Slurm support: batch commands must be continuous and start at 1\n" + "e.g. sbatch --array=1-32");
+			helper.printHelp(
+					"Usage:", "JPanSim2 command line options.", options,
+					"Slurm support: batch commands must be continuous and start at 1\n"
+							+ "e.g. sbatch --array=1-32"
+			);
 			System.exit(0);
 		}
 		// finish configuration using CLI
@@ -116,12 +131,14 @@ public class JPanSim2 {
 		try {
 			Files.createDirectories(dir);
 		} catch (IOException e) {
-			throw new RuntimeException("Could not create output directory at: " + dir);
+			throw new RuntimeException(
+					"Could not create output directory at: " + dir
+			);
 		}
 
-		if (!Files.exists(configFile)) {
-			throw new RuntimeException("Could not find configuration at: " + configFile);
-		}
+		if (!Files.exists(configFile)) throw new RuntimeException(
+				"Could not find configuration at: " + configFile
+		);
 
 		var conf = ExperimentConfiguration.readConfig(configFile);
 
@@ -130,13 +147,6 @@ public class JPanSim2 {
 		var runner = new SimulationMonitor(conf, dir);
 		runner.run();
 
-	}
-
-	private static Path expand(Path path) {
-		if (path.startsWith("~" + File.separator)) {
-			path = Paths.get(System.getProperty("user.home"), path.toString().substring(1));
-		}
-		return path;
 	}
 
 }

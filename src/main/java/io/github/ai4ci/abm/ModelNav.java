@@ -30,75 +30,13 @@ import io.github.ai4ci.config.setup.SetupConfiguration;
 public class ModelNav {
 
 	/**
-	 * Return the current outbreak state for the supplied person temporal state.
-	 *
-	 * @param person the temporal person state wrapper
-	 * @return the current {@link OutbreakState} for the person's outbreak
-	 */
-	public static OutbreakState modelState(PersonTemporalState person) {
-		return person.getEntity().getOutbreak().getCurrentState();
-	}
-
-	/**
-	 * Return the outbreak baseline for the outbreak containing the supplied person
-	 * temporal state.
-	 *
-	 * @param person the temporal person state wrapper
-	 * @return the {@link OutbreakBaseline} used for the person's outbreak
-	 */
-	public static OutbreakBaseline modelBase(PersonTemporalState person) {
-		return person.getEntity().getOutbreak().getBaseline();
-	}
-
-	/**
-	 * Return execution configuration parameters for the outbreak that contains the
-	 * supplied person temporal state.
-	 *
-	 * @param person the temporal person state wrapper
-	 * @return the {@link ExecutionConfiguration} for the person's outbreak
-	 */
-	public static ExecutionConfiguration modelParam(PersonTemporalState person) {
-		return person.getEntity().getOutbreak().getExecutionConfiguration();
-	}
-
-	/**
-	 * Return execution configuration parameters from an outbreak temporal state.
-	 *
-	 * @param outbreak the temporal outbreak state wrapper
-	 * @return the {@link ExecutionConfiguration} for the outbreak
-	 */
-	public static ExecutionConfiguration modelParam(OutbreakTemporalState outbreak) {
-		return outbreak.getEntity().getExecutionConfiguration();
-	}
-
-	/**
-	 * Return the current outbreak state for a plain {@link Person}.
+	 * Convenience accessor for a person's baseline demographic data.
 	 *
 	 * @param person the person entity
-	 * @return the current {@link OutbreakState} for the person's outbreak
+	 * @return the {@link PersonBaseline} for the person
 	 */
-	public static OutbreakState modelState(Person person) {
-		return person.getOutbreak().getCurrentState();
-	}
-
-	/**
-	 * Return the outbreak baseline for a plain {@link Person}.
-	 *
-	 * @param person the person entity
-	 * @return the {@link OutbreakBaseline} used for the person's outbreak
-	 */
-	public static OutbreakBaseline modelBase(Person person) {
-		return person.getOutbreak().getBaseline();
-	}
-
-	/**
-	 * Return execution configuration parameters for a plain {@link Person}.
-	 *
-	 * @param person the person entity
-	 * @return the {@link ExecutionConfiguration} for the person's outbreak
-	 */
-	public static ExecutionConfiguration modelParam(Person person) {
-		return person.getOutbreak().getExecutionConfiguration();
+	public static PersonBaseline baseline(Person person) {
+		return person.getBaseline();
 	}
 
 	/**
@@ -112,13 +50,40 @@ public class ModelNav {
 	}
 
 	/**
-	 * Convenience accessor for a person's baseline demographic data.
+	 * Return the current {@link PersonState} for the supplied history entry.
 	 *
-	 * @param person the person entity
-	 * @return the {@link PersonBaseline} for the person
+	 * @param person a {@link PersonHistory} entry
+	 * @return the corresponding current {@link PersonState}
 	 */
-	public static PersonBaseline baseline(Person person) {
-		return person.getBaseline();
+	public static PersonState current(PersonHistory person) {
+		return person.getEntity().getCurrentState();
+	}
+
+	/**
+	 * Return the optional current {@link OutbreakHistory} for the supplied
+	 * outbreak state.
+	 *
+	 * @param outbreakState the outbreak state wrapper
+	 * @return an optional current {@link OutbreakHistory}
+	 */
+	public static Optional<OutbreakHistory> history(
+			OutbreakState outbreakState
+	) {
+		return outbreakState.getEntity().getCurrentHistory();
+	}
+
+	/**
+	 * Stream past outbreak history entries limited to the supplied period.
+	 *
+	 * @param outbreakState the outbreak state wrapper
+	 * @param period        number of historical entries to return (most recent
+	 *                      first)
+	 * @return a stream of {@link OutbreakHistory} limited to {@code period}
+	 */
+	public static Stream<OutbreakHistory> history(
+			OutbreakState outbreakState, int period
+	) {
+		return outbreakState.getEntity().getHistory().stream().limit(period);
 	}
 
 	/**
@@ -143,67 +108,84 @@ public class ModelNav {
 	}
 
 	/**
-	 * Return the current {@link PersonState} for the supplied history entry.
+	 * Return the outbreak baseline from an outbreak temporal state.
 	 *
-	 * @param person a {@link PersonHistory} entry
-	 * @return the corresponding current {@link PersonState}
+	 * @param outbreakState the outbreak temporal state wrapper
+	 * @return the {@link OutbreakBaseline} for the outbreak
 	 */
-	public static PersonState current(PersonHistory person) {
-		return person.getEntity().getCurrentState();
+	public static OutbreakBaseline modelBase(
+			OutbreakTemporalState outbreakState
+	) {
+		return outbreakState.getEntity().getBaseline();
 	}
 
 	/**
-	 * Stream the current state of every person in the supplied outbreak state.
+	 * Return the outbreak baseline for a plain {@link Person}.
 	 *
-	 * @param current the current {@link OutbreakState}
-	 * @return a parallel stream of {@link PersonState} for each person
+	 * @param person the person entity
+	 * @return the {@link OutbreakBaseline} used for the person's outbreak
 	 */
-	public static Stream<PersonState> peopleState(OutbreakState current) {
-		return current.getEntity().getPeople().parallelStream().map(p -> p.getCurrentState());
+	public static OutbreakBaseline modelBase(Person person) {
+		return person.getOutbreak().getBaseline();
 	}
 
 	/**
-	 * Stream the current history entry for every person in the supplied outbreak
-	 * state.
+	 * Return the outbreak baseline for the outbreak containing the supplied
+	 * person temporal state.
 	 *
-	 * @param current the current {@link OutbreakState}
-	 * @return a parallel stream of current {@link PersonHistory} entries
+	 * @param person the temporal person state wrapper
+	 * @return the {@link OutbreakBaseline} used for the person's outbreak
 	 */
-	public static Stream<PersonHistory> peopleCurrentHistory(OutbreakState current) {
-		return current.getEntity().getPeople().parallelStream().flatMap(p -> p.getCurrentHistory().stream());
+	public static OutbreakBaseline modelBase(PersonTemporalState person) {
+		return person.getEntity().getOutbreak().getBaseline();
 	}
 
 	/**
-	 * Stream the person entities for the supplied outbreak state.
+	 * Retrieve the execution configuration from an entity (person or outbreak).
 	 *
-	 * @param current the current {@link OutbreakState}
-	 * @return a parallel stream of {@link Person} entities
+	 * @param entity an {@link Entity} instance
+	 * @return the corresponding {@link ExecutionConfiguration}
+	 * @throws RuntimeException if the entity type is not supported
 	 */
-	public static Stream<Person> people(OutbreakState current) {
-		return current.getEntity().getPeople().parallelStream();
+	public static ExecutionConfiguration modelParam(Entity entity) {
+		if (entity instanceof Outbreak)
+			return ((Outbreak) entity).getExecutionConfiguration();
+		if (entity instanceof Person)
+			return ((Person) entity).getOutbreak().getExecutionConfiguration();
+		throw new RuntimeException();
 	}
 
 	/**
-	 * Return the optional current {@link OutbreakHistory} for the supplied outbreak
-	 * state.
+	 * Return execution configuration parameters from an outbreak temporal state.
 	 *
-	 * @param outbreakState the outbreak state wrapper
-	 * @return an optional current {@link OutbreakHistory}
+	 * @param outbreak the temporal outbreak state wrapper
+	 * @return the {@link ExecutionConfiguration} for the outbreak
 	 */
-	public static Optional<OutbreakHistory> history(OutbreakState outbreakState) {
-		return outbreakState.getEntity().getCurrentHistory();
+	public static ExecutionConfiguration modelParam(
+			OutbreakTemporalState outbreak
+	) {
+		return outbreak.getEntity().getExecutionConfiguration();
 	}
 
 	/**
-	 * Stream past outbreak history entries limited to the supplied period.
+	 * Return execution configuration parameters for a plain {@link Person}.
 	 *
-	 * @param outbreakState the outbreak state wrapper
-	 * @param period        number of historical entries to return (most recent
-	 *                      first)
-	 * @return a stream of {@link OutbreakHistory} limited to {@code period}
+	 * @param person the person entity
+	 * @return the {@link ExecutionConfiguration} for the person's outbreak
 	 */
-	public static Stream<OutbreakHistory> history(OutbreakState outbreakState, int period) {
-		return outbreakState.getEntity().getHistory().stream().limit(period);
+	public static ExecutionConfiguration modelParam(Person person) {
+		return person.getOutbreak().getExecutionConfiguration();
+	}
+
+	/**
+	 * Return execution configuration parameters for the outbreak that contains
+	 * the supplied person temporal state.
+	 *
+	 * @param person the temporal person state wrapper
+	 * @return the {@link ExecutionConfiguration} for the person's outbreak
+	 */
+	public static ExecutionConfiguration modelParam(PersonTemporalState person) {
+		return person.getEntity().getOutbreak().getExecutionConfiguration();
 	}
 
 	/**
@@ -213,31 +195,29 @@ public class ModelNav {
 	 * @return the corresponding {@link ExecutionConfiguration}
 	 * @throws RuntimeException if the temporal state type is not recognised
 	 */
-	public static ExecutionConfiguration modelParam(TemporalState<?> temporalState) {
-		if (temporalState instanceof OutbreakTemporalState) {
+	public static ExecutionConfiguration modelParam(
+			TemporalState<?> temporalState
+	) {
+		if (temporalState instanceof OutbreakTemporalState)
 			return modelParam((OutbreakTemporalState) temporalState);
-		}
-		if (temporalState instanceof PersonTemporalState) {
+		if (temporalState instanceof PersonTemporalState)
 			return modelParam((PersonTemporalState) temporalState);
-		}
 		throw new RuntimeException("Unknown temporal state type");
 	}
 
 	/**
-	 * Retrieve setup configuration from a generic temporal state instance.
+	 * Retrieve the setup configuration from an entity (person or outbreak).
 	 *
-	 * @param temporalState a temporal state (person or outbreak)
+	 * @param entity an {@link Entity} instance
 	 * @return the corresponding {@link SetupConfiguration}
-	 * @throws RuntimeException if the temporal state type is not recognised
+	 * @throws RuntimeException if the entity type is not supported
 	 */
-	public static SetupConfiguration modelSetup(TemporalState<?> temporalState) {
-		if (temporalState instanceof OutbreakTemporalState) {
-			return modelSetup((OutbreakTemporalState) temporalState);
-		}
-		if (temporalState instanceof PersonTemporalState) {
-			return modelSetup((PersonTemporalState) temporalState);
-		}
-		throw new RuntimeException("Unknown temporal state type");
+	public static SetupConfiguration modelSetup(Entity entity) {
+		if (entity instanceof Outbreak)
+			return ((Outbreak) entity).getSetupConfiguration();
+		if (entity instanceof Person)
+			return ((Person) entity).getOutbreak().getSetupConfiguration();
+		throw new RuntimeException();
 	}
 
 	/**
@@ -251,8 +231,8 @@ public class ModelNav {
 	}
 
 	/**
-	 * Retrieve setup configuration for a person temporal state by delegating to the
-	 * person's outbreak.
+	 * Retrieve setup configuration for a person temporal state by delegating to
+	 * the person's outbreak.
 	 *
 	 * @param outbreak the person temporal state wrapper
 	 * @return the {@link SetupConfiguration} for the person's outbreak
@@ -262,15 +242,38 @@ public class ModelNav {
 	}
 
 	/**
-	 * The corresponding history entries for this point in time in the outbreak i.e.
-	 * a stream of individuals' history entries at the same time point.
+	 * Retrieve setup configuration from a generic temporal state instance.
 	 *
-	 * @param outbreakHistory the outbreak history entry to reference
-	 * @return a stream of {@link PersonHistory} entries for the same time
+	 * @param temporalState a temporal state (person or outbreak)
+	 * @return the corresponding {@link SetupConfiguration}
+	 * @throws RuntimeException if the temporal state type is not recognised
 	 */
-	public static Stream<PersonHistory> peopleHistory(OutbreakHistory outbreakHistory) {
-		int time = outbreakHistory.getTime();
-		return outbreakHistory.getEntity().getPeople().stream().flatMap(p -> p.getHistoryEntry(time).stream());
+	public static SetupConfiguration modelSetup(TemporalState<?> temporalState) {
+		if (temporalState instanceof OutbreakTemporalState)
+			return modelSetup((OutbreakTemporalState) temporalState);
+		if (temporalState instanceof PersonTemporalState)
+			return modelSetup((PersonTemporalState) temporalState);
+		throw new RuntimeException("Unknown temporal state type");
+	}
+
+	/**
+	 * Return the current outbreak state for a plain {@link Person}.
+	 *
+	 * @param person the person entity
+	 * @return the current {@link OutbreakState} for the person's outbreak
+	 */
+	public static OutbreakState modelState(Person person) {
+		return person.getOutbreak().getCurrentState();
+	}
+
+	/**
+	 * Return the current outbreak state for the supplied person temporal state.
+	 *
+	 * @param person the temporal person state wrapper
+	 * @return the current {@link OutbreakState} for the person's outbreak
+	 */
+	public static OutbreakState modelState(PersonTemporalState person) {
+		return person.getEntity().getOutbreak().getCurrentState();
 	}
 
 	/**
@@ -282,51 +285,8 @@ public class ModelNav {
 	 */
 	public static OutbreakHistory outbreakHistory(PersonHistory personHistory) {
 		int time = personHistory.getTime();
-		return personHistory.getEntity().getOutbreak().getHistoryEntry(time).get();
-	}
-
-	/**
-	 * Retrieve the setup configuration from an entity (person or outbreak).
-	 *
-	 * @param entity an {@link Entity} instance
-	 * @return the corresponding {@link SetupConfiguration}
-	 * @throws RuntimeException if the entity type is not supported
-	 */
-	public static SetupConfiguration modelSetup(Entity entity) {
-		if (entity instanceof Outbreak) {
-			return ((Outbreak) entity).getSetupConfiguration();
-		}
-		if (entity instanceof Person) {
-			return ((Person) entity).getOutbreak().getSetupConfiguration();
-		}
-		throw new RuntimeException();
-	}
-
-	/**
-	 * Retrieve the execution configuration from an entity (person or outbreak).
-	 *
-	 * @param entity an {@link Entity} instance
-	 * @return the corresponding {@link ExecutionConfiguration}
-	 * @throws RuntimeException if the entity type is not supported
-	 */
-	public static ExecutionConfiguration modelParam(Entity entity) {
-		if (entity instanceof Outbreak) {
-			return ((Outbreak) entity).getExecutionConfiguration();
-		}
-		if (entity instanceof Person) {
-			return ((Person) entity).getOutbreak().getExecutionConfiguration();
-		}
-		throw new RuntimeException();
-	}
-
-	/**
-	 * Return the outbreak baseline from an outbreak temporal state.
-	 *
-	 * @param outbreakState the outbreak temporal state wrapper
-	 * @return the {@link OutbreakBaseline} for the outbreak
-	 */
-	public static OutbreakBaseline modelBase(OutbreakTemporalState outbreakState) {
-		return outbreakState.getEntity().getBaseline();
+		return personHistory.getEntity().getOutbreak().getHistoryEntry(time)
+				.get();
 	}
 
 	/**
@@ -337,6 +297,56 @@ public class ModelNav {
 	 */
 	public static OutbreakState outbreakState(PersonTemporalState hist) {
 		return hist.getEntity().getOutbreak().getCurrentState();
+	}
+
+	/**
+	 * Stream the person entities for the supplied outbreak state.
+	 *
+	 * @param current the current {@link OutbreakState}
+	 * @return a parallel stream of {@link Person} entities
+	 */
+	public static Stream<Person> people(OutbreakState current) {
+		return current.getEntity().getPeople().parallelStream();
+	}
+
+	/**
+	 * Stream the current history entry for every person in the supplied outbreak
+	 * state.
+	 *
+	 * @param current the current {@link OutbreakState}
+	 * @return a parallel stream of current {@link PersonHistory} entries
+	 */
+	public static Stream<PersonHistory> peopleCurrentHistory(
+			OutbreakState current
+	) {
+		return current.getEntity().getPeople().parallelStream()
+				.flatMap(p -> p.getCurrentHistory().stream());
+	}
+
+	/**
+	 * The corresponding history entries for this point in time in the outbreak
+	 * i.e. a stream of individuals' history entries at the same time point.
+	 *
+	 * @param outbreakHistory the outbreak history entry to reference
+	 * @return a stream of {@link PersonHistory} entries for the same time
+	 */
+	public static Stream<PersonHistory> peopleHistory(
+			OutbreakHistory outbreakHistory
+	) {
+		int time = outbreakHistory.getTime();
+		return outbreakHistory.getEntity().getPeople().stream()
+				.flatMap(p -> p.getHistoryEntry(time).stream());
+	}
+
+	/**
+	 * Stream the current state of every person in the supplied outbreak state.
+	 *
+	 * @param current the current {@link OutbreakState}
+	 * @return a parallel stream of {@link PersonState} for each person
+	 */
+	public static Stream<PersonState> peopleState(OutbreakState current) {
+		return current.getEntity().getPeople().parallelStream()
+				.map(p -> p.getCurrentState());
 	}
 
 }

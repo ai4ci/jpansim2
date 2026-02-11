@@ -84,34 +84,40 @@ public enum ReactiveLockdown implements PolicyModel {
 	MONITOR {
 
 		@Override
-		public void updateHistory(ImmutableOutbreakHistory.Builder builder, OutbreakState current,
-				StateMachineContext context, Sampler rng) {
-			randomlyScreen(current, rng);
-		}
-
-		@Override
-		public State.PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,
-				Sampler rng) {
-			if (current.getLockdownTrigger()
-					.confidentlyGreaterThan(ModelNav.modelParam(current).getLockdownStartTrigger(), 0.95)) {
+		public State.PolicyState nextState(
+				Builder builder, OutbreakState current, StateMachineContext context,
+				Sampler rng
+		) {
+			if (current.getLockdownTrigger().confidentlyGreaterThan(
+					ModelNav.modelParam(current).getLockdownStartTrigger(), 0.95
+			)) {
 				branchPeopleTo(current, LockdownIsolation.ISOLATE);
 				return LOCKDOWN;
 			}
 			return MONITOR;
 		}
+
+		@Override
+		public void updateHistory(
+				ImmutableOutbreakHistory.Builder builder, OutbreakState current,
+				StateMachineContext context, Sampler rng
+		) {
+			randomlyScreen(current, rng);
+		}
 	},
 
 	/**
 	 * Active lockdown state that enforces population-wide isolation measures and
-	 * evaluates whether to release based on improving epidemiological conditions.
+	 * evaluates whether to release based on improving epidemiological
+	 * conditions.
 	 *
 	 * <p>
 	 * In this state:
 	 * <ul>
 	 * <li>Routine screening continues to monitor outbreak progression</li>
 	 * <li>Population-wide isolation behavior is enforced</li>
-	 * <li>Lockdown is released when positivity falls below release threshold with
-	 * 95% confidence</li>
+	 * <li>Lockdown is released when positivity falls below release threshold
+	 * with 95% confidence</li>
 	 * </ul>
 	 *
 	 * <p>
@@ -121,20 +127,25 @@ public enum ReactiveLockdown implements PolicyModel {
 	LOCKDOWN {
 
 		@Override
-		public void updateHistory(ImmutableOutbreakHistory.Builder builder, OutbreakState current,
-				StateMachineContext context, Sampler rng) {
-			randomlyScreen(current, rng);
-		}
-
-		@Override
-		public State.PolicyState nextState(Builder builder, OutbreakState current, StateMachineContext context,
-				Sampler rng) {
-			if (current.getLockdownTrigger()
-					.confidentlyLessThan(ModelNav.modelParam(current).getLockdownReleaseTrigger(), 0.95)) {
+		public State.PolicyState nextState(
+				Builder builder, OutbreakState current, StateMachineContext context,
+				Sampler rng
+		) {
+			if (current.getLockdownTrigger().confidentlyLessThan(
+					ModelNav.modelParam(current).getLockdownReleaseTrigger(), 0.95
+			)) {
 				branchPeopleTo(current, LockdownIsolation.RELEASE);
 				return MONITOR;
 			}
 			return LOCKDOWN;
+		}
+
+		@Override
+		public void updateHistory(
+				ImmutableOutbreakHistory.Builder builder, OutbreakState current,
+				StateMachineContext context, Sampler rng
+		) {
+			randomlyScreen(current, rng);
 		}
 	};
 

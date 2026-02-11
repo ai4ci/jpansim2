@@ -10,14 +10,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 /**
  * A simple function that always returns a fixed value.
  *
- * <p>This interface describes a simple function that always returns the same
- * value regardless of the input. It is used as a baseline or default in cases
- * where a more complex function is not required. For example, it may be used as
- * a default contact odds function in demographic configurations or as a simple
+ * <p>
+ * This interface describes a simple function that always returns the same value
+ * regardless of the input. It is used as a baseline or default in cases where a
+ * more complex function is not required. For example, it may be used as a
+ * default contact odds function in demographic configurations or as a simple
  * parameter function in execution configurations.
  *
- * <p>Downstream uses include demographic and execution configuration code such
- * as {@link io.github.ai4ci.config.setup.AgeStratifiedDemography} and
+ * <p>
+ * Downstream uses include demographic and execution configuration code such as
+ * {@link io.github.ai4ci.config.setup.AgeStratifiedDemography} and
  * {@link io.github.ai4ci.config.execution.ExecutionConfiguration}.
  *
  * @author Rob Challen
@@ -28,32 +30,25 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 public interface FixedValueFunction extends Serializable, SimpleFunction {
 
 	/**
-	 * The fixed value returned by this function.
+	 * Creates a fixed value function that always returns the specified value.
 	 *
-	 * <p>This value is returned by the {@link #value(double)} method regardless
-	 * of the input. It is set at construction and may be used as a simple
-	 * parameter or default function in various configurations.
-	 * 
-	 * @return the fixed value returned by this function
-	 * 
-	 */
-	double getValue();
-	
-	/**
-	 * Returns the fixed value of this function.
+	 * <p>
+	 * This factory method allows you to create a fixed value function with any
+	 * specified value. It may be used as a simple parameter function in various
+	 * configurations where a constant value is sufficient.
 	 *
-	 * <p>This method ignores the input and always returns the value specified
-	 * by {@link #getValue()}. It provides a simple implementation of the
-	 * {@link SimpleFunction} interface.
+	 * @param value the fixed value to be returned by the function
+	 * @return a fixed value function that always returns the specified value
 	 */
-	default double value(double x) {
-		return getValue();
+	public static FixedValueFunction of(double value) {
+		return ImmutableFixedValueFunction.builder().setValue(value).build();
 	}
-	
+
 	/**
 	 * Creates a fixed value function that always returns 1.
 	 *
-	 * <p>This is a convenient factory method for creating a simple fixed value
+	 * <p>
+	 * This is a convenient factory method for creating a simple fixed value
 	 * function with a default value of 1. It may be used as a default contact
 	 * odds function or as a simple parameter function in various configurations.
 	 *
@@ -62,18 +57,30 @@ public interface FixedValueFunction extends Serializable, SimpleFunction {
 	public static FixedValueFunction ofOne() {
 		return ImmutableFixedValueFunction.builder().setValue(1).build();
 	}
-	
+
 	/**
-	 * Creates a fixed value function that always returns the specified value.
+	 * The fixed value returned by this function.
 	 *
-	 * <p>This factory method allows you to create a fixed value function with
-	 * any specified value. It may be used as a simple parameter function in
-	 * various configurations where a constant value is sufficient.
+	 * <p>
+	 * This value is returned by the {@link #value(double)} method regardless of
+	 * the input. It is set at construction and may be used as a simple parameter
+	 * or default function in various configurations.
 	 *
-	 * @param value the fixed value to be returned by the function
-	 * @return a fixed value function that always returns the specified value
+	 * @return the fixed value returned by this function
+	 *
 	 */
-	public static FixedValueFunction of(double value) {
-		return ImmutableFixedValueFunction.builder().setValue(value).build();
+	double getValue();
+
+	/**
+	 * Returns the fixed value of this function.
+	 *
+	 * <p>
+	 * This method ignores the input and always returns the value specified by
+	 * {@link #getValue()}. It provides a simple implementation of the
+	 * {@link SimpleFunction} interface.
+	 */
+	@Override
+	default double value(double x) {
+		return this.getValue();
 	}
 }

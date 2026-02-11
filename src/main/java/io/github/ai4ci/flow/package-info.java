@@ -1,83 +1,90 @@
 /**
  * Simulation execution and data flow management for agent-based modelling.
  *
- * <p>This package now centralises the core execution and export infrastructure
+ * <p>
+ * This package now centralises the core execution and export infrastructure
  * following a recent refactor that moved execution builders, monitoring and
  * exporters into the {@code io.github.ai4ci.flow} package and the
  * {@code io.github.ai4ci.flow.output} subpackage.
  *
  * <h2>Core components now located in this package</h2>
  * <ul>
- *   <li>{@link io.github.ai4ci.flow.ExecutionBuilder} - orchestrates setup,
- *       baselining and initialisation steps to create runnable simulations</li>
- *   <li>{@link io.github.ai4ci.flow.SimulationExecutor} - executes an
- *       individual simulation to completion with thread management and
- *       monitoring</li>
- *   <li>{@link io.github.ai4ci.flow.SimulationFactory} - preconfigures and
- *       caches simulation instances for batch execution</li>
- *   <li>{@link io.github.ai4ci.flow.SimulationMonitor} - oversees multiple
- *       simulation executions and manages resource allocation and throttling</li>
+ * <li>{@link io.github.ai4ci.flow.ExecutionBuilder} - orchestrates setup,
+ * baselining and initialisation steps to create runnable simulations</li>
+ * <li>{@link io.github.ai4ci.flow.SimulationExecutor} - executes an individual
+ * simulation to completion with thread management and monitoring</li>
+ * <li>{@link io.github.ai4ci.flow.SimulationFactory} - preconfigures and caches
+ * simulation instances for batch execution</li>
+ * <li>{@link io.github.ai4ci.flow.SimulationMonitor} - oversees multiple
+ * simulation executions and manages resource allocation and throttling</li>
  * </ul>
  *
  * <h2>Export and writer components (flow.output)</h2>
- * <p>Export and writer implementations have been grouped under the
+ * <p>
+ * Export and writer implementations have been grouped under the
  * {@code io.github.ai4ci.flow.output} subpackage. Notable types include:
  * <ul>
- *   <li>{@link io.github.ai4ci.flow.output.SimulationExporter} - coordinates
- *       export of simulation records at the configured stages</li>
- *   <li>{@link io.github.ai4ci.flow.output.OutputWriter} - base interface for
- *       concrete writers</li>
- *   <li>{@link io.github.ai4ci.flow.output.CSVWriter} - writes records to CSV</li>
- *   <li>{@link io.github.ai4ci.flow.output.DuckDBWriter} - writes records to
- *       DuckDB database files</li>
- *   <li>{@link io.github.ai4ci.flow.output.QueueWriter} - buffered writer for
- *       asynchronous export</li>
- *   <li>{@link io.github.ai4ci.flow.output.Export} and
- *       {@link io.github.ai4ci.flow.output.ExportSelector} - annotations and
- *       helper interfaces that describe what to export and when</li>
+ * <li>{@link io.github.ai4ci.flow.output.SimulationExporter} - coordinates
+ * export of simulation records at the configured stages</li>
+ * <li>{@link io.github.ai4ci.flow.output.OutputWriter} - base interface for
+ * concrete writers</li>
+ * <li>{@link io.github.ai4ci.flow.output.CSVWriter} - writes records to
+ * CSV</li>
+ * <li>{@link io.github.ai4ci.flow.output.DuckDBWriter} - writes records to
+ * DuckDB database files</li>
+ * <li>{@link io.github.ai4ci.flow.output.QueueWriter} - buffered writer for
+ * asynchronous export</li>
+ * <li>{@link io.github.ai4ci.flow.output.Export} and
+ * {@link io.github.ai4ci.flow.output.ExportSelector} - annotations and helper
+ * interfaces that describe what to export and when</li>
  * </ul>
  *
  * <h2>Execution lifecycle</h2>
- * <p>The typical lifecycle of a simulation is:
+ * <p>
+ * The typical lifecycle of a simulation is:
  * <ol>
- *   <li>Factory setup: {@link SimulationFactory} constructs ready instances</li>
- *   <li>Initialisation: {@link ExecutionBuilder} prepares model state</li>
- *   <li>Execution loop: {@link SimulationExecutor} advances time and emits
- *       export records at configured stages</li>
- *   <li>Monitoring: {@link SimulationMonitor} throttles and supervises runs</li>
- *   <li>Completion: exporters flush and resources are reclaimed</li>
+ * <li>Factory setup: {@link SimulationFactory} constructs ready instances</li>
+ * <li>Initialisation: {@link ExecutionBuilder} prepares model state</li>
+ * <li>Execution loop: {@link SimulationExecutor} advances time and emits export
+ * records at configured stages</li>
+ * <li>Monitoring: {@link SimulationMonitor} throttles and supervises runs</li>
+ * <li>Completion: exporters flush and resources are reclaimed</li>
  * </ol>
  *
  * <h2>Data export pipeline</h2>
- * <p>Exported records are produced at defined stages (for example START,
- * BASELINE, UPDATE and FINISH) and routed to the appropriate writer. The
- * pipeline ensures export occurs before state mutation so that exported rows
- * represent the pre‑update state for each time step.
+ * <p>
+ * Exported records are produced at defined stages (for example START, BASELINE,
+ * UPDATE and FINISH) and routed to the appropriate writer. The pipeline ensures
+ * export occurs before state mutation so that exported rows represent the
+ * pre‑update state for each time step.
  *
  * <h2>Integration points</h2>
- * <p>The flow package integrates with the simulation model and configuration:
+ * <p>
+ * The flow package integrates with the simulation model and configuration:
  * <ul>
- *   <li>{@link io.github.ai4ci.abm.Outbreak} - core simulation model</li>
- *   <li>{@link io.github.ai4ci.config.setup.SetupConfiguration} - model
- *       structure configuration used by builders</li>
- *   <li>{@link io.github.ai4ci.config.execution.ExecutionConfiguration} - runtime
- *       parameter configuration consulted during initialisation and export</li>
- *   <li>{@link io.github.ai4ci.flow.mechanics.Updater} - time step advancement
- *       logic used by executors</li>
+ * <li>{@link io.github.ai4ci.abm.Outbreak} - core simulation model</li>
+ * <li>{@link io.github.ai4ci.config.setup.SetupConfiguration} - model structure
+ * configuration used by builders</li>
+ * <li>{@link io.github.ai4ci.config.execution.ExecutionConfiguration} - runtime
+ * parameter configuration consulted during initialisation and export</li>
+ * <li>{@link io.github.ai4ci.flow.mechanics.Updater} - time step advancement
+ * logic used by executors</li>
  * </ul>
  *
  * <h2>Usage example</h2>
+ *
  * <pre>
  * SimulationMonitor monitor = new SimulationMonitor();
  * SimulationFactory factory = new SimulationFactory();
  * ExecutionBuilder builder = new ExecutionBuilder(...);
  * SimulationExporter exporter = new SimulationExporter();
- * 
+ *
  * SimulationExecutor executor = new SimulationExecutor(monitor, factory.create(), exporter, 1000);
  * monitor.submit(executor);
  * </pre>
  *
- * <p>Downstream consumers: exporters and writers in {@code flow.output} and
+ * <p>
+ * Downstream consumers: exporters and writers in {@code flow.output} and
  * analytics or notebooks that consume CSV or DuckDB outputs generated by the
  * writers.
  *

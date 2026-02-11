@@ -14,30 +14,31 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Utility class for DuckDB database operations and type mapping.
  * <p>
  * This class provides functionality for appending Java objects to DuckDB tables
- * and generating SQL CREATE TABLE statements based on Java class metadata.
- * The class handles type mapping between Java types and DuckDB SQL types,
+ * and generating SQL CREATE TABLE statements based on Java class metadata. The
+ * class handles type mapping between Java types and DuckDB SQL types,
  * supporting primitive types, wrapper classes, and common Java types.
- * 
+ *
  * @author Rob Challen
  * @see org.duckdb.DuckDBAppender
  * @see com.fasterxml.jackson.annotation.JsonProperty
  */
 
 public class DuckDBUtil {
-	
-	
 
 	/**
-	 * Appends a Java object to a DuckDB table using type-specific appender methods.
+	 * Appends a Java object to a DuckDB table using type-specific appender
+	 * methods.
 	 * <p>
-	 * This method performs type-based dispatch to invoke the appropriate DuckDBAppender
-	 * method for the given object type. Supported types include primitive types, their wrapper classes, BigDecimal,
-	 * LocalDateTime, and String. If the object type is not supported, an IllegalArgumentException is thrown.
+	 * This method performs type-based dispatch to invoke the appropriate
+	 * DuckDBAppender method for the given object type. Supported types include
+	 * primitive types, their wrapper classes, BigDecimal, LocalDateTime, and
+	 * String. If the object type is not supported, an IllegalArgumentException
+	 * is thrown.
 	 *
 	 * @param appender the DuckDBAppender instance to append data to
-	 * @param value the object to append, must be of a supported type
+	 * @param value    the object to append, must be of a supported type
 	 * @throws IllegalArgumentException if the object type is not supported
-	 * @throws RuntimeException if a SQLException occurs during appending
+	 * @throws RuntimeException         if a SQLException occurs during appending
 	 */
 	public static void append(DuckDBAppender appender, Object value) {
 		try {
@@ -61,9 +62,10 @@ public class DuckDBUtil {
 				appender.appendBigDecimal((BigDecimal) value);
 			} else if (value instanceof LocalDateTime) {
 				appender.appendLocalDateTime((LocalDateTime) value);
-			} else {
-				throw new IllegalArgumentException("Unsupported type for DuckDB Appender");
-			}
+			} else
+				throw new IllegalArgumentException(
+						"Unsupported type for DuckDB Appender"
+				);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
@@ -76,28 +78,27 @@ public class DuckDBUtil {
 	 * annotated with {@link JsonProperty} in the specified class. The generated
 	 * SQL creates a table with columns corresponding to each annotated property.
 	 *
-	 * @param <X> the class type parameter
-	 * @param type the Java class to generate SQL for
+	 * @param <X>       the class type parameter
+	 * @param type      the Java class to generate SQL for
 	 * @param tableName the name of the table to create
 	 * @return a complete CREATE TABLE SQL statement
 	 */
 	public static <X> String createSql(Class<X> type, String tableName) {
-		return "CREATE TABLE "+tableName+" ("+
-				Arrays.stream(type.getMethods())
-		.filter(c -> c.isAnnotationPresent(JsonProperty.class))
-		.map(m ->
-		m.getAnnotation(JsonProperty.class).value() +" "+
-		mapToDuckDBType(m.getReturnType())
-				).collect(Collectors.joining(","))+
-		")"
-		;
+		return "CREATE TABLE " + tableName + " ("
+				+ Arrays.stream(type.getMethods())
+						.filter(c -> c.isAnnotationPresent(JsonProperty.class))
+						.map(
+								m -> m.getAnnotation(JsonProperty.class).value() + " "
+										+ mapToDuckDBType(m.getReturnType())
+						).collect(Collectors.joining(","))
+				+ ")";
 	}
 
 	/**
 	 * Maps Java class types to corresponding DuckDB SQL types.
 	 * <p>
-	 * This function implements the type mapping covering both primitive
-	 * types and their corresponding wrapper classes, plus additional Java types
+	 * This function implements the type mapping covering both primitive types
+	 * and their corresponding wrapper classes, plus additional Java types
 	 * commonly used in database applications.
 	 * <p>
 	 * The mapping logic handles primitive types first, then falls back to
@@ -109,9 +110,8 @@ public class DuckDBUtil {
 	 * @throws IllegalArgumentException if clazz is null or unsupported
 	 */
 	public static String mapToDuckDBType(Class<?> clazz) {
-		if (clazz == null) {
+		if (clazz == null)
 			throw new IllegalArgumentException("Class cannot be null");
-		}
 
 		if (clazz.isPrimitive()) {
 			if (clazz == boolean.class) return "BOOLEAN";
@@ -134,6 +134,8 @@ public class DuckDBUtil {
 			if (clazz == String.class) return "VARCHAR";
 		}
 
-		throw new IllegalArgumentException("Unsupported type for DuckDB Appender: " + clazz.getName());
+		throw new IllegalArgumentException(
+				"Unsupported type for DuckDB Appender: " + clazz.getName()
+		);
 	}
 }

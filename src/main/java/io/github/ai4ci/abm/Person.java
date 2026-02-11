@@ -21,8 +21,9 @@ import io.github.ai4ci.util.Ephemeral;
  */
 @Value.Modifiable
 @Data.Mutable
-public abstract class Person implements Entity, HistoricalStateProvider<PersonHistory> {
- 
+public abstract class Person
+		implements Entity, HistoricalStateProvider<PersonHistory> {
+
 	/**
 	 * Creates a new person and adds them into the outbreak network. The created
 	 * person is a minimal "stub" instance: it will be assigned an id and
@@ -34,9 +35,9 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	 * @return a modifiable person stub attached to the provided outbreak
 	 */
 	public static ModifiablePerson createPersonStub(Outbreak outbreak) {
-		ModifiablePerson tmp = new ModifiablePerson();
+		var tmp = new ModifiablePerson();
 		tmp.setOutbreak(outbreak);
-		int id = outbreak.getPeople().put(tmp);
+		var id = outbreak.getPeople().put(tmp);
 		tmp.setId(id);
 		tmp.setNextHistory(Ephemeral.empty());
 		tmp.setNextState(Ephemeral.empty());
@@ -44,31 +45,15 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 		tmp.setDemographic(PersonDemographic.stub(tmp));
 		return tmp;
 	}
-	
+
 	/**
-	 * Returns a persistent unique resource name for this person within the
-	 * outbreak, used primarily for logging and diagnostics.
-	 *
-	 * @return URN string in the form {@code <outbreak-urn>:person:<id>}
+	 * {@inheritDoc}
 	 */
-	public String getUrn() {
-		return getOutbreak().getUrn()+":person:"+getId();
+	@Override
+	public final boolean equals(Object another) {
+		return super.equals(another);
 	}
-	
-	/**
-	 * The unique numeric identifier for this person within the outbreak network.
-	 *
-	 * @return person's id (non-null)
-	 */
-	public abstract Integer getId();
-	
-	/**
-	 * The outbreak this person belongs to. Never null for a created person.
-	 *
-	 * @return the associated {@link Outbreak}
-	 */
-	public abstract Outbreak getOutbreak();
-	
+
 	/**
 	 * Immutable baseline information for this person (e.g. comorbidities,
 	 * baseline behaviours). This is stable for the duration of a simulation run.
@@ -76,7 +61,21 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	 * @return the {@link PersonBaseline} for this person
 	 */
 	public abstract PersonBaseline getBaseline();
-	
+
+	/**
+	 * Gets the first history item unless there is no history. If called during
+	 * update cycle this will get the history at the same time as the current
+	 * state. If called after it will be the previous day.
+	 *
+	 * @return an {@link Optional} containing the most recent
+	 *         {@link PersonHistory} or {@link Optional#empty()} if no history
+	 *         exists
+	 */
+	public Optional<PersonHistory> getCurrentHistory() {
+		if (this.getHistory().size() == 0) { return Optional.empty(); }
+		return Optional.of(this.getHistory().get(0));
+	}
+
 	/**
 	 * The current immutable state of the person for the current simulation
 	 * timestep. This represents the snapshot of their epidemiological and
@@ -85,7 +84,7 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	 * @return the current {@link PersonState}
 	 */
 	public abstract PersonState getCurrentState();
-	
+
 	/**
 	 * Demographic information for the person such as age group and other
 	 * population-level stratifiers used in the simulation.
@@ -93,45 +92,64 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	 * @return the {@link PersonDemographic} instance
 	 */
 	public abstract PersonDemographic getDemographic();
-	
-	/*
-	 * Only populated during the update cycle, and copied from the t-1 state. 
-	 * This is where changes to the future t state are made.
-	 */
-	public abstract Ephemeral<ImmutablePersonState.Builder> getNextState();
-	
-	/*
-	 * Only populated during the update cycle largely as a mapping from the t-1 
-	 * state. Historical events are added most notably test sampling.
-	 */
-	public abstract Ephemeral<ImmutablePersonHistory.Builder> getNextHistory();
-	
-	/*
-	 * The person's behavioural state machine.
-	 */
-	public abstract StateMachine getStateMachine();
 
 	/**
 	 * Reverse time ordered list of historical states (recent first).
 	 *
-	 * @return list of {@link PersonHistory} entries in reverse chronological order
+	 * @return list of {@link PersonHistory} entries in reverse chronological
+	 *         order
 	 */
+	@Override
 	public abstract List<PersonHistory> getHistory();
-	
-	
+
 	/**
-	 * Gets the first history item unless there is no history. If called during
-	 * update cycle this will get the history at the same time as the current state.
-	 * If called after it will be the previous day.
+	 * The unique numeric identifier for this person within the outbreak network.
 	 *
-	 * @return an {@link Optional} containing the most recent {@link PersonHistory}
-	 *         or {@link Optional#empty()} if no history exists
+	 * @return person's id (non-null)
 	 */
-	public Optional<PersonHistory> getCurrentHistory() {
-		if (getHistory().size() == 0) return Optional.empty();
-		return Optional.of(getHistory().get(0));
+	public abstract Integer getId();
+
+	/**
+	 * Only populated during the update cycle largely as a mapping from the t-1
+	 * state. Historical events are added most notably test sampling.
+	 *
+	 * @return ephemeral builder for next person history
+	 */
+	public abstract Ephemeral<ImmutablePersonHistory.Builder> getNextHistory();
+
+	/**
+	 * Only populated during the update cycle, and copied from the t-1 state.
+	 * This is where changes to the future t state are made.
+	 *
+	 * @return ephemeral builder for next person state
+	 */
+	public abstract Ephemeral<ImmutablePersonState.Builder> getNextState();
+
+	/**
+	 * The outbreak this person belongs to. Never null for a created person.
+	 *
+	 * @return the associated {@link Outbreak}
+	 */
+	public abstract Outbreak getOutbreak();
+
+	/**
+	 * The person's behavioural state machine.
+	 *
+	 * @return the person's {@link StateMachine} for behaviour transitions
+	 */
+	public abstract StateMachine getStateMachine();
+
+	/**
+	 * Returns a persistent unique resource name for this person within the
+	 * outbreak, used primarily for logging and diagnostics.
+	 *
+	 * @return URN string in the form {@code <outbreak-urn>:person:<id>}
+	 */
+	@Override
+	public String getUrn() {
+		return this.getOutbreak().getUrn() + ":person:" + this.getId();
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 *
@@ -140,20 +158,16 @@ public abstract class Person implements Entity, HistoricalStateProvider<PersonHi
 	 * redefinition in generated classes.
 	 */
 	@Override
-	public final int hashCode() {return super.hashCode();}
-	
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final boolean equals(Object another) {return super.equals(another);}
-	
+	public final int hashCode() {
+		return super.hashCode();
+	}
+
 	/**
 	 * Returns the URN for this person. This provides a human-friendly
 	 * representation useful for logging.
 	 */
 	@Override
 	public String toString() {
-		return getUrn();
+		return this.getUrn();
 	}
 }

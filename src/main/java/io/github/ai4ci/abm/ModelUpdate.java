@@ -3,9 +3,6 @@ package io.github.ai4ci.abm;
 import static io.github.ai4ci.flow.mechanics.ModelOperation.updateOutbreakState;
 import static io.github.ai4ci.flow.mechanics.ModelOperation.updatePersonState;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.github.ai4ci.flow.mechanics.ModelOperation;
 import io.github.ai4ci.flow.mechanics.ModelOperation.OutbreakStateUpdater;
 import io.github.ai4ci.flow.mechanics.ModelOperation.PersonStateUpdater;
@@ -81,26 +78,47 @@ import io.github.ai4ci.flow.mechanics.ModelOperation.PersonStateUpdater;
  */
 public class ModelUpdate {
 
-	static Logger log = LoggerFactory.getLogger(ModelUpdate.class);
-
+	/**
+	 * Outbreak-level updaters: run once per day during the {@code updateState}
+	 * phase (see
+	 * {@link io.github.ai4ci.flow.mechanics.Updater#updateState(Outbreak)}).
+	 * These get access to the outbreak's next-state builder and the current
+	 * outbreak object so they can make deterministic or probabilistic
+	 * modifications to the next state before it is finalised. This is intended
+	 * for global updates that affect the outbreak as a whole (e.g., available
+	 * tests, contact detection probability) rather than person-level updates.
+	 */
 	public static enum OutbreakUpdaterFn {
 		/**
-		 * Default no-op outbreak updater. Kept so the Updater has at least one outbreak
-		 * processor by default. Outbreak-level processors are run once per day during
-		 * {@code updateState} on the outbreak builder and can modify global parameters
-		 * (e.g. available tests, contact detection probability).
+		 * Default no-op outbreak updater. Kept so the Updater has at least one
+		 * outbreak processor by default. Outbreak-level processors are run once
+		 * per day during {@code updateState} on the outbreak builder and can
+		 * modify global parameters (e.g. available tests, contact detection
+		 * probability).
 		 */
-		DEFAULT(updateOutbreakState((outbreak) -> true, (builder, outbreak, rng) -> {
-			// OutbreakBaseline baseline = outbreak.getBaseline();
-			// OutbreakState current = outbreak.getCurrentState();
-		})),;
+		DEFAULT(
+				updateOutbreakState(
+						(outbreak) -> true, (builder, outbreak, rng) -> {
+							// OutbreakBaseline baseline = outbreak.getBaseline();
+							// OutbreakState current = outbreak.getCurrentState();
+						}
+				)
+		),;
 
-		OutbreakStateUpdater fn;
+		private OutbreakStateUpdater fn;
 
-		OutbreakUpdaterFn(ModelOperation.OutbreakStateUpdater fn) {
+		private OutbreakUpdaterFn(ModelOperation.OutbreakStateUpdater fn) {
 			this.fn = fn;
 		}
 
+		/**
+		 * The function that performs the outbreak-level update. This is a lambda
+		 * that accepts a selector (predicate) and a mutator (tri-consumer) and
+		 * returns an
+		 *
+		 * @return a {@link OutbreakStateUpdater} that can be applied to the
+		 *         outbreak's next state builder during the update cycle.
+		 */
 		public OutbreakStateUpdater fn() {
 			return this.fn;
 		}
@@ -110,20 +128,23 @@ public class ModelUpdate {
 	 * Person-level updaters: run for every person during the {@code updateState}
 	 * phase (see
 	 * {@link io.github.ai4ci.flow.mechanics.Updater#updateState(Person)}). These
-	 * get access to the person's next-state builder and the current person object
-	 * so they can make deterministic or probabilistic modifications to the next
-	 * state before it is finalised.
+	 * get access to the person's next-state builder and the current person
+	 * object so they can make deterministic or probabilistic modifications to
+	 * the next state before it is finalised.
 	 */
 	public static enum PersonUpdaterFn {
 		/**
-		 * Default no-op person updater. This exists so the Updater has at least one
-		 * person processor by default and demonstrates the expected lambda shape.
+		 * Default no-op person updater. This exists so the Updater has at least
+		 * one person processor by default and demonstrates the expected lambda
+		 * shape.
 		 */
-		DEFAULT(updatePersonState((person) -> true, (builder, person, rng) -> {
-			// PersonBaseline baseline = person.getBaseline();
-			// PersonState current = person.getCurrentState();
+		DEFAULT(
+				updatePersonState((person) -> true, (builder, person, rng) -> {
+					// PersonBaseline baseline = person.getBaseline();
+					// PersonState current = person.getCurrentState();
 
-		})),
+				})
+		),
 
 		/**
 		 * Immunisation (vaccination) protocol placeholder.
@@ -134,42 +155,49 @@ public class ModelUpdate {
 		 * <ol>
 		 * <li>Be extended to consult outbreak-level vaccine supply and
 		 * prioritisation.</li>
-		 * <li>Apply doses to eligible individuals by mutating the next-state builder
-		 * (e.g. {@code builder.setImmunisationDose(...)}) and schedule follow-up
-		 * doses.</li>
+		 * <li>Apply doses to eligible individuals by mutating the next-state
+		 * builder (e.g. {@code builder.setImmunisationDose(...)}) and schedule
+		 * follow-up doses.</li>
 		 * <li>Interact with the in-host model and risk model so that vaccination
 		 * affects susceptibility, severity and waning parameters.</li>
 		 * </ol>
 		 *
-		 * Important: the full vaccination workflow (eligibility, queueing, multi-dose
-		 * schedules and waning immunity) is not implemented here. Treat this enum value
-		 * as a scaffolding point for productionising vaccine logic; prefer implementing
-		 * a dedicated person processor or service that can be added via
+		 * Important: the full vaccination workflow (eligibility, queueing,
+		 * multi-dose schedules and waning immunity) is not implemented here.
+		 * Treat this enum value as a scaffolding point for productionising
+		 * vaccine logic; prefer implementing a dedicated person processor or
+		 * service that can be added via
 		 * {@link io.github.ai4ci.flow.mechanics.Updater#withPersonProcessor(java.util.function.Predicate, io.github.ai4ci.flow.mechanics.ModelOperation.TriConsumer)}
 		 * when building an experiment.
 		 */
-		IMMUNISATION_PROTOCOL(updatePersonState((person) -> true, (builder, person, rng) -> {
-			// PersonBaseline baseline = person.getBaseline();
-			// PersonState current = person.getCurrentState();
-			builder.setImmunisationDose(0D);
-		})),
+		IMMUNISATION_PROTOCOL(
+				updatePersonState((person) -> true, (builder, person, rng) -> {
+					// PersonBaseline baseline = person.getBaseline();
+					// PersonState current = person.getCurrentState();
+					builder.setImmunisationDose(0D);
+				})
+		),
 
 		/**
-		 * Importation protocol: demonstrates how one might seed exposure on the next
-		 * day using a per-person probability scaled by model parameters and the agent's
-		 * mobility. This adds an importation exposure to the next state builder if the
-		 * random draw succeeds; otherwise it leaves the importation exposure as zero.
+		 * Importation protocol: demonstrates how one might seed exposure on the
+		 * next day using a per-person probability scaled by model parameters and
+		 * the agent's mobility. This adds an importation exposure to the next
+		 * state builder if the random draw succeeds; otherwise it leaves the
+		 * importation exposure as zero.
 		 */
-		IMPORTATION_PROTOCOL(updatePersonState((person) -> true, (builder, person, rng) -> {
-			// PersonBaseline baseline = person.getBaseline();
-			// PersonState current = person.getCurrentState();
-			if (rng.uniform() < ModelNav.modelParam(person).getImportationProbability()
-					* person.getCurrentState().getAdjustedMobility()) {
-				builder.setImportationExposure(2D);
-			} else {
-				builder.setImportationExposure(0D);
-			}
-		}))
+		IMPORTATION_PROTOCOL(
+				updatePersonState((person) -> true, (builder, person, rng) -> {
+					// PersonBaseline baseline = person.getBaseline();
+					// PersonState current = person.getCurrentState();
+					if (rng.uniform() < ModelNav.modelParam(person)
+							.getImportationProbability()
+							* person.getCurrentState().getAdjustedMobility()) {
+						builder.setImportationExposure(2D);
+					} else {
+						builder.setImportationExposure(0D);
+					}
+				})
+		)
 
 		;
 
@@ -180,15 +208,18 @@ public class ModelUpdate {
 		}
 
 		/**
-		 * The function that performs the person-level update. This is a lambda that
-		 * accepts a selector (predicate) and a mutator (tri-consumer) and returns a
+		 * The function that performs the person-level update. This is a lambda
+		 * that accepts a selector (predicate) and a mutator (tri-consumer) and
+		 * returns a
 		 *
-		 * @return a {@link PersonStateUpdater} that can be applied to a person's next
-		 *         state builder during the update cycle.
+		 * @return a {@link PersonStateUpdater} that can be applied to a person's
+		 *         next state builder during the update cycle.
 		 */
 		public PersonStateUpdater fn() {
 			return this.fn;
 		}
 	}
+
+	// static Logger log = LoggerFactory.getLogger(ModelUpdate.class);
 
 }

@@ -13,13 +13,22 @@ import org.immutables.value.Value;
 public interface Exposure {
 
 	/**
-	 * Returns the amount of virus or exposure dose successfully transmitted from
-	 * the exposer to the exposee. This value quantifies the intensity of the
-	 * exposure event.
+	 * Retrieves the {@link PersonHistory} of the exposer at the current time of
+	 * the exposee's temporal state. This method provides access to the
+	 * historical data of the individual who caused the exposure.
 	 *
-	 * @return The exposure dose received by the exposee.
+	 * @param one The {@link PersonTemporalState} of the exposee, providing
+	 *            context for the current time.
+	 * @return The {@link PersonHistory} of the exposer at the specified time.
+	 * @throws java.util.NoSuchElementException if the exposer's history cannot
+	 *                                          be found for the given ID and
+	 *                                          time.
 	 */
-	double getExposure();
+	default PersonHistory getExposer(PersonTemporalState one) {
+		int time = one.getTime();
+		return one.getEntity().getOutbreak()
+				.getPersonHistoryByIdAndTime(this.getExposerId(), time).get();
+	}
 
 //	/**
 //	 * This is already accounted for in the presence of the transmission event
@@ -38,18 +47,11 @@ public interface Exposure {
 	int getExposerId();
 
 	/**
-	 * Retrieves the {@link PersonHistory} of the exposer at the current time of the
-	 * exposee's temporal state. This method provides access to the historical data
-	 * of the individual who caused the exposure.
+	 * Returns the amount of virus or exposure dose successfully transmitted from
+	 * the exposer to the exposee. This value quantifies the intensity of the
+	 * exposure event.
 	 *
-	 * @param one The {@link PersonTemporalState} of the exposee, providing context
-	 *            for the current time.
-	 * @return The {@link PersonHistory} of the exposer at the specified time.
-	 * @throws java.util.NoSuchElementException if the exposer's history cannot be
-	 *                                          found for the given ID and time.
+	 * @return The exposure dose received by the exposee.
 	 */
-	default PersonHistory getExposer(PersonTemporalState one) {
-		int time = one.getTime();
-		return one.getEntity().getOutbreak().getPersonHistoryByIdAndTime(getExposerId(), time).get();
-	}
+	double getExposure();
 }

@@ -14,6 +14,14 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Import {
+	/**
+	 * Marks a field as the unique identifier for the data item, used for
+	 * indexing and lookup during import.
+	 */
+	@Inherited
+	@Target(ElementType.METHOD)
+	@Retention(RetentionPolicy.RUNTIME)
+	public @interface Id {}
 
 	/**
 	 * The name of the csv file to import from.
@@ -21,14 +29,4 @@ public @interface Import {
 	 * @return the name of the csv file to import from
 	 */
 	String value();
-
-	/**
-	 * Marks a field as the unique identifier for the data item, used for indexing
-	 * and lookup during import.
-	 */
-	@Inherited
-	@Target(ElementType.METHOD)
-	@Retention(RetentionPolicy.RUNTIME)
-	public @interface Id {
-	}
 }

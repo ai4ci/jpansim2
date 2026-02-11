@@ -1,4 +1,5 @@
 package io.github.ai4ci.util;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,262 +8,290 @@ import java.util.stream.IntStream;
 /**
  * Utilities for sparse matrix operations and spectral decomposition.
  *
- * <p>This class provides a lightweight sparse matrix representation
- * in coordinate (row, column, value) form, a builder to construct such
- * matrices and a power iteration routine to estimate the dominant
- * eigenvalue and eigenvector. The routines operate with concurrent
- * double vectors implemented by {@link AtomicDoubleArray} and may be
- * used where atomic updates to vector entries are required.</p>
+ * <p>
+ * This class provides a lightweight sparse matrix representation in coordinate
+ * (row, column, value) form, a builder to construct such matrices and a power
+ * iteration routine to estimate the dominant eigenvalue and eigenvector. The
+ * routines operate with concurrent double vectors implemented by
+ * {@link AtomicDoubleArray} and may be used where atomic updates to vector
+ * entries are required.
+ * </p>
  *
- * <p>Downstream uses: see {@link io.github.ai4ci.util.AtomicDoubleArray}
- * and {@link io.github.ai4ci.util.AtomicDouble} for the concurrent
- * vector types used by the matrix operations.</p>
+ * <p>
+ * Downstream uses: see {@link io.github.ai4ci.util.AtomicDoubleArray} and
+ * {@link io.github.ai4ci.util.AtomicDouble} for the concurrent vector types
+ * used by the matrix operations.
+ * </p>
  *
  * @author Rob Challen
  */
 public class SparseDecomposition {
 
-    /**
-     * Sparse matrix in coordinate (COO) form.
-     *
-     * <p>The matrix is represented by parallel arrays of row indices,
-     * column indices and values. The storage is compact for sparse
-     * matrices and convenient for parallel iteration over non-zero
-     * entries.</p>
-     *
-     * <p>Downstream use: multiplication results are accumulated into an
-     * {@link AtomicDoubleArray} by {@link #multiply(AtomicDoubleArray)}.</p>
-     *
-     * @author Rob Challen
-     */
-    public static class SparseMatrix {
-    	public final int dim;
-    	public final int[] rowIndices;      // row indices
-        public final int[] colIndices;  // column indices
-        public final double[] values;   // matrix values
+	/**
+	 * Sparse matrix in coordinate (COO) form.
+	 *
+	 * <p>
+	 * The matrix is represented by parallel arrays of row indices, column
+	 * indices and values. The storage is compact for sparse matrices and
+	 * convenient for parallel iteration over non-zero entries.
+	 * </p>
+	 *
+	 * <p>
+	 * Downstream use: multiplication results are accumulated into an
+	 * {@link AtomicDoubleArray} by {@link #multiply(AtomicDoubleArray)}.
+	 * </p>
+	 *
+	 * @author Rob Challen
+	 */
+	public static class SparseMatrix {
+		/**
+		 * Create a new builder for constructing a sparse matrix.
+		 *
+		 * @return a {@link SparseMatrixBuilder}
+		 */
+		public static SparseMatrixBuilder builder() {
+			return new SparseMatrixBuilder();
+		}
 
-        /**
-         * Construct a sparse matrix using the supplied coordinate
-         * arrays. The matrix dimension is inferred from the maximum
-         * index in the supplied arrays.
-         *
-         * @param rowIndices array of row indices for each non-zero entry
-         * @param colIndices array of column indices for each non-zero entry
-         * @param values array of values for each non-zero entry
-         */
-        public SparseMatrix(int[] rowIndices, int[] colIndices, double[] values) {
-        	this(
-				Math.max(
-					Arrays.stream(rowIndices).max().orElse(0),
-					Arrays.stream(colIndices).max().orElse(0))+1,
-				rowIndices, 
-				colIndices,
-				values
-		);
-        }
-        
-        /**
-         * Construct a sparse matrix with explicit dimension.
-         *
-         * @param dim matrix dimension (number of rows/columns)
-         * @param rowIndices array of row indices
-         * @param colIndices array of column indices
-         * @param values array of values
-         */
-        public SparseMatrix(int dim, int[] rowIndices, int[] colIndices, double[] values) {
-        	if (rowIndices.length != colIndices.length || rowIndices.length != values.length) 
+		final int dim;
+		final int[] rowIndices; // row indices
+		final int[] colIndices; // column indices
+		final double[] values; // matrix values
+
+		/**
+		 * Construct a sparse matrix with explicit dimension.
+		 *
+		 * @param dim        matrix dimension (number of rows/columns)
+		 * @param rowIndices array of row indices
+		 * @param colIndices array of column indices
+		 * @param values     array of values
+		 */
+		public SparseMatrix(
+				int dim, int[] rowIndices, int[] colIndices, double[] values
+		) {
+			if (rowIndices.length != colIndices.length
+					|| rowIndices.length != values.length) {
 				throw new RuntimeException("Mismatched sizes");
-            this.rowIndices = rowIndices;
-            this.colIndices = colIndices;
-            this.values = values;
-            this.dim = dim; 
-        }
-        
-        /**
-         * Create a new builder for constructing a sparse matrix.
-         *
-         * @return a {@link SparseMatrixBuilder}
-         */
-        public static SparseMatrixBuilder builder() {
-        	return new SparseMatrixBuilder();
-        }
+			}
+			this.rowIndices = rowIndices;
+			this.colIndices = colIndices;
+			this.values = values;
+			this.dim = dim;
+		}
 
-        /**
-         * Multiply this sparse matrix by the vector {@code x} and return
-         * the result as a new {@link AtomicDoubleArray}.
-         *
-         * <p>The multiplication iterates over non-zero entries in
-         * parallel. Each contribution is accumulated into the output
-         * vector using atomic addition so the operation is thread safe.</p>
-         *
-         * @param x the input vector (must have length equal to matrix dimension)
-         * @return the product vector as an {@link AtomicDoubleArray}
-         */
-        public AtomicDoubleArray multiply(AtomicDoubleArray x) {
-        	if (x.length() != dim) throw new RuntimeException("Mismatched shapes");
-        	AtomicDoubleArray out = new AtomicDoubleArray(x.length());
-            IntStream.range(0, values.length).parallel().forEach(k -> {
-            	int j = colIndices[k];
-            	// multiplies across columns
-                double Axi = x.get(j) * values[k];
-                int i = rowIndices[k];
-                // sums accross rows
-                out.getAndAdd(i, Axi);
-            });
-            return out;
-        }
-    }
+		/**
+		 * Construct a sparse matrix using the supplied coordinate arrays. The
+		 * matrix dimension is inferred from the maximum index in the supplied
+		 * arrays.
+		 *
+		 * @param rowIndices array of row indices for each non-zero entry
+		 * @param colIndices array of column indices for each non-zero entry
+		 * @param values     array of values for each non-zero entry
+		 */
+		public SparseMatrix(int[] rowIndices, int[] colIndices, double[] values) {
+			this(
+					Math.max(
+							Arrays.stream(rowIndices).max().orElse(0),
+							Arrays.stream(colIndices).max().orElse(0)
+					) + 1, rowIndices, colIndices, values
+			);
+		}
 
-    // Compute Euclidean norm of a vector
-    private static double norm2(AtomicDoubleArray v) {
-        return Math.sqrt(IntStream.range(0, v.length())
-                .parallel()
-                .mapToDouble(i -> v.get(i) * v.get(i))
-                .sum());
-    }
+		/**
+		 * Multiply this sparse matrix by the vector {@code x} and return the
+		 * result as a new {@link AtomicDoubleArray}.
+		 *
+		 * <p>
+		 * The multiplication iterates over non-zero entries in parallel. Each
+		 * contribution is accumulated into the output vector using atomic
+		 * addition so the operation is thread safe.
+		 * </p>
+		 *
+		 * @param x the input vector (must have length equal to matrix dimension)
+		 * @return the product vector as an {@link AtomicDoubleArray}
+		 */
+		public AtomicDoubleArray multiply(AtomicDoubleArray x) {
+			if (x.length() != this.dim) {
+				throw new RuntimeException("Mismatched shapes");
+			}
+			var out = new AtomicDoubleArray(x.length());
+			IntStream.range(0, this.values.length).parallel().forEach(k -> {
+				var j = this.colIndices[k];
+				// multiplies across columns
+				var Axi = x.get(j) * this.values[k];
+				var i = this.rowIndices[k];
+				// sums accross rows
+				out.getAndAdd(i, Axi);
+			});
+			return out;
+		}
+	}
 
-    // Normalize vector in-place
-    private static void normalize(AtomicDoubleArray v) {
-        double n = norm2(v);
-        if (n > 0) {
-            final double invNorm = 1.0 / n;
-            IntStream.range(0, v.length()).parallel().forEach(i -> {
-            	v.getAndApply(i, invNorm, (old,x) -> old*x);
-            });
-        }
-    }
+	/**
+	 * Builder for {@link SparseMatrix} using explicit insertion of entries.
+	 *
+	 * <p>
+	 * The builder accumulates entries and produces a compact
+	 * {@link SparseMatrix} instance when {@link #build()} is called.
+	 * </p>
+	 *
+	 * @author Rob Challen
+	 */
+	public static class SparseMatrixBuilder {
+		int dim = -1;
+		List<Integer> rowIndices = new ArrayList<>(); // rowPtr[i] to
+																		// rowPtr[i+1] gives
+																		// col indices and
+																		// values for row i
+		List<Integer> colIndices = new ArrayList<>(); // column indices
+		List<Double> values = new ArrayList<>();
 
-    /**
-     * Perform power iteration to estimate the largest eigenvalue and
-     * eigenvector.
-     *
-     * <p>The routine initialises a small random vector, repeatedly
-     * applies the matrix and normalises the result using the Euclidean
-     * norm until the Rayleigh quotient converges to within {@code tol}.
-     * The returned array contains the estimated eigenvalue as the first
-     * element followed by the eigenvector components.</p>
-     *
-     * <p>Internally this method uses {@link SparseMatrix#multiply(AtomicDoubleArray)}
-     * and {@link #normalize(AtomicDoubleArray)}. The eigenvector is
-     * returned with a consistent sign to reduce variability of output.</p>
-     *
-     * @param A the sparse matrix in triple format
-     * @param maxIter maximum number of iterations
-     * @param tol convergence tolerance
-     * @return an array containing [lambda_max, v0, v1, ...]
-     */
-    public static double[] powerIteration(SparseMatrix A, int maxIter, double tol) {
-        int n = A.dim;
+		/**
+		 * Build a {@link SparseMatrix} from the entries accumulated in this
+		 * builder.
+		 *
+		 * @return a new {@link SparseMatrix}
+		 */
+		public SparseMatrix build() {
+			return new SparseMatrix(
+					this.dim + 1,
+					this.rowIndices.stream().mapToInt(i -> i).toArray(),
+					this.colIndices.stream().mapToInt(i -> i).toArray(),
+					this.values.stream().mapToDouble(i -> i).toArray()
+			);
+		}
 
-        // Initialize random guess vector
-        AtomicDoubleArray v = new AtomicDoubleArray(n);
-        for (int i = 0; i < n; i++) {
-            v.set(i, Math.random() - 0.5);  // Small random initial vector
-        }
-        normalize(v);
+		/**
+		 * Insert a single non-zero entry into the matrix. Values with magnitude
+		 * below 1e-8 are ignored as numerical noise.
+		 *
+		 * @param row    row index
+		 * @param column column index
+		 * @param value  the value to insert
+		 */
+		public void insert(Integer row, Integer column, Double value) {
+			if (value < 1e-8) { return; }
+			if (this.dim < row) { this.dim = row; }
+			if (this.dim < column) { this.dim = column; }
+			this.rowIndices.add(row);
+			this.colIndices.add(column);
+			this.values.add(value);
+		}
 
-        double lambdaOld = 0.0;
-        
-        boolean converged = false;
-        for (int iter = 0; iter < maxIter; iter++) {
-        	AtomicDoubleArray Av = A.multiply(v);  // Av = A * v
-        	AtomicDoubleArray v2 = v;
+		/**
+		 * Insert a value into the matrix symmetrically (row,col) and (col,row).
+		 *
+		 * @param row    row index
+		 * @param column column index
+		 * @param value  value to insert
+		 */
+		public void insertSymmetric(Integer row, Integer column, Double value) {
+			this.insert(row, column, value);
+			this.insert(column, row, value);
+		}
+	}
 
-            // New eigenvalue estimate via Rayleigh quotient
-            double lambda = IntStream.range(0, n)
-                    .parallel()
-                    .mapToDouble(i -> v2.get(i) * Av.get(i))
-                    .sum();
+	// Compute Euclidean norm of a vector
+	private static double norm2(AtomicDoubleArray v) {
+		return Math.sqrt(
+				IntStream.range(0, v.length()).parallel()
+						.mapToDouble(i -> v.get(i) * v.get(i)).sum()
+		);
+	}
 
-            // Update eigenvector approximation
-            v = Av;
-            normalize(v);
+	// Normalize vector in-place
+	private static void normalize(AtomicDoubleArray v) {
+		var n = norm2(v);
+		if (n > 0) {
+			final var invNorm = 1.0 / n;
+			IntStream.range(0, v.length()).parallel().forEach(i -> {
+				v.getAndApply(i, invNorm, (old, x) -> old * x);
+			});
+		}
+	}
 
-            // Check convergence
-            if (Math.abs(lambda - lambdaOld) < tol) {
-                lambdaOld = lambda;
-                converged = true;
-                break;
-            }
+	/**
+	 * Perform power iteration to estimate the largest eigenvalue and
+	 * eigenvector.
+	 *
+	 * <p>
+	 * The routine initialises a small random vector, repeatedly applies the
+	 * matrix and normalises the result using the Euclidean norm until the
+	 * Rayleigh quotient converges to within {@code tol}. The returned array
+	 * contains the estimated eigenvalue as the first element followed by the
+	 * eigenvector components.
+	 * </p>
+	 *
+	 * <p>
+	 * Internally this method uses
+	 * {@link SparseMatrix#multiply(AtomicDoubleArray)} and
+	 * {@link #normalize(AtomicDoubleArray)}. The eigenvector is returned with a
+	 * consistent sign to reduce variability of output.
+	 * </p>
+	 *
+	 * @param A       the sparse matrix in triple format
+	 * @param maxIter maximum number of iterations
+	 * @param tol     convergence tolerance
+	 * @return an array containing [lambda_max, v0, v1, ...]
+	 */
+	public static double[] powerIteration(
+			SparseMatrix A, int maxIter, double tol
+	) {
+		var n = A.dim;
 
-            lambdaOld = lambda;
-        }
-        if (!converged) throw new RuntimeException("Eigenvalue decomposition did not converge.");
-        
-        // normalise signs otherwise we get variable output
-        if (v.get(0)<0) for (int i =0; i<n; i++) v.getAndApply(i, -1, (x,y) -> x*y);
+		// Initialize random guess vector
+		var v = new AtomicDoubleArray(n);
+		for (var i = 0; i < n; i++) {
+			v.set(i, Math.random() - 0.5); // Small random initial vector
+		}
+		normalize(v);
 
-        // Return [lambda, v0, v1, ..., vn-1]
-        double[] result = new double[n + 1];
-        result[0] = lambdaOld;
-        for (int i =0; i<n; i++) result[i+1] = v.get(i);
-        return result;
-    }
+		var lambdaOld = 0.0;
 
+		var converged = false;
+		for (var iter = 0; iter < maxIter; iter++) {
+			var Av = A.multiply(v); // Av = A * v
+			var v2 = v;
 
-    /**
-     * Builder for {@link SparseMatrix} using explicit insertion of
-     * entries.
-     *
-     * <p>The builder accumulates entries and produces a compact
-     * {@link SparseMatrix} instance when {@link #build()} is called.</p>
-     *
-     * @author Rob Challen
-     */
-    public static class SparseMatrixBuilder {
-        public int dim = -1;
-        public List<Integer> rowIndices = new ArrayList<>();      // rowPtr[i] to rowPtr[i+1] gives col indices and values for row i
-        public List<Integer> colIndices = new ArrayList<>();  // column indices
-        public List<Double> values = new ArrayList<>();
-        
-        /**
-         * Insert a value into the matrix symmetrically (row,col) and
-         * (col,row).
-         *
-         * @param row row index
-         * @param column column index
-         * @param value value to insert
-         */
-        public void insertSymmetric(Integer row, Integer column, Double value) {
-        	insert(row,column,value);
-        	insert(column,row,value);
-        }
-        
-        /**
-         * Insert a single non-zero entry into the matrix.
-         * Values with magnitude below 1e-8 are ignored as numerical
-         * noise.
-         *
-         * @param row row index
-         * @param column column index
-         * @param value the value to insert
-         */
-        public void insert(Integer row, Integer column, Double value) {
-        	if (value < 1e-8) return;
-        	if (dim < row) dim = row;
-        	if (dim < column) dim = column;
-        	rowIndices.add(row);
-        	colIndices.add(column);
-        	values.add(value);
-        }
-        
-        /**
-         * Build a {@link SparseMatrix} from the entries accumulated in
-         * this builder.
-         *
-         * @return a new {@link SparseMatrix}
-         */
-        public SparseMatrix build() {
-        	return new SparseMatrix(
-				dim+1,
-				rowIndices.stream().mapToInt(i->i).toArray(),
-				colIndices.stream().mapToInt(i->i).toArray(),
-				values.stream().mapToDouble(i->i).toArray()
-			); 
-        }
-    }
-    
-    
+			// New eigenvalue estimate via Rayleigh quotient
+			var lambda = IntStream.range(0, n).parallel()
+					.mapToDouble(i -> v2.get(i) * Av.get(i)).sum();
+
+			// Update eigenvector approximation
+			v = Av;
+			normalize(v);
+
+			// Check convergence
+			if (Math.abs(lambda - lambdaOld) < tol) {
+				lambdaOld = lambda;
+				converged = true;
+				break;
+			}
+
+			lambdaOld = lambda;
+		}
+		if (!converged) {
+			throw new RuntimeException(
+					"Eigenvalue decomposition did not converge."
+			);
+		}
+
+		// normalise signs otherwise we get variable output
+		if (v.get(0) < 0) {
+			for (var i = 0; i < n; i++) {
+				v.getAndApply(i, -1, (x, y) -> x * y);
+			}
+		}
+
+		// Return [lambda, v0, v1, ..., vn-1]
+		var result = new double[n + 1];
+		result[0] = lambdaOld;
+		for (var i = 0; i < n; i++) {
+			result[i + 1] = v.get(i);
+		}
+		return result;
+	}
+
 }
 
 //public class SparseDecomposition {
@@ -280,7 +309,7 @@ public class SparseDecomposition {
 //            this.colIndices = colIndices;
 //            this.values = values;
 //        }
-//        
+//
 //        public static SparseMatrixBuilder builder() {
 //        	return new SparseMatrixBuilder();
 //        }
@@ -338,7 +367,7 @@ public class SparseDecomposition {
 //
 //        double lambdaOld = 0.0;
 //        double[] Av = new double[n];
-//        
+//
 //        boolean converged = false;
 //        for (int iter = 0; iter < maxIter; iter++) {
 //            A.multiply(v, Av);  // Av = A * v
@@ -363,7 +392,7 @@ public class SparseDecomposition {
 //            lambdaOld = lambda;
 //        }
 //        if (!converged) throw new RuntimeException("Eigenvalue decomposition did not converge.");
-//        
+//
 //        // normalise signs otherwise we get variable output
 //        if (v[0]<0) for (int i =0; i<n; i++) v[i] *= -1;
 //
@@ -380,20 +409,20 @@ public class SparseDecomposition {
 //        public List<Integer> rowPtr = new ArrayList<>();      // rowPtr[i] to rowPtr[i+1] gives col indices and values for row i
 //        public List<Integer> colIndices = new ArrayList<>();  // column indices
 //        public List<Double> values = new ArrayList<>();
-//        
+//
 //        {
 //        	rowPtr.add(0);
 //        }
-//        
+//
 //        public void insertSymmetric(Integer row, Integer column, Double value) {
 //        	insert(row,column,value);
 //        	insert(column,row,value);
 //        }
-//        
+//
 //        public void insert(Integer row, Integer column, Double value) {
 //        	if (value == 0) return;
-//        	// pad row pointers with zeros 
-//        	int initRows = rowPtr.size()-1; 
+//        	// pad row pointers with zeros
+//        	int initRows = rowPtr.size()-1;
 //        	if (initRows <= row) for (int i = 0; i<=row-initRows; i++) rowPtr.add(rowPtr.get(initRows));
 //        	int colStart = rowPtr.get(row);
 //        	int colEnd = rowPtr.get(row+1);
@@ -418,34 +447,34 @@ public class SparseDecomposition {
 //        	}
 //        	for (int i = row+1; i < rowPtr.size(); i++) rowPtr.set(i,rowPtr.get(i)+1);
 //        }
-//        
+//
 //        public SparseMatrix build() {
 //        	return new SparseMatrix(
 //    			rowPtr.stream().mapToInt(i->i).toArray(),
 //    			colIndices.stream().mapToInt(i->i).toArray(),
 //    			values.stream().mapToDouble(i->i).toArray()
-//        	); 
+//        	);
 //        }
 //    }
-//    
+//
 //    public static <X> SparseMatrix csrFromEdges(
 //    		Stream<X> input,
-//    		Function<X,Integer> sourceId, 
-//    		Function<X,Integer> targetId, 
+//    		Function<X,Integer> sourceId,
+//    		Function<X,Integer> targetId,
 //    		Function<X,Double> mapper,
 //    		boolean symmetric
 //    	) {
-//		
+//
 //    	SparseMatrixBuilder build = SparseMatrix.builder();
-//    	
+//
 //    	input.forEach(x -> {
-//    		
-//    		if (symmetric) 
+//
+//    		if (symmetric)
 //    			build.insertSymmetric(targetId.apply(x), sourceId.apply(x), mapper.apply(x));
-//    		else 
+//    		else
 //    			build.insert(sourceId.apply(x), targetId.apply(x), mapper.apply(x));
 //    	});
-//    	
+//
 //		return build.build();
 //	}
 // }

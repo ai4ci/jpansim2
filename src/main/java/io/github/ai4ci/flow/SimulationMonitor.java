@@ -3,131 +3,227 @@ package io.github.ai4ci.flow;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.nio.file.Path;
-import java.util.List;
 
 import org.mariuszgromada.math.mxparser.License;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.config.ExperimentConfiguration;
-import io.github.ai4ci.config.execution.ExecutionConfiguration;
-import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.flow.output.SimulationExporter;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
 
 /**
- * There is one monitor thread running during the simulation. It keeps track
- * of the number of threads in use and available memory. If there is available 
+ * There is one monitor thread running during the simulation. It keeps track of
+ * the number of threads in use and available memory. If there is available
  * memory it will poll for a new simulation to be created by the factory. If
- * there are queued simulations ready to be run it will spawn a new thread and 
+ * there are queued simulations ready to be run it will spawn a new thread and
  * execute them (individual simulations will be processed in parallel also).
  */
 public class SimulationMonitor implements Runnable {
 
-	private static final long WAIT_FOR_MEMORY = 5*60*1000;
+	private static final long WAIT_FOR_MEMORY = 5 * 60 * 1000;
 	// reserve at least 512Mb for system
-	private static final long RESERVE = 512*1024*1024;
-	
+	private static final long RESERVE = 512 * 1024 * 1024;
+
 	static SystemInfo si = new SystemInfo();
 	static HardwareAbstractionLayer hal = si.getHardware();
 	static Logger log = LoggerFactory.getLogger(SimulationMonitor.class);
-	
-	SimulationFactory factory;
-	SimulationExporter exporter;
-	
-	int duration;
-	
-	Object trigger = new Object();
-	volatile private boolean halt = false;
-	
-	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory) throws IOException {
-		
-		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
-		
-		this.exporter = config.exporter(baseDirectory);
-		exporter.writeInputConfiguration(config);
-		List<SetupConfiguration> setups = config.getBatchSetupList();
-		List<ExecutionConfiguration> executions = config.getExecution();
-		factory = SimulationFactory.startFactory(setups, executions, config.getBatchConfig().getUrnBase(), this);
-		duration = config.getBatchConfig().getSimulationDuration();
-	}
-	
-	public static double usedOfAvailable(long sysReserved) {
-		
-		float sysAvail = ((float) hal.getMemory().getAvailable()-sysReserved)/(1024*1024*1024);
-		float freeHeap = ((float) Runtime.getRuntime().freeMemory())/(1024*1024*1024);
-		float maxHeap = ((float) Runtime.getRuntime().maxMemory())/(1024*1024*1024);
-		float currentHeap = ((float) Runtime.getRuntime().totalMemory())/(1024*1024*1024);
-		float allocatable = Math.min(maxHeap-currentHeap, sysAvail);
-		float allocated = currentHeap - freeHeap;
-		return allocated/(currentHeap+allocatable);
-	}
-	
+
+	/**
+	 * Get a string describing the current free memory in the system and JVM.
+	 * This is used for logging and debugging purposes to monitor memory usage
+	 * during the simulation.
+	 *
+	 * @return a formatted string showing free memory in GB, used memory in GB
+	 *         and percentage, and available system memory in GB
+	 */
 	public static String freeMemG() {
-		float sys = ((float) hal.getMemory().getAvailable())/(1024*1024*1024);
-		float freeHeap = ((float) Runtime.getRuntime().freeMemory())/(1024*1024*1024);
-		float maxHeap = ((float) Runtime.getRuntime().maxMemory())/(1024*1024*1024);
-		float currentHeap = ((float) Runtime.getRuntime().totalMemory())/(1024*1024*1024);
-		float allocatable = Math.min(maxHeap-currentHeap, sys);
-		float allocated = currentHeap - freeHeap;
-		return String.format("%1.2f Gb remaining; %1.2f Gb used (%1.2f%%) [%1.2f Gb system]", 
-				allocatable+freeHeap,
-				allocated,
-				allocated/(currentHeap+allocatable)*100,
-				sys
+		var sys = ((float) hal.getMemory().getAvailable())
+				/ (1024 * 1024 * 1024);
+		var freeHeap = ((float) Runtime.getRuntime().freeMemory())
+				/ (1024 * 1024 * 1024);
+		var maxHeap = ((float) Runtime.getRuntime().maxMemory())
+				/ (1024 * 1024 * 1024);
+		var currentHeap = ((float) Runtime.getRuntime().totalMemory())
+				/ (1024 * 1024 * 1024);
+		var allocatable = Math.min(maxHeap - currentHeap, sys);
+		var allocated = currentHeap - freeHeap;
+		return String.format(
+				"%1.2f Gb remaining; %1.2f Gb used (%1.2f%%) [%1.2f Gb system]",
+				allocatable + freeHeap, allocated,
+				allocated / (currentHeap + allocatable) * 100, sys
 		);
 	}
-	
-	private boolean isRunning(SimulationExecutor ex) {
-		return ex != null &&  !ex.getState().equals(State.TERMINATED);
+
+	/**
+	 * Calculate the proportion of used memory to available memory, taking into
+	 * account both JVM heap and system memory. This is used to determine when to
+	 * throttle the simulation factory or execution due to low memory conditions.
+	 *
+	 * @param sysReserved the amount of system memory (in bytes) to reserve for
+	 *                    non-simulation processes
+	 * @return the proportion of used memory to available memory, as a value
+	 *         between 0 and 1
+	 */
+	public static double usedOfAvailable(long sysReserved) {
+
+		var sysAvail = ((float) hal.getMemory().getAvailable() - sysReserved)
+				/ (1024 * 1024 * 1024);
+		var freeHeap = ((float) Runtime.getRuntime().freeMemory())
+				/ (1024 * 1024 * 1024);
+		var maxHeap = ((float) Runtime.getRuntime().maxMemory())
+				/ (1024 * 1024 * 1024);
+		var currentHeap = ((float) Runtime.getRuntime().totalMemory())
+				/ (1024 * 1024 * 1024);
+		var allocatable = Math.min(maxHeap - currentHeap, sysAvail);
+		var allocated = currentHeap - freeHeap;
+		return allocated / (currentHeap + allocatable);
 	}
-	
+
+	SimulationFactory factory;
+	SimulationExporter exporter;
+	int duration;
+	Object trigger = new Object();
+	volatile private boolean halt = false;
+
+	/**
+	 * Create a new SimulationMonitor with the given configuration and base
+	 * directory for output. This will initialise the simulation factory and
+	 * exporter based on the provided configuration, and write the input
+	 * configuration to the output directory.
+	 *
+	 * @param config        the experiment configuration containing setup and
+	 *                      execution details
+	 * @param baseDirectory the base directory for output files generated by the
+	 *                      exporter
+	 * @throws IOException if there is an error writing the input configuration
+	 *                     or initialising the exporter
+	 */
+	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory)
+			throws IOException {
+
+		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
+
+		this.exporter = config.exporter(baseDirectory);
+		this.exporter.writeInputConfiguration(config);
+		var setups = config.getBatchSetupList();
+		var executions = config.getExecution();
+		this.factory = SimulationFactory.startFactory(
+				setups, executions, config.getBatchConfig().getUrnBase(), this
+		);
+		this.duration = config.getBatchConfig().getSimulationDuration();
+	}
+
+	/**
+	 * Handle exceptions that occur during the simulation. This will set the halt
+	 * flag to true to signal the monitor to stop processing, and print the stack
+	 * trace of the exception for debugging purposes.
+	 *
+	 * @param e the exception that occurred during the simulation
+	 */
+	public void handle(Exception e) {
+		this.halt = true;
+		e.printStackTrace();
+	}
+
+	private boolean isRunning(SimulationExecutor ex) {
+		return ex != null && !ex.getState().equals(State.TERMINATED);
+	}
+
+	/**
+	 * Notify the monitor that a simulation execution has completed. This will
+	 * log the status of the executor and notify any waiting threads that may be
+	 * waiting for a simulation to complete or a new simulation to be queued.
+	 *
+	 * @param executor the SimulationExecutor that has completed execution
+	 */
+	protected void notifyExecutionComplete(SimulationExecutor executor) {
+		log.info("Execution complete: " + executor.status());
+		synchronized (this.trigger) {
+			this.trigger.notifyAll();
+		}
+	}
+
+	/**
+	 * Notify the monitor that a new simulation is ready to be executed. This
+	 * will log the status of the factory and notify any waiting threads that may
+	 * be waiting for a simulation to complete or a new simulation to be queued.
+	 *
+	 * @param factory the SimulationFactory that has a new simulation ready for
+	 *                execution
+	 */
+	protected void notifyFactoryReady(SimulationFactory factory) {
+		log.info("Build complete: " + factory.status());
+		synchronized (this.trigger) {
+			this.trigger.notifyAll();
+		}
+	}
+
+	@Override
 	public void run() {
 		SimulationExecutor executor = null;
 		try {
-			
-			double freeSysGb = hal.getMemory().getAvailable()/(1024*1024*1024);
-			
-			long abortTime = Long.MAX_VALUE;
-			
-			while (!factory.finished() || isRunning(executor)) {
-				
-				if (halt) break;
-				
-				int checkAgainInMs = 1000;
+
+			double freeSysGb = hal.getMemory().getAvailable()
+					/ (1024 * 1024 * 1024);
+
+			var abortTime = Long.MAX_VALUE;
+
+			while (!this.factory.finished() || this.isRunning(executor)) {
+
+				if (this.halt) { break; }
+
+				var checkAgainInMs = 1000;
 				// long memLimit = factory.getSimulationSize().orElse(0);
-				
+
 				if (usedOfAvailable(RESERVE) > 0.80 || freeSysGb < 1) {
-					factory.pause();
-					log.warn("Low memory. Throttling factory production. Memory: "+freeMemG());
+					this.factory.pause();
+					log.warn(
+							"Low memory. Throttling factory production. Memory: "
+									+ freeMemG()
+					);
 				} else {
 					// This will only be successful if the cache is not already full;
-					factory.unpause();
+					this.factory.unpause();
 				}
-				
+
 				if (usedOfAvailable(RESERVE) > 0.90 || freeSysGb < 0.5) {
 					System.gc();
-					abortTime = Math.min(abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY);
+					abortTime = Math.min(
+							abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY
+					);
 					if (executor != null) {
 						executor.pause();
-						log.warn("Very low memory. Throttling simulation execution. Memory: "+freeMemG());
+						log.warn(
+								"Very low memory. Throttling simulation execution. Memory: "
+										+ freeMemG()
+						);
 					} else {
-						log.warn("Very low memory. Delaying simulation execution. Memory: "+freeMemG());
+						log.warn(
+								"Very low memory. Delaying simulation execution. Memory: "
+										+ freeMemG()
+						);
 					}
-					log.warn("Aborting in "+(abortTime-System.currentTimeMillis())/1000+" secs unless memory improves");
-					log.info("Exporters: "+exporter.report());
-					
-					if (exporter.allWaiting()) {
-						log.warn("Exporters all empty. Trying to clear simulation despite very low memory.");
+					log.warn(
+							"Aborting in "
+									+ (abortTime - System.currentTimeMillis()) / 1000
+									+ " secs unless memory improves"
+					);
+					log.info("Exporters: " + this.exporter.report());
+
+					if (this.exporter.allWaiting()) {
+						log.warn(
+								"Exporters all empty. Trying to clear simulation despite very low memory."
+						);
 						if (executor != null) { executor.unpause(); }
 					}
-					
+
 					checkAgainInMs = 1000;
-					
+
 				} else {
 					abortTime = Long.MAX_VALUE;
-					if ( isRunning(executor) ) {
+					if (this.isRunning(executor)) {
 						executor.unpause();
 					} else {
 						if (executor != null) {
@@ -137,84 +233,80 @@ public class SimulationMonitor implements Runnable {
 							executor = null;
 						}
 						// Start a new simulation
-						if (factory.ready()) {
-							executor = new SimulationExecutor(this, factory.deliver(), exporter, duration);
+						if (this.factory.ready()) {
+							executor = new SimulationExecutor(
+									this, this.factory.deliver(), this.exporter,
+									this.duration
+							);
 							executor.start();
 							log.info("Starting new simulation");
 						} else {
 							log.warn("Waiting for simulation to run");
-							factory.unpause();
+							this.factory.unpause();
 							checkAgainInMs = 1000;
 						}
 					}
 				}
-				
+
 				if (usedOfAvailable(RESERVE) > 0.95 || freeSysGb < 0.25) {
-					
-					if (
-							exporter.allWaiting() &&
-							(executor == null || executor.isWaiting()) &&
-							factory.isWaiting()
-					) {
-						log.error("Critically low memory. All processes blocked. Terminating early: "+freeMemG());
+
+					if (this.exporter.allWaiting()
+							&& (executor == null || executor.isWaiting())
+							&& this.factory.isWaiting()) {
+						log.error(
+								"Critically low memory. All processes blocked. Terminating early: "
+										+ freeMemG()
+						);
 						throw new InterruptedException("Out of memory");
-					} else {
-						log.warn("Critically low memory. Waiting for exporters to clear backlog.: "+freeMemG());
-						System.gc();
-						checkAgainInMs = 1000;
 					}
-					
+					log.warn(
+							"Critically low memory. Waiting for exporters to clear backlog.: "
+									+ freeMemG()
+					);
+					System.gc();
+					checkAgainInMs = 1000;
+
 				}
-				
-				log.info("Factory: "+factory.status());
-				if (isRunning(executor)) log.info("Executor: "+executor.status()+" - "+freeMemG());
-				
-				// Sleep the monitor thread until a simulation finishes or a 
+
+				log.info("Factory: " + this.factory.status());
+				if (this.isRunning(executor)) {
+					log.info("Executor: " + executor.status() + " - " + freeMemG());
+				}
+
+				// Sleep the monitor thread until a simulation finishes or a
 				// new simulation is queued.
 				if (System.currentTimeMillis() > abortTime) {
-					log.error("Low memory has not been cleared after "+WAIT_FOR_MEMORY/1000+" seconds. Aborting");
+					log.error(
+							"Low memory has not been cleared after "
+									+ WAIT_FOR_MEMORY / 1000 + " seconds. Aborting"
+					);
 					break;
 				}
-				waitForEvent(checkAgainInMs);
+				this.waitForEvent(checkAgainInMs);
 			}
-			exporter.finaliseAll();
-			while (!exporter.allWaiting()) {
+			this.exporter.finaliseAll();
+			while (!this.exporter.allWaiting()) {
 				log.info("Waiting for output to complete...");
 				Thread.sleep(1000);
 			}
 			log.info("Completed.");
-			
+
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} finally {
-			if(factory != null) factory.halt();
-			if(exporter != null) exporter.close();
-			if(executor != null) executor.halt();
+			if (this.factory != null) { this.factory.halt(); }
+			if (this.exporter != null) { this.exporter.close(); }
+			if (executor != null) { executor.halt(); }
 		}
 	}
-	
+
 	private void waitForEvent(long ms) throws InterruptedException {
-		synchronized(this.trigger) {this.trigger.wait(ms);}
-	}
-	
-	protected void notifyExecutionComplete(SimulationExecutor executor) {
-		log.info("Execution complete: "+executor.status());
-		synchronized(this.trigger) {this.trigger.notifyAll();}
-	};
-	
-	protected void notifyFactoryReady(SimulationFactory factory) {
-		log.info("Build complete: "+factory.status());
-		synchronized(this.trigger) {this.trigger.notifyAll();}
+		synchronized (this.trigger) {
+			this.trigger.wait(ms);
+		}
 	}
 
-	public void handle(Exception e) {
-		halt = true;
-		e.printStackTrace();
-	};
-	
-	
 }
-
 
 //Scheduler configScheduler = Schedulers.single(); // For configuration
 //Scheduler executionScheduler = Schedulers.single(); // For parallel execution
@@ -240,7 +332,7 @@ public class SimulationMonitor implements Runnable {
 //			builder2.baselineModel(exCfg);
 //			builder2.initialiseStatus(exCfg);
 //			return builder2;
-//		});	
+//		});
 //	}, 2) //prefetch 2 items
 //	.onBackpressureBuffer(2)
 //	.subscribeOn(configScheduler)
@@ -261,4 +353,3 @@ public class SimulationMonitor implements Runnable {
 //		log.debug("Post clean up - memory free: "+freeMem());
 //	})
 //	;
-

@@ -25,21 +25,24 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * A {@code double} array in which elements may be updated atomically.
- * See the {@link java.util.concurrent.atomic} package specification
- * for description of the properties of atomic variables.
+ * A {@code double} array in which elements may be updated atomically. See the
+ * {@link java.util.concurrent.atomic} package specification for description of
+ * the properties of atomic variables.
  *
- * <p>This class compares primitive {@code double}
- * values in methods such as {@link #compareAndSet} by comparing their
- * bitwise representation using {@link Double#doubleToRawLongBits},
- * which differs from both the primitive double {@code ==} operator
- * and from {@link Double#equals}, as if implemented by:
- *  <pre> {@code
+ * <p>
+ * This class compares primitive {@code double} values in methods such as
+ * {@link #compareAndSet} by comparing their bitwise representation using
+ * {@link Double#doubleToRawLongBits}, which differs from both the primitive
+ * double {@code ==} operator and from {@link Double#equals}, as if implemented
+ * by:
+ *
+ * <pre> {@code
  * static boolean bitEquals(double x, double y) {
- *   long xBits = Double.doubleToRawLongBits(x);
- *   long yBits = Double.doubleToRawLongBits(y);
- *   return xBits == yBits;
- * }}</pre>
+ * 	long xBits = Double.doubleToRawLongBits(x);
+ * 	long yBits = Double.doubleToRawLongBits(y);
+ * 	return xBits == yBits;
+ * }
+ * }</pre>
  *
  * @author Doug Lea
  * @author Martin Buchholz
@@ -53,18 +56,8 @@ public class AtomicDoubleArray implements java.io.Serializable {
 	private transient AtomicLongArray longs;
 
 	/**
-	 * Creates a new {@code AtomicDoubleArray} of the given length,
-	 * with all elements initially zero.
-	 *
-	 * @param length the length of the array
-	 */
-	public AtomicDoubleArray(int length) {
-		this.longs = new AtomicLongArray(length);
-	}
-
-	/**
-	 * Creates a new {@code AtomicDoubleArray} with the same length
-	 * as, and all elements copied from, the given array.
+	 * Creates a new {@code AtomicDoubleArray} with the same length as, and all
+	 * elements copied from, the given array.
 	 *
 	 * @param array the array to copy elements from
 	 * @throws NullPointerException if array is null
@@ -79,12 +72,57 @@ public class AtomicDoubleArray implements java.io.Serializable {
 	}
 
 	/**
-	 * Returns the length of the array.
+	 * Creates a new {@code AtomicDoubleArray} of the given length, with all
+	 * elements initially zero.
 	 *
-	 * @return the length of the array
+	 * @param length the length of the array
 	 */
-	public final int length() {
-		return longs.length();
+	public AtomicDoubleArray(int length) {
+		this.longs = new AtomicLongArray(length);
+	}
+
+	/**
+	 * Atomically adds the given value to the element at index {@code i}.
+	 *
+	 * @param i     the index
+	 * @param delta the value to add
+	 * @return the updated value
+	 */
+	public double addAndGet(int i, double delta) {
+		while (true) {
+			long current = this.longs.get(i);
+			double currentVal = longBitsToDouble(current);
+			double nextVal = currentVal + delta;
+			long next = doubleToRawLongBits(nextVal);
+			if (this.longs.compareAndSet(i, current, next)) return nextVal;
+		}
+	}
+
+	/**
+	 * Returns a stream containing the current values of array as AtomicDouble.
+	 *
+	 * @return a stream containing the current values of array as AtomicDouble
+	 */
+	public Stream<AtomicDouble> atomicStream() {
+		return IntStream.range(0, this.length())
+				.mapToObj(i -> AtomicDouble.fromLong(this.longs.get(i)));
+	}
+
+	/**
+	 * Atomically sets the element at position {@code i} to the given updated
+	 * value if the current value is <a href="#bitEquals">bitwise equal</a> to
+	 * the expected value.
+	 *
+	 * @param i      the index
+	 * @param expect the expected value
+	 * @param update the new value
+	 * @return true if successful. False return indicates that the actual value
+	 *         was not equal to the expected value.
+	 */
+	public final boolean compareAndSet(int i, double expect, double update) {
+		return this.longs.compareAndSet(
+				i, doubleToRawLongBits(expect), doubleToRawLongBits(update)
+		);
 	}
 
 	/**
@@ -94,162 +132,79 @@ public class AtomicDoubleArray implements java.io.Serializable {
 	 * @return the current value
 	 */
 	public final double get(int i) {
-		return longBitsToDouble(longs.get(i));
+		return longBitsToDouble(this.longs.get(i));
 	}
 
 	/**
-	 * Sets the element at position {@code i} to the given value.
+	 * Atomically adds the given value to the element at index {@code i}.
 	 *
-	 * @param i the index
-	 * @param newValue the new value
+	 * @param i     the index
+	 * @param delta the value to add
+	 * @return the previous value
 	 */
-	public final void set(int i, double newValue) {
+	public final double getAndAdd(int i, double delta) {
+		while (true) {
+			long current = this.longs.get(i);
+			double currentVal = longBitsToDouble(current);
+			double nextVal = currentVal + delta;
+			long next = doubleToRawLongBits(nextVal);
+			if (this.longs.compareAndSet(i, current, next)) return currentVal;
+		}
+	}
+
+	/**
+	 * Atomically adds the given value to the element at index {@code i}.
+	 *
+	 * @param i     the index
+	 * @param delta the value to update
+	 * @param op    the operation
+	 * @return the previous value
+	 */
+	public final double getAndApply(
+			int i, double delta, DoubleBinaryOperator op
+	) {
+		while (true) {
+			long current = this.longs.get(i);
+			double currentVal = longBitsToDouble(current);
+			double nextVal = op.applyAsDouble(currentVal, delta);
+			long next = doubleToRawLongBits(nextVal);
+			if (this.longs.compareAndSet(i, current, next)) return currentVal;
+		}
+	}
+
+	/**
+	 * Atomically sets the element at position {@code i} to the given value and
+	 * returns the old value.
+	 *
+	 * @param i        the index
+	 * @param newValue the new value
+	 * @return the previous value
+	 */
+	public final double getAndSet(int i, double newValue) {
 		long next = doubleToRawLongBits(newValue);
-		longs.set(i, next);
+		return longBitsToDouble(this.longs.getAndSet(i, next));
 	}
 
 	/**
 	 * Eventually sets the element at position {@code i} to the given value.
 	 *
-	 * @param i the index
+	 * @param i        the index
 	 * @param newValue the new value
 	 */
 	public final void lazySet(int i, double newValue) {
-		set(i, newValue);
+		this.set(i, newValue);
 		// TODO(user): replace with code below when jdk5 support is dropped.
 		// long next = doubleToRawLongBits(newValue);
 		// longs.lazySet(i, next);
 	}
 
 	/**
-	 * Atomically sets the element at position {@code i} to the given value
-	 * and returns the old value.
+	 * Returns the length of the array.
 	 *
-	 * @param i the index
-	 * @param newValue the new value
-	 * @return the previous value
+	 * @return the length of the array
 	 */
-	public final double getAndSet(int i, double newValue) {
-		long next = doubleToRawLongBits(newValue);
-		return longBitsToDouble(longs.getAndSet(i, next));
-	}
-
-	/**
-	 * Atomically sets the element at position {@code i} to the given
-	 * updated value
-	 * if the current value is <a href="#bitEquals">bitwise equal</a>
-	 * to the expected value.
-	 *
-	 * @param i the index
-	 * @param expect the expected value
-	 * @param update the new value
-	 * @return true if successful. False return indicates that
-	 * the actual value was not equal to the expected value.
-	 */
-	public final boolean compareAndSet(int i, double expect, double update) {
-		return longs.compareAndSet(i,
-				doubleToRawLongBits(expect),
-				doubleToRawLongBits(update));
-	}
-
-	/**
-	 * Atomically adds the given value to the element at index {@code i}.
-	 *
-	 * @param i the index
-	 * @param delta the value to add
-	 * @return the previous value
-	 */
-	public final double getAndAdd(int i, double delta) {
-		while (true) {
-			long current = longs.get(i);
-			double currentVal = longBitsToDouble(current);
-			double nextVal = currentVal + delta;
-			long next = doubleToRawLongBits(nextVal);
-			if (longs.compareAndSet(i, current, next)) {
-				return currentVal;
-			}
-		}
-	}
-
-	/**
-	 * Atomically adds the given value to the element at index {@code i}.
-	 *
-	 * @param i the index
-	 * @param delta the value to update
-	 * @param op the operation
-	 * @return the previous value
-	 */
-	public final double getAndApply(int i, double delta, DoubleBinaryOperator op) {
-		while (true) {
-			long current = longs.get(i);
-			double currentVal = longBitsToDouble(current);
-			double nextVal = op.applyAsDouble(currentVal, delta);
-			long next = doubleToRawLongBits(nextVal);
-			if (longs.compareAndSet(i, current, next)) {
-				return currentVal;
-			}
-		}
-	}
-
-	/**
-	 * Atomically adds the given value to the element at index {@code i}.
-	 *
-	 * @param i the index
-	 * @param delta the value to add
-	 * @return the updated value
-	 */
-	public double addAndGet(int i, double delta) {
-		while (true) {
-			long current = longs.get(i);
-			double currentVal = longBitsToDouble(current);
-			double nextVal = currentVal + delta;
-			long next = doubleToRawLongBits(nextVal);
-			if (longs.compareAndSet(i, current, next)) {
-				return nextVal;
-			}
-		}
-	}
-
-	/**
-	 * Returns the String representation of the current values of array.
-	 * @return the String representation of the current values of array
-	 */
-	public String toString() {
-		int iMax = length() - 1;
-		if (iMax == -1) {
-			return "[]";
-		}
-
-		// Double.toString(Math.PI).length() == 17
-		StringBuilder b = new StringBuilder((17 + 2) * (iMax + 1));
-		b.append('[');
-		for (int i = 0;; i++) {
-			b.append(longBitsToDouble(longs.get(i)));
-			if (i == iMax) {
-				return b.append(']').toString();
-			}
-			b.append(',').append(' ');
-		}
-	}
-
-	/**
-	 * Saves the state to a stream (that is, serializes it).
-	 *
-	 * @serialData The length of the array is emitted (int), followed by all
-	 *             of its elements (each a {@code double}) in the proper order.
-	 */
-	private void writeObject(java.io.ObjectOutputStream s)
-			throws java.io.IOException {
-		s.defaultWriteObject();
-
-		// Write out array length
-		int length = length();
-		s.writeInt(length);
-
-		// Write out all elements in the proper order.
-		for (int i = 0; i < length; i++) {
-			s.writeDouble(get(i));
-		}
+	public final int length() {
+		return this.longs.length();
 	}
 
 	/**
@@ -265,37 +220,82 @@ public class AtomicDoubleArray implements java.io.Serializable {
 
 		// Read in all elements in the proper order.
 		for (int i = 0; i < length; i++) {
-			set(i, s.readDouble());
+			this.set(i, s.readDouble());
 		}
 	}
 
 	/**
+	 * Sets the element at position {@code i} to the given value.
+	 *
+	 * @param i        the index
+	 * @param newValue the new value
+	 */
+	public final void set(int i, double newValue) {
+		long next = doubleToRawLongBits(newValue);
+		this.longs.set(i, next);
+	}
+
+	/**
+	 * Returns a stream containing the current values of array.
+	 *
+	 * @return a stream containing the current values of array
+	 */
+	public DoubleStream stream() {
+		return IntStream.range(0, this.length()).mapToDouble(this::get);
+	}
+
+	/**
 	 * Returns an array containing the current values of array.
+	 *
 	 * @return an array containing the current values of array
 	 */
 	public double[] toArray() {
-		int length = length();
+		int length = this.length();
 		double[] array = new double[length];
 		for (int i = 0; i < length; i++) {
-			array[i] = get(i);
+			array[i] = this.get(i);
 		}
 		return array;
 	}
 
 	/**
-	 * Returns a stream containing the current values of array.
-	 * @return a stream containing the current values of array
+	 * Returns the String representation of the current values of array.
+	 *
+	 * @return the String representation of the current values of array
 	 */
-	public DoubleStream stream() {
-		return IntStream.range(0, length()).mapToDouble(this::get);
+	@Override
+	public String toString() {
+		int iMax = this.length() - 1;
+		if (iMax == -1) return "[]";
+
+		// Double.toString(Math.PI).length() == 17
+		StringBuilder b = new StringBuilder((17 + 2) * (iMax + 1));
+		b.append('[');
+		for (int i = 0;; i++) {
+			b.append(longBitsToDouble(this.longs.get(i)));
+			if (i == iMax) return b.append(']').toString();
+			b.append(',').append(' ');
+		}
 	}
-	
+
 	/**
-	 * Returns a stream containing the current values of array as AtomicDouble.
-	 * @return a stream containing the current values of array as AtomicDouble
+	 * Saves the state to a stream (that is, serializes it).
+	 *
+	 * @serialData The length of the array is emitted (int), followed by all of
+	 *             its elements (each a {@code double}) in the proper order.
 	 */
-	public Stream<AtomicDouble> atomicStream() {
-		return IntStream.range(0, length()).mapToObj(i -> AtomicDouble.fromLong(this.longs.get(i)));
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		s.defaultWriteObject();
+
+		// Write out array length
+		int length = this.length();
+		s.writeInt(length);
+
+		// Write out all elements in the proper order.
+		for (int i = 0; i < length; i++) {
+			s.writeDouble(this.get(i));
+		}
 	}
-	
+
 }
