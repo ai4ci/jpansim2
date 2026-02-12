@@ -57,6 +57,7 @@ public class WriteExampleConfig {
 		);
 
 		try {
+			Files.createDirectories(d);
 			if (!Files.exists(d.resolve(".nojekyll"))) {
 				Files.createFile(d.resolve(".nojekyll"));
 			}
