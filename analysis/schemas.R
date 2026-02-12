@@ -3,9 +3,9 @@
 
 # maps to Java interface io.github.ai4ci.config.refdata.UKCensus$AgeGender
 i_agegender <- interfacer::iface(
-  gender = character + not_missing ~ "maps to java field AgeGender.gender",
   age = double + not_missing ~ "maps to java field AgeGender.age",
   geography = integer + not_missing ~ "maps to java field AgeGender.geography",
+  gender = character + not_missing ~ "maps to java field AgeGender.gender",
   index = character + not_missing ~ "maps to java field AgeGender.index",
   count = integer + not_missing ~ "maps to java field AgeGender.count",
   id = character + not_missing ~ "maps to java field AgeGender.id",
