@@ -62,10 +62,10 @@ i_industry <- interfacer::iface(
 # maps to Java interface io.github.ai4ci.config.refdata.UKCensus$Unemployment
 i_unemployment <- interfacer::iface(
   geography = integer + not_missing ~ "maps to java field Unemployment.geography",
-  employment = character + not_missing ~ "maps to java field Unemployment.employment",
   employmentType = character + not_missing ~ "maps to java field Unemployment.employmentType",
   fullTime = character + not_missing ~ "maps to java field Unemployment.fullTime",
   student = character + not_missing ~ "maps to java field Unemployment.student",
+  employment = character + not_missing ~ "maps to java field Unemployment.employment",
   index = character + not_missing ~ "maps to java field Unemployment.index",
   count = integer + not_missing ~ "maps to java field Unemployment.count",
   id = character + not_missing ~ "maps to java field Unemployment.id",

@@ -21,5 +21,5 @@ jobs:
           # target-folder: javadoc # url will be https://<username>.github.io/<repo>/javadoc, This can be left as nothing to generate javadocs in the root folder.
           target-folder: ''        # empty publishes to repo root on the javadoc branch
           project: maven
-          custom-command: mvn site -DskipTests
+          custom-command: mvn -DskipTests process-classes site
           

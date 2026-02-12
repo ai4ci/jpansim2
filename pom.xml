@@ -393,10 +393,10 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<reporting>
-  <plugins>
-    <plugin>
+		<plugins>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.12.0</version>
@@ -419,9 +419,9 @@
 						<groupId>com.github.terminological</groupId>
 	    				<artifactId>umldoclet</artifactId>
 	    				<version>jitpack-f389191ef6-1</version>
-<!--	    				<groupId>nl.talsmasoftware</groupId>-->
-<!--						<artifactId>umldoclet</artifactId>-->
-<!--						<version>2.2.5-SNAPSHOT</version>-->
+						<!--	    				<groupId>nl.talsmasoftware</groupId>-->
+						<!--						<artifactId>umldoclet</artifactId>-->
+						<!--						<version>2.2.5-SNAPSHOT</version>-->
 					</docletArtifact>
 					
 					<additionalOptions>
@@ -430,8 +430,8 @@
 						<additionalOption>-umlExcludedTypeReferences "java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
 						<additionalOption>-umlCustomDirective "left to right direction"</additionalOption>
 						<additionalOption>--uml-exclude-package-dependencies true</additionalOption>
-<!--						<additionalOption>uml-exclude-package-diagram true</additionalOption>-->
-<!--						<additionalOption>uml-exclude-class-diagrams true</additionalOption>-->
+						<!--						<additionalOption>uml-exclude-package-diagram true</additionalOption>-->
+						<!--						<additionalOption>uml-exclude-class-diagrams true</additionalOption>-->
 					</additionalOptions>
 				</configuration>
 				<reportSets>
