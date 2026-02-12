@@ -388,7 +388,7 @@
 						<!-- run during the 'site' phase (after javadoc
 						generation if this block is listed after the javadoc
 						plugin) -->
-						<phase>process-resources</phase>
+						<phase>site</phase>
 						<goals>
 							<goal>copy-resources</goal>
 						</goals>
@@ -407,11 +407,19 @@
 									</includes>
 								</resource>
 								<resource>
-									<!-- where plantuml already writes images -->
+									<!-- copy example config to directory -->
 									<directory>
 										${project.build.directory}/generated-config</directory>
 									<includes>
-										<include>**/*</include>
+										<include>**/*.json</include>
+									</includes>
+								</resource>
+								<resource>
+									<!-- copy no jeckyll to root. -->
+									<directory>
+										${project.build.directory}/generated-config/examples</directory>
+									<includes>
+										<include>.nojekyll</include>
 									</includes>
 								</resource>
 							</resources>
