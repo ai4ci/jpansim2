@@ -411,7 +411,7 @@
 									<directory>
 										${project.build.directory}/generated-config</directory>
 									<includes>
-										<include>**/*.json</include>
+										<include>**/*</include>
 									</includes>
 								</resource>
 							</resources>

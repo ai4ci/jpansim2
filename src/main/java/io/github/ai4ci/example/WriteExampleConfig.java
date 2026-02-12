@@ -1,5 +1,6 @@
 package io.github.ai4ci.example;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -54,6 +55,16 @@ public class WriteExampleConfig {
 			"Writing example configuration files and JSON schema to "
 					+ d.toAbsolutePath()
 		);
+
+		try {
+			if (!Files.exists(d.resolve(".nojekyll"))) {
+				Files.createFile(d.resolve(".nojekyll"));
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(
+					"Could not create .nojekyll file in output directory.", e
+			);
+		}
 
 		Arrays.stream(Experiment.values())
 			.forEach((a) -> {
