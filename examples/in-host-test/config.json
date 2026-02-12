@@ -1,0 +1,258 @@
+{
+  "batchConfig" : {
+    "exporters" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ],
+    "simulationDuration" : 200,
+    "urnBase" : "default"
+  },
+  "executionConfig" : {
+    "name" : "execution",
+    "appUseProbability" : {
+      "@type" : "unimodal-beta",
+      "dispersion" : 0.1,
+      "mean" : 0.97
+    },
+    "asymptomaticFraction" : 0.5,
+    "availableTests" : [ {
+      "limitOfDetection" : 1.0,
+      "meanTestDelay" : 0.0,
+      "sdTestDelay" : 0.0,
+      "sensitivity" : 0.9,
+      "specificity" : 0.98,
+      "testName" : "LFT"
+    }, {
+      "limitOfDetection" : 0.1,
+      "meanTestDelay" : 3.0,
+      "sdTestDelay" : 1.0,
+      "sensitivity" : 0.8,
+      "specificity" : 0.995,
+      "testName" : "PCR"
+    } ],
+    "caseFatalityRate" : 0.01,
+    "caseHospitalisationRate" : 0.05,
+    "complianceDeteriorationRate" : 0.02,
+    "complianceImprovementRate" : 0.01,
+    "complianceProbability" : {
+      "@type" : "unimodal-beta",
+      "dispersion" : 0.1,
+      "mean" : 0.99
+    },
+    "contactDetectedProbability" : 0.9,
+    "contactProbability" : {
+      "@type" : "unimodal-beta",
+      "dispersion" : 0.25,
+      "mean" : 0.5
+    },
+    "defaultBehaviourModelName" : "Test",
+    "defaultPolicyModelName" : "NoControl",
+    "demographicAdjustment" : { },
+    "importationProbability" : 0.0,
+    "inHostConfiguration" : {
+      "@type" : "phenomenological",
+      "approxPeakImmuneResponse" : {
+        "@type" : "unimodal-beta",
+        "dispersion" : 0.1,
+        "mean" : 0.5
+      },
+      "approxPeakViralLoad" : {
+        "@type" : "unimodal-beta",
+        "dispersion" : 0.1,
+        "mean" : 0.5
+      },
+      "immuneWaningHalfLife" : {
+        "@type" : "log-normal",
+        "mean" : 300.0,
+        "sd" : 10.0
+      },
+      "incubationPeriod" : {
+        "@type" : "log-normal",
+        "mean" : 4.0,
+        "sd" : 2.0
+      },
+      "incubationToPeakViralLoadDelay" : {
+        "@type" : "log-normal",
+        "mean" : 2.0,
+        "sd" : 1.0
+      },
+      "infectiousnessCutoff" : 0.2,
+      "peakImmuneResponseDelay" : {
+        "@type" : "log-normal",
+        "mean" : 20.0,
+        "sd" : 4.0
+      },
+      "peakToRecoveryDelay" : {
+        "@type" : "log-normal",
+        "mean" : 6.0,
+        "sd" : 3.0
+      }
+    },
+    "initialEstimateIncubationPeriod" : 4.0,
+    "initialEstimateInfectionDuration" : 10.0,
+    "initialEstimateSymptomSensitivity" : 0.5,
+    "initialEstimateSymptomSpecificity" : 0.95,
+    "initialScreeningProbability" : 0.01,
+    "lockdownReleaseTrigger" : 0.01,
+    "lockdownStartTrigger" : 0.05,
+    "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY",
+    "maximumSocialContactReduction" : {
+      "@type" : "unimodal-beta",
+      "dispersion" : 0.1,
+      "mean" : 0.25
+    },
+    "organicRateOfMobilityChange" : 0.25,
+    "r0" : 1.75,
+    "riskModelContactsKernel" : {
+      "@type" : "gaussian",
+      "maximum" : 10,
+      "minimum" : 0,
+      "sum" : 7.5,
+      "mu" : 0.0,
+      "sigma" : 3.0
+    },
+    "riskModelSymptomKernel" : {
+      "@type" : "gaussian",
+      "maximum" : 7,
+      "minimum" : -3,
+      "sum" : 5.0,
+      "mu" : 2.0,
+      "sigma" : 3.0
+    },
+    "riskModelTestKernel" : {
+      "@type" : "gaussian",
+      "maximum" : 11,
+      "minimum" : -5,
+      "sum" : 10.0,
+      "mu" : 2.0,
+      "sigma" : 3.0
+    },
+    "smartAppRiskTrigger" : 0.05,
+    "symptomSensitivity" : {
+      "@type" : "uniform",
+      "mean" : 1.0
+    },
+    "symptomSpecificity" : {
+      "@type" : "uniform",
+      "mean" : 1.0
+    }
+  },
+  "executionReplications" : 1,
+  "facets" : [ {
+    "name" : "in-host-models",
+    "modifications" : [ {
+      "name" : "markov",
+      "inHostConfiguration" : {
+        "@type" : "markov",
+        "immuneWaningHalfLife" : {
+          "@type" : "log-normal",
+          "mean" : 300.0,
+          "sd" : 10.0
+        },
+        "incubationPeriod" : {
+          "@type" : "log-normal",
+          "mean" : 5.0,
+          "sd" : 2.0
+        },
+        "infectiousDuration" : {
+          "@type" : "log-normal",
+          "mean" : 8.0,
+          "sd" : 3.0
+        },
+        "symptomDuration" : {
+          "@type" : "log-normal",
+          "mean" : 5.0,
+          "sd" : 3.0
+        }
+      }
+    }, {
+      "name" : "phenomenological",
+      "inHostConfiguration" : {
+        "@type" : "phenomenological",
+        "approxPeakImmuneResponse" : {
+          "@type" : "unimodal-beta",
+          "dispersion" : 0.1,
+          "mean" : 0.5
+        },
+        "approxPeakViralLoad" : {
+          "@type" : "unimodal-beta",
+          "dispersion" : 0.1,
+          "mean" : 0.5
+        },
+        "immuneWaningHalfLife" : {
+          "@type" : "log-normal",
+          "mean" : 300.0,
+          "sd" : 10.0
+        },
+        "incubationPeriod" : {
+          "@type" : "log-normal",
+          "mean" : 4.0,
+          "sd" : 2.0
+        },
+        "incubationToPeakViralLoadDelay" : {
+          "@type" : "log-normal",
+          "mean" : 2.0,
+          "sd" : 1.0
+        },
+        "infectiousnessCutoff" : 0.2,
+        "peakImmuneResponseDelay" : {
+          "@type" : "log-normal",
+          "mean" : 20.0,
+          "sd" : 4.0
+        },
+        "peakToRecoveryDelay" : {
+          "@type" : "log-normal",
+          "mean" : 6.0,
+          "sd" : 3.0
+        }
+      }
+    }, {
+      "name" : "stochastic",
+      "inHostConfiguration" : {
+        "@type" : "stochastic",
+        "baselineViralInfectionRate" : 1.0,
+        "baselineViralReplicationRate" : 4.0,
+        "immuneActivationRate" : {
+          "@type" : "log-normal",
+          "mean" : 1.0,
+          "sd" : 0.1
+        },
+        "immuneTargetRatio" : {
+          "@type" : "log-normal",
+          "mean" : 1.0,
+          "sd" : 0.1
+        },
+        "immuneWaningRate" : {
+          "@type" : "log-normal",
+          "mean" : 0.006666666666666667,
+          "sd" : 0.01
+        },
+        "infectionCarrierProbability" : {
+          "@type" : "uniform",
+          "mean" : 0.0
+        },
+        "targetCellCount" : 10000,
+        "targetRecoveryRate" : {
+          "@type" : "log-normal",
+          "mean" : 0.14285714285714285,
+          "sd" : 0.1
+        },
+        "virionsDiseaseCutoff" : 1000
+      }
+    } ]
+  } ],
+  "setupConfig" : [ {
+    "modifications" : [ ],
+    "default" : {
+      "name" : "default",
+      "demographics" : {
+        "@type" : "location-aware",
+        "contactProximityBias" : 2.0
+      },
+      "initialImports" : 30,
+      "network" : {
+        "@type" : "erdos-reyni",
+        "networkDegree" : 100,
+        "networkSize" : 16384
+      }
+    }
+  } ],
+  "setupReplications" : 1
+}
