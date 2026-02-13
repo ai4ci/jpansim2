@@ -17,7 +17,6 @@ Coding style (Java)
 - Follow standard Java conventions: camelCase for methods/fields, Pascal
  Case for classes and interfaces, and 4-space indentation.
 - Wrap at 80 characters.
-
 - Prefer immutability for small value objects where reasonable.
 - Use modern Java idioms (streams, Optional) sparingly and only when it
  improves clarity.
