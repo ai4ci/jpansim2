@@ -138,7 +138,7 @@ public interface MathematicalFunction extends Serializable, SimpleFunction {
 	 *
 	 * @return the X coordinates defining the knot points
 	 */
-	@Value.Derived
+	@JsonIgnore @Value.Derived
 	default double[] getX() {
 		return IntStream.rangeClosed(0, 100)
 			.mapToDouble(
@@ -152,7 +152,7 @@ public interface MathematicalFunction extends Serializable, SimpleFunction {
 	 *
 	 * @return the Y coordinates defining the knot points (true scale)
 	 */
-	@Value.Derived
+	@JsonIgnore @Value.Derived
 	default double[] getY() {
 		var xArg = new Argument("x");
 		mXparser.disableUlpRounding();

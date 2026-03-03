@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.immutables.value.Value;
@@ -134,6 +135,33 @@ public interface ExperimentConfiguration {
 			.readerFor(ExperimentConfiguration.class)
 			.readValue(file.toFile());
 		return rt;
+	}
+
+	static String getFileVersion() {
+		var myProperties = new Properties();
+		try {
+			myProperties.load(
+				ExperimentConfiguration.class
+					.getResourceAsStream("/jpansim-version.properties")
+			);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+		return (String) myProperties.get("version");
+	}
+
+	default void checkConfigVersion() {
+		var ref = getFileVersion();
+		if (!this.getVersion()
+			.equalsIgnoreCase(ref)) {
+			throw new RuntimeException(
+					String.format(
+						"Mismatch between configuration version %s and api version %s",
+						this.getVersion(),
+						ref
+					)
+			);
+		}
 	}
 
 	/**
@@ -396,6 +424,9 @@ public interface ExperimentConfiguration {
 	 * @return Number of setup replications (minimum 1)
 	 */
 	int getSetupReplications();
+
+	@Value.Default
+	default String getVersion() { return getFileVersion(); }
 
 	/**
 	 * Creates a new configuration with the specified execution configuration.

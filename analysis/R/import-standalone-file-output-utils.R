@@ -6,7 +6,7 @@
 # ---
 # repo: terminological/ggrrr
 # file: standalone-file-output-utils.R
-# last-updated: 2025-10-06
+# last-updated: 2026-02-16
 # license: https://unlicense.org
 # dependencies:
 # - standalone-directory-utils.R
@@ -716,6 +716,7 @@ window.onload = init;
 #'
 #' @return nothing - used for side effects
 #' @export
+#' @keywords internal
 #' @concept output
 print.rendered_plot = function(x, ...) {
   if (interactive()) {
@@ -759,6 +760,7 @@ print.rendered_plot = function(x, ...) {
 #'
 #' @return a named vector
 #' @export
+#' @keywords internal
 #' @concept output
 as.character.rendered_plot = function(x, ...) {
   tmp = x[!names(x) %in% c("plot", "width", "height")]
@@ -783,6 +785,7 @@ as.character.rendered_plot = function(x, ...) {
 #'
 #' @return nothing - used for side effects
 #' @export
+#' @keywords internal
 #' @concept output
 knit_print.rendered_plot = function(x, options, ...) {
   # return(knitr::asis_output(sprintf("<img src='%s'></img>", base64enc::dataURI(file = x$png, mime = "image/png"))))
@@ -1077,6 +1080,7 @@ knit_print.rendered_plot = function(x, options, ...) {
 #'
 #' @return nothing - used for side effects
 #' @export
+#' @keywords internal
 #' @concept output
 knit_print.rendered_table = function(x, ...) {
   hidetables = getOption("hide.tables", FALSE)
@@ -1120,6 +1124,7 @@ knit_print.rendered_table = function(x, ...) {
 #'
 #' @return a named vector
 #' @export
+#' @keywords internal
 #' @concept output
 as.character.rendered_table = function(x, ...) {
   tmp = x[!names(x) %in% c("hux", "width", "height")]
@@ -1141,6 +1146,7 @@ as.character.rendered_table = function(x, ...) {
 #'
 #' @return nothing - used for side effects
 #' @export
+#' @keywords internal
 #' @concept output
 print.rendered_table = function(x, ...) {
   if (interactive()) {

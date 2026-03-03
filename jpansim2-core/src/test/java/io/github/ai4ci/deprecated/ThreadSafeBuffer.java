@@ -35,6 +35,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		this.tail = new AtomicInteger(0);
 	}
 	
+	@Override
 	public void put(X value) {
 		int p = next.getAndIncrement();
 		while (p-tail.get() == capacity) Thread.onSpinWait();
@@ -49,10 +50,12 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		}
 	}
 	
+	@Override
 	public boolean isEmpty() {
 		return next.get() == tail.get();
 	}
 	
+	@Override
 	public X poll() {
 		if (isEmpty()) return null;
 		int p = tail.getAndIncrement();
@@ -65,10 +68,12 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return this.data[p % capacity];
 	}
 	
+	@Override
 	public int size() {
 		return next.get() - tail.get();
 	}
 
+	@Override
 	public X[] toArray() {
 		int b = next.get();
 		int a = tail.get();

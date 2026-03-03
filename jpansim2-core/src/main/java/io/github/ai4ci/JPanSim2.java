@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -16,8 +18,10 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.logging.log4j.Level;
+import org.mariuszgromada.math.mxparser.License;
 
 import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.example.Experiment;
 import io.github.ai4ci.flow.SimulationMonitor;
 
 /**
@@ -58,7 +62,9 @@ public class JPanSim2 {
 	private static Path expand(Path path) {
 		if (path.startsWith("~" + File.separator)) {
 			path = Paths.get(
-					System.getProperty("user.home"), path.toString().substring(1)
+				System.getProperty("user.home"),
+				path.toString()
+					.substring(1)
 			);
 		}
 		return path;
@@ -79,26 +85,55 @@ public class JPanSim2 {
 	public static void main(String... args)
 			throws IOException, InterruptedException {
 
-		var dir = SystemUtils.getUserDir().toPath();
-		var configFile = dir.resolve("config.json");
+		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
+
+		var dir = SystemUtils.getUserDir()
+			.toPath();
+		Path configFile = null;
+
+		Experiment experiment = null;
 
 		// define options via CLI
 		var options = new Options();
 
-		var outputPath = Option.builder("o").longOpt("output").argName(
-				"output"
-		).hasArg(true).converter(Converter.PATH).desc(
+		var outputPath = Option.builder("o")
+			.longOpt("output")
+			.argName("output")
+			.hasArg(true)
+			.converter(Converter.PATH)
+			.desc(
 				"The path to the output directory. Defaults to the current working directory."
-		).required(false).build();
+			)
+			.required(false)
+			.build();
 
-		var configPath = Option.builder("c").longOpt("config").argName(
-				"config"
-		).hasArg(true).converter(Converter.PATH).desc(
+		var configPath = Option.builder("c")
+			.longOpt("config")
+			.argName("config")
+			.hasArg(true)
+			.converter(Converter.PATH)
+			.desc(
 				"The path to the configuration file. Defaults to \"config.json\" in the output directory."
-		).required(false).build();
+			)
+			.required(false)
+			.build();
+
+		var configs = Arrays.stream(Experiment.values())
+			.map(v -> v.name)
+			.collect(Collectors.joining(",", "'", "'"));
+
+		var generateConfigName = Option.builder("g")
+			.longOpt("generate-config")
+			.argName("generate-config")
+			.hasArg(true)
+			.type(String.class)
+			.desc("The example configuration name to generate. One of: " + configs)
+			.required(false)
+			.build();
 
 		options.addOption(outputPath);
 		options.addOption(configPath);
+		options.addOption(generateConfigName);
 		// define parser
 		CommandLine cmd;
 		CommandLineParser parser = new DefaultParser();
@@ -112,17 +147,34 @@ public class JPanSim2 {
 				dir = tmp;
 			}
 
+			if (cmd.hasOption(generateConfigName)) {
+				var tmp = cmd.getParsedOptionValue(generateConfigName)
+					.toString();
+				experiment = Arrays.stream(Experiment.values())
+					.filter(v -> v.name.equalsIgnoreCase(tmp))
+					.findFirst()
+					.orElseThrow(
+						() -> new RuntimeException(
+								"Couldn't find experiment: " + generateConfigName
+						)
+					);
+			}
+
 			if (cmd.hasOption(configPath)) {
 				var tmp = expand(cmd.getParsedOptionValue(configPath));
 				configFile = tmp;
+			} else {
+				configFile = dir.resolve("config.json");
 			}
 
 		} catch (ParseException e) {
 			System.out.println(e.getMessage());
 			helper.printHelp(
-					"Usage:", "JPanSim2 command line options.", options,
-					"Slurm support: batch commands must be continuous and start at 1\n"
-							+ "e.g. sbatch --array=1-32"
+				"Usage:",
+				"JPanSim2 command line options.",
+				options,
+				"Slurm support: batch commands must be continuous and start at 1\n"
+						+ "e.g. sbatch --array=1-32"
 			);
 			System.exit(0);
 		}
@@ -136,9 +188,22 @@ public class JPanSim2 {
 			);
 		}
 
-		if (!Files.exists(configFile)) throw new RuntimeException(
-				"Could not find configuration at: " + configFile
-		);
+		if (!Files.exists(configFile)) {
+			if (experiment == null) {
+				throw new RuntimeException(
+						"Could not find configuration at: " + configFile
+				);
+			}
+			experiment.config.writeConfig(configFile, false);
+			System.out.println(
+				String.format(
+					"Writing example configuration '%s' to file: %s",
+					experiment.name,
+					configFile
+				)
+			);
+			System.exit(0);
+		}
 
 		var conf = ExperimentConfiguration.readConfig(configFile);
 

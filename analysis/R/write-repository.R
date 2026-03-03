@@ -1,5 +1,11 @@
 #' Write dataframes as CSV and generate corresponding Java @Import interfaces.
 #'
+#' This function takes a set of R dataframes, writes them as CSV files, and
+#' generates a Java class containing @Import interfaces that correspond to the
+#' structure of the dataframes. The generated Java class will include methods
+#' for loading the data from the CSV files and defining the structure of the
+#' data as Java interfaces.
+#'
 #' The dataframes must have a column named `id` which is unique. References to
 #' other dataframe rows must be named `<relationship>_<dataframe>` or just
 #' `<dataframe>` where `<dataframe>` is the name of the entity in a dataframe
@@ -13,21 +19,21 @@
 #'
 #' @export
 #' @examples
-#' library(tibble)
+#'
 #' # Example data
-#' country <- tibble::tibble(
+#' country <- dplyr::tibble(
 #'   id = c("1", "2", "3"),
 #'   country_name = c("France", "Germany", "Italy")
 #' )
 #'
-#' city <- tibble::tibble(
+#' city <- dplyr::tibble(
 #'   id = c("101", "102", "103"),
 #'   town_name = c("Paris", "Marseille", "Berlin"),
 #'   country = c("1", "1", "2"),  # matches country$id
 #'   capital = c(TRUE,FALSE,TRUE)
 #' )
 #'
-#' person <- tibble::tibble(
+#' person <- dplyr::tibble(
 #'   id = c("1001", "1002","1003"),
 #'   first_name = c("Alice", "Bob", "Sasha"),
 #'   given_gender = factor(c("female","male","non binary")),
@@ -36,13 +42,16 @@
 #' )
 #'
 #' # Generate Java + CSV
-#' writeRepositoryData(
-#'   directory = "~/tmp/data/",
+#' write_repository_data(
+#'   directory = fs::path(tempdir(),"repo-test"),
 #'   fqn = "com.example.model.RepositoryData",
 #'   country,
 #'   city,
 #'   person
 #' )
+#'
+#' fs::dir_tree(fs::path(tempdir(),"repo-test"))
+#'
 write_repository_data <- function(directory, fqn, ...) {
   # Capture inputs
   dots <- list(...)
@@ -77,7 +86,7 @@ write_repository_data <- function(directory, fqn, ...) {
   )
 
   # Create initial dataframe
-  df_meta <- tibble::tibble(
+  df_meta <- dplyr::tibble(
     name_r = names,
     df = dots
   ) %>%
@@ -85,7 +94,7 @@ write_repository_data <- function(directory, fqn, ...) {
       name_java = .to_camel_case(name_r),
       csv_file = paste0(name_java, ".csv"),
       # Normalize colnames to camelCase
-      df = map(
+      df = purrr::map(
         df,
         ~ {
           colnames(.) <- .to_camel_case(colnames(.), capitalize_first = FALSE)
@@ -99,8 +108,8 @@ write_repository_data <- function(directory, fqn, ...) {
   # ——————————————————————————————
 
   path = strsplit(fqn, ".", fixed = TRUE)[[1]]
-  class_name = tail(path, 1)
-  source_directory = c(directory, "src", "main", "java", head(path, -1))
+  class_name = utils::tail(path, 1)
+  source_directory = c(directory, "src", "main", "java", utils::head(path, -1))
   source_directory = do.call(fs::path, as.list(source_directory))
   fs::dir_create(source_directory, recurse = TRUE)
   data_directory = c(directory, "src", "main", "resources", class_name)
@@ -112,13 +121,13 @@ write_repository_data <- function(directory, fqn, ...) {
   # ——————————————————————————————
   enum_info <- df_meta %>%
     dplyr::transmute(
-      factor_cols = map(
+      factor_cols = purrr::map(
         df,
         function(d) {
           is_fac <- sapply(d, is.factor)
-          tibble::tibble(
+          dplyr::tibble(
             col_name = colnames(d)[is_fac],
-            levels = map(colnames(d)[is_fac], ~ levels(d[[.x]]))
+            levels = purrr::map(colnames(d)[is_fac], ~ levels(d[[.x]]))
           )
         }
       )
@@ -162,7 +171,7 @@ write_repository_data <- function(directory, fqn, ...) {
   df_meta <- df_meta %>%
     dplyr::mutate(
       path = fs::path(data_directory, csv_file),
-      write_result = map2(df, path, ~ readr::write_csv(.x, .y))
+      write_result = purrr::map2(df, path, ~ readr::write_csv(.x, .y))
     )
 
   # ——————————————————————————————
@@ -171,9 +180,9 @@ write_repository_data <- function(directory, fqn, ...) {
 
   interfaces <- df_meta %>%
     dplyr::mutate(
-      cols = map(
+      cols = purrr::map(
         df,
-        ~ tibble::tibble(
+        ~ dplyr::tibble(
           col = colnames(.x),
           java_type = sapply(colnames(.x), \(s) {
             .r_type_to_java_type(.x[[s]], s, df_meta$name_java)
@@ -202,6 +211,7 @@ write_repository_data <- function(directory, fqn, ...) {
     dplyr::mutate(
       iface_lines = paste0(
         c(
+          "@SuppressWarnings(\"immutables\")",
           "@Value.Immutable",
           sprintf("@Import(\"%s\")", csv_file),
           sprintf(
@@ -295,6 +305,7 @@ write_repository_data <- function(directory, fqn, ...) {
 #' @param capitalize_first Logical; if TRUE, returns PascalCase (e.g., "MyVariable").
 #'                         If FALSE (default), returns camelCase (e.g., "myVariable").
 #' @return A character vector with converted names.
+#' @noRd
 #'
 #' @examples
 #' .to_camel_case("hello_world")
@@ -336,6 +347,7 @@ write_repository_data <- function(directory, fqn, ...) {
 #' Map R vector type to Java type
 #' name is the column name. It will be a lowerCamelCase most likely
 #' types is the list of classes. They will be UpperCamelCase
+#' @noRd
 .r_type_to_java_type <- function(x, name, types) {
   fk_match = stringr::str_ends(tolower(name), tolower(types))
   if (any(fk_match)) {

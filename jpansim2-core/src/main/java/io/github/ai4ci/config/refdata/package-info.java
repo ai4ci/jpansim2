@@ -2,11 +2,11 @@
  * Package io.github.ai4ci.config.refdata
  *
  * <p>
- * This package is a work in progress providing support for loading reference
- * demographic and related data from CSV files. The long term aim is to offer a
- * straightforward way to include reference demographics into the simulation
- * model so that initialisers and other components can use empiric population
- * data when constructing agents and locations.
+ * Experimental: This package is a work in progress providing support for
+ * loading reference demographic and related data from CSV files. The long term
+ * aim is to offer a straightforward way to include reference demographics into
+ * the simulation model so that initialisers and other components can use
+ * empiric population data when constructing agents and locations.
  *
  * <p>
  * At present the code in this package (for example

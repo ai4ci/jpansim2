@@ -1,16 +1,16 @@
 package io.github.ai4ci.config;
 
 import io.github.ai4ci.flow.output.ExportSelector;
-import io.github.ai4ci.output.ImmutableContactCSV;
+import io.github.ai4ci.output.ImmutableContactDuckDB;
 import io.github.ai4ci.output.ImmutableDebugParametersCSV;
 import io.github.ai4ci.output.ImmutableInfectivityProfileCSV;
-import io.github.ai4ci.output.ImmutableLineListCSV;
+import io.github.ai4ci.output.ImmutableLineListDuckDB;
 import io.github.ai4ci.output.ImmutableOutbreakBehaviourCountCSV;
 import io.github.ai4ci.output.ImmutableOutbreakCSV;
 import io.github.ai4ci.output.ImmutableOutbreakContactCountCSV;
 import io.github.ai4ci.output.ImmutableOutbreakFinalStateCSV;
 import io.github.ai4ci.output.ImmutableOutbreakHistoryCSV;
-import io.github.ai4ci.output.ImmutablePersonDemographicsCSV;
+import io.github.ai4ci.output.ImmutablePersonDemographicsDuckDB;
 
 /**
  * Enumeration of the different exporters available in the system, each
@@ -34,7 +34,7 @@ public enum Exporters {
 	),
 	/** Exporter for line list data, using the ImmutableLineListCSV format. */
 	LINELIST(
-			ExportSelector.of(ImmutableLineListCSV.class)
+			ExportSelector.of(ImmutableLineListDuckDB.class)
 	),
 	/**
 	 * Exporter for historical test data, using the ImmutableOutbreakHistoryCSV
@@ -47,7 +47,7 @@ public enum Exporters {
 	 * Exporter for contact network data, using the ImmutableContactCSV format.
 	 */
 	CONTACT_NETWORK(
-			ExportSelector.of(ImmutableContactCSV.class)
+			ExportSelector.of(ImmutableContactDuckDB.class)
 	),
 	/**
 	 * Exporter for infectivity profile data, using the
@@ -61,7 +61,7 @@ public enum Exporters {
 	 * ImmutablePersonDemographicsCSV format.
 	 */
 	DEMOGRAPHICS(
-			ExportSelector.of(ImmutablePersonDemographicsCSV.class)
+			ExportSelector.of(ImmutablePersonDemographicsDuckDB.class)
 	),
 	/**
 	 * Exporter for debug parameters, using the ImmutableDebugParametersCSV

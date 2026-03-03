@@ -49,6 +49,7 @@ import io.github.ai4ci.flow.output.Export;
  * @see JsonSerialize
  * @see JsonDeserialize
  */
+@SuppressWarnings("immutables")
 public @interface Data {
 
 	/**
@@ -76,6 +77,7 @@ public @interface Data {
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
+	@SuppressWarnings("immutables")
 	@Value.Style(
 			get = { "is*", "get*" },
 			init = "set*",
@@ -191,7 +193,7 @@ public @interface Data {
 			depluralize = true,
 			depluralizeDictionary = { "person:people" }
 	)
-	@SuppressWarnings("immutables:from")
+	@SuppressWarnings("immutables")
 	public static @interface Repository {}
 
 	/**
@@ -222,7 +224,7 @@ public @interface Data {
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
-	@SuppressWarnings("immutables:from")
+	@SuppressWarnings("immutables")
 	@Value.Style(
 			// Detect 'get' and 'is' prefixes in accessor methods
 			get = { "is*", "get*" },

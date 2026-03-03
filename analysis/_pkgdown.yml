@@ -1,0 +1,5 @@
+---
+url: https://ai4ci.github.io/jpansim2/analysis
+destination: src/site/resources
+template:
+  bootstrap: 5

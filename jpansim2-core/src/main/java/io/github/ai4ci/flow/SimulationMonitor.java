@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.nio.file.Path;
 
-import org.mariuszgromada.math.mxparser.License;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,20 +38,22 @@ public class SimulationMonitor implements Runnable {
 	 *         and percentage, and available system memory in GB
 	 */
 	public static String freeMemG() {
-		var sys = ((float) hal.getMemory().getAvailable())
-				/ (1024 * 1024 * 1024);
-		var freeHeap = ((float) Runtime.getRuntime().freeMemory())
-				/ (1024 * 1024 * 1024);
-		var maxHeap = ((float) Runtime.getRuntime().maxMemory())
-				/ (1024 * 1024 * 1024);
-		var currentHeap = ((float) Runtime.getRuntime().totalMemory())
-				/ (1024 * 1024 * 1024);
+		var sys = ((float) hal.getMemory()
+			.getAvailable()) / (1024 * 1024 * 1024);
+		var freeHeap = ((float) Runtime.getRuntime()
+			.freeMemory()) / (1024 * 1024 * 1024);
+		var maxHeap = ((float) Runtime.getRuntime()
+			.maxMemory()) / (1024 * 1024 * 1024);
+		var currentHeap = ((float) Runtime.getRuntime()
+			.totalMemory()) / (1024 * 1024 * 1024);
 		var allocatable = Math.min(maxHeap - currentHeap, sys);
 		var allocated = currentHeap - freeHeap;
 		return String.format(
-				"%1.2f Gb remaining; %1.2f Gb used (%1.2f%%) [%1.2f Gb system]",
-				allocatable + freeHeap, allocated,
-				allocated / (currentHeap + allocatable) * 100, sys
+			"%1.2f Gb remaining; %1.2f Gb used (%1.2f%%) [%1.2f Gb system]",
+			allocatable + freeHeap,
+			allocated,
+			allocated / (currentHeap + allocatable) * 100,
+			sys
 		);
 	}
 
@@ -68,14 +69,14 @@ public class SimulationMonitor implements Runnable {
 	 */
 	public static double usedOfAvailable(long sysReserved) {
 
-		var sysAvail = ((float) hal.getMemory().getAvailable() - sysReserved)
-				/ (1024 * 1024 * 1024);
-		var freeHeap = ((float) Runtime.getRuntime().freeMemory())
-				/ (1024 * 1024 * 1024);
-		var maxHeap = ((float) Runtime.getRuntime().maxMemory())
-				/ (1024 * 1024 * 1024);
-		var currentHeap = ((float) Runtime.getRuntime().totalMemory())
-				/ (1024 * 1024 * 1024);
+		var sysAvail = ((float) hal.getMemory()
+			.getAvailable() - sysReserved) / (1024 * 1024 * 1024);
+		var freeHeap = ((float) Runtime.getRuntime()
+			.freeMemory()) / (1024 * 1024 * 1024);
+		var maxHeap = ((float) Runtime.getRuntime()
+			.maxMemory()) / (1024 * 1024 * 1024);
+		var currentHeap = ((float) Runtime.getRuntime()
+			.totalMemory()) / (1024 * 1024 * 1024);
 		var allocatable = Math.min(maxHeap - currentHeap, sysAvail);
 		var allocated = currentHeap - freeHeap;
 		return allocated / (currentHeap + allocatable);
@@ -103,16 +104,19 @@ public class SimulationMonitor implements Runnable {
 	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory)
 			throws IOException {
 
-		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
-
 		this.exporter = config.exporter(baseDirectory);
 		this.exporter.writeInputConfiguration(config);
 		var setups = config.getBatchSetupList();
 		var executions = config.getExecution();
 		this.factory = SimulationFactory.startFactory(
-				setups, executions, config.getBatchConfig().getUrnBase(), this
+			setups,
+			executions,
+			config.getBatchConfig()
+				.getUrnBase(),
+			this
 		);
-		this.duration = config.getBatchConfig().getSimulationDuration();
+		this.duration = config.getBatchConfig()
+			.getSimulationDuration();
 	}
 
 	/**
@@ -128,7 +132,8 @@ public class SimulationMonitor implements Runnable {
 	}
 
 	private boolean isRunning(SimulationExecutor ex) {
-		return ex != null && !ex.getState().equals(State.TERMINATED);
+		return ex != null && !ex.getState()
+			.equals(State.TERMINATED);
 	}
 
 	/**
@@ -165,8 +170,8 @@ public class SimulationMonitor implements Runnable {
 		SimulationExecutor executor = null;
 		try {
 
-			double freeSysGb = hal.getMemory().getAvailable()
-					/ (1024 * 1024 * 1024);
+			double freeSysGb = hal.getMemory()
+				.getAvailable() / (1024 * 1024 * 1024);
 
 			var abortTime = Long.MAX_VALUE;
 
@@ -180,8 +185,8 @@ public class SimulationMonitor implements Runnable {
 				if (usedOfAvailable(RESERVE) > 0.80 || freeSysGb < 1) {
 					this.factory.pause();
 					log.warn(
-							"Low memory. Throttling factory production. Memory: "
-									+ freeMemG()
+						"Low memory. Throttling factory production. Memory: "
+								+ freeMemG()
 					);
 				} else {
 					// This will only be successful if the cache is not already full;
@@ -190,31 +195,30 @@ public class SimulationMonitor implements Runnable {
 
 				if (usedOfAvailable(RESERVE) > 0.90 || freeSysGb < 0.5) {
 					System.gc();
-					abortTime = Math.min(
-							abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY
-					);
+					abortTime = Math
+						.min(abortTime, System.currentTimeMillis() + WAIT_FOR_MEMORY);
 					if (executor != null) {
 						executor.pause();
 						log.warn(
-								"Very low memory. Throttling simulation execution. Memory: "
-										+ freeMemG()
+							"Very low memory. Throttling simulation execution. Memory: "
+									+ freeMemG()
 						);
 					} else {
 						log.warn(
-								"Very low memory. Delaying simulation execution. Memory: "
-										+ freeMemG()
+							"Very low memory. Delaying simulation execution. Memory: "
+									+ freeMemG()
 						);
 					}
 					log.warn(
-							"Aborting in "
-									+ (abortTime - System.currentTimeMillis()) / 1000
-									+ " secs unless memory improves"
+						"Aborting in "
+								+ (abortTime - System.currentTimeMillis()) / 1000
+								+ " secs unless memory improves"
 					);
 					log.info("Exporters: " + this.exporter.report());
 
 					if (this.exporter.allWaiting()) {
 						log.warn(
-								"Exporters all empty. Trying to clear simulation despite very low memory."
+							"Exporters all empty. Trying to clear simulation despite very low memory."
 						);
 						if (executor != null) { executor.unpause(); }
 					}
@@ -254,14 +258,14 @@ public class SimulationMonitor implements Runnable {
 							&& (executor == null || executor.isWaiting())
 							&& this.factory.isWaiting()) {
 						log.error(
-								"Critically low memory. All processes blocked. Terminating early: "
-										+ freeMemG()
+							"Critically low memory. All processes blocked. Terminating early: "
+									+ freeMemG()
 						);
 						throw new InterruptedException("Out of memory");
 					}
 					log.warn(
-							"Critically low memory. Waiting for exporters to clear backlog.: "
-									+ freeMemG()
+						"Critically low memory. Waiting for exporters to clear backlog.: "
+								+ freeMemG()
 					);
 					System.gc();
 					checkAgainInMs = 1000;
@@ -277,8 +281,8 @@ public class SimulationMonitor implements Runnable {
 				// new simulation is queued.
 				if (System.currentTimeMillis() > abortTime) {
 					log.error(
-							"Low memory has not been cleared after "
-									+ WAIT_FOR_MEMORY / 1000 + " seconds. Aborting"
+						"Low memory has not been cleared after "
+								+ WAIT_FOR_MEMORY / 1000 + " seconds. Aborting"
 					);
 					break;
 				}

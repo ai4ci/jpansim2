@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+import org.mariuszgromada.math.mxparser.License;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -51,6 +53,8 @@ public class WriteExampleConfig {
 			d = Path.of(args[0])
 				.resolve("examples");
 		}
+
+		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
 
 		System.out.println(
 			"Writing example configuration files and JSON schema to "

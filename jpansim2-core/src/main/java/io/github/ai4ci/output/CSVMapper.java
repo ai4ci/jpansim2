@@ -79,9 +79,10 @@ public abstract class CSVMapper {
 	 * @return stream of {@link InfectivityProfileCSV} records
 	 */
 	public Stream<InfectivityProfileCSV> infectivityProfile(Outbreak outbreak) {
-		var dd = outbreak.getBaseline().getInfectivityProfile();
+		var dd = outbreak.getBaseline()
+			.getInfectivityProfile();
 		return IntStream.range(0, (int) dd.size())
-				.mapToObj(i -> this.toIP(outbreak, i, dd.density(i)));
+			.mapToObj(i -> this.toIP(outbreak, i, dd.density(i)));
 	}
 
 	/**
@@ -92,8 +93,10 @@ public abstract class CSVMapper {
 	 */
 	public Stream<OutbreakBehaviourCountCSV> toBehaviourCSV(Outbreak outbreak) {
 		var cs = outbreak.getCurrentState();
-		return cs.getBehaviourCounts().entrySet().stream()
-				.map(kv -> this.toBehaviourCSV(cs, kv.getKey(), kv.getValue()));
+		return cs.getBehaviourCounts()
+			.entrySet()
+			.stream()
+			.map(kv -> this.toBehaviourCSV(cs, kv.getKey(), kv.getValue()));
 	}
 
 	/**
@@ -117,8 +120,10 @@ public abstract class CSVMapper {
 	 */
 	public Stream<OutbreakContactCountCSV> toContactCSV(Outbreak t) {
 		var cs = t.getCurrentState();
-		return cs.getContactCounts().entrySet().stream()
-				.map(kv -> this.toContactCSV(cs, kv.getKey(), kv.getValue()));
+		return cs.getContactCounts()
+			.entrySet()
+			.stream()
+			.map(kv -> this.toContactCSV(cs, kv.getKey(), kv.getValue()));
 	}
 
 	/**
@@ -141,12 +146,14 @@ public abstract class CSVMapper {
 	 * @param person the person whose contacts to export
 	 * @return stream of contact CSV records
 	 */
-	public Stream<ImmutableContactCSV> toContacts(Person person) {
-		return person.getCurrentHistory().stream().flatMap(
+	public Stream<ImmutableContactDuckDB> toContacts(Person person) {
+		return person.getCurrentHistory()
+			.stream()
+			.flatMap(
 				ph -> Arrays.stream(ph.getTodaysContacts())
-						.filter(c -> c.getParticipant1Id() == person.getId())
-						.map(c -> this.toCSV(ph, c))
-		);
+					.filter(c -> c.getParticipant1Id() == person.getId())
+					.map(c -> this.toCSV(ph, c))
+			);
 	}
 
 	/**
@@ -200,7 +207,7 @@ public abstract class CSVMapper {
 	 * @param baseline the person's baseline information
 	 * @return CSV DTO for the person's demographics
 	 */
-	protected abstract ImmutablePersonDemographicsCSV toCSV(
+	protected abstract ImmutablePersonDemographicsDuckDB toCSV(
 			Person person, PersonDemographic demog, PersonBaseline baseline
 	);
 
@@ -222,7 +229,7 @@ public abstract class CSVMapper {
 			target = "contactId",
 			source = "contact.participant2Id"
 	)
-	protected abstract ImmutableContactCSV toCSV(
+	protected abstract ImmutableContactDuckDB toCSV(
 			PersonHistory person, Contact contact
 	);
 
@@ -241,7 +248,7 @@ public abstract class CSVMapper {
 			target = "logOddsInfectiousToday",
 			source = "riskModel.logOddsInfectiousToday"
 	)
-	public abstract ImmutableLineListCSV toCSV(PersonState state);
+	public abstract ImmutableLineListDuckDB toCSV(PersonState state);
 
 	/**
 	 * Map a test result and corresponding person history to a CSV DTO for test
@@ -268,7 +275,7 @@ public abstract class CSVMapper {
 			target = "sampleTime",
 			source = "t.time"
 	)
-	public abstract ImmutablePersonTestsCSV toCSV(
+	public abstract ImmutablePersonTestsDuckDB toCSV(
 			TestResult t, PersonHistory ph
 	);
 
@@ -279,7 +286,7 @@ public abstract class CSVMapper {
 	 * @param person the person whose demographics to export
 	 * @return demographic CSV DTO
 	 */
-	public ImmutablePersonDemographicsCSV toDemog(Person person) {
+	public ImmutablePersonDemographicsDuckDB toDemog(Person person) {
 		return this.toCSV(person, person.getDemographic(), person.getBaseline());
 	}
 

@@ -1,0 +1,35 @@
+# A space saving ggplot theme
+
+A ggplot theme with minimal fluff and with the defaults set small.
+
+## Usage
+
+``` r
+.gg_tiny_theme(baseSize = 8, font = "Roboto")
+```
+
+## Arguments
+
+- baseSize:
+
+  the size of the base font.
+
+- font:
+
+  the font family name
+
+## Value
+
+a ggplot theme
+
+## Examples
+
+``` r
+try({
+  ggplot2::ggplot(ggplot2::diamonds,
+    ggplot2::aes(x=carat,y=price,color=color))+
+    ggplot2::geom_point()+
+    .gg_tiny_theme()
+})
+#> Error in .gg_tiny_theme() : could not find function ".gg_tiny_theme"
+```

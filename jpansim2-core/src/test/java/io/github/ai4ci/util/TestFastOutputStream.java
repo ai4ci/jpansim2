@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.deprecated.FastWriteOnlyOutputStream;
 
-@SuppressWarnings("deprecation")
 class TestFastOutputStream {
 
 	@Test

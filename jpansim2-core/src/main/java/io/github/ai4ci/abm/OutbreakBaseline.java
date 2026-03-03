@@ -82,7 +82,8 @@ public interface OutbreakBaseline extends Serializable {
 	 */
 	@Value.Derived
 	default int getInfectiveDuration() {
-		return (int) this.getInfectivityProfile().size();
+		return (int) this.getInfectivityProfile()
+			.size();
 	}
 
 	/**
@@ -155,9 +156,15 @@ public interface OutbreakBaseline extends Serializable {
 	 *         load
 	 */
 	default Double getTransmissibilityBaseline(double viralLoad) {
-		return transmissibilityFromViralLoad(
-				viralLoad, this.getViralLoadTransmissibilityParameter()
+		return
+//				Conversions.scaleProbabilityByOR(
+		transmissibilityFromViralLoad(
+			viralLoad,
+			this.getViralLoadTransmissibilityParameter()
 		);
+//			,
+//			getTransmissionOddsRatio()
+//		);
 	}
 
 	/**
@@ -171,5 +178,14 @@ public interface OutbreakBaseline extends Serializable {
 	 *         viral load
 	 */
 	double getViralLoadTransmissibilityParameter();
+
+//	/**
+//	 * This is a scaling odds ratio for transmission that modifies the baseline
+//	 * R0 This is implemented so a default R0 can be overridden on an execution
+//	 * by execution basis.
+//	 *
+//	 * @return
+//	 */
+//	double getTransmissionOddsRatio();
 
 }

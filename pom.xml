@@ -6,7 +6,7 @@
 
 	<groupId>io.github.ai4ci</groupId>
 	<artifactId>jpansim2-parent</artifactId>
-	<version>0.3.1</version>
+	<version>0.3.2</version>
 	<!-- git commit ...; git tag vX.Y.Z; git push origin <dash><dash>tags -->
 	<packaging>pom</packaging>
 

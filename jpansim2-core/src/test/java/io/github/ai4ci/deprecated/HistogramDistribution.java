@@ -20,11 +20,15 @@ import io.github.ai4ci.util.Sampler;
 // @JsonDeserialize(as = ImmutableHistogramDistribution.class)
 public interface HistogramDistribution extends Distribution, Serializable {
 
+	@Override
 	double[] getSamples();
 	
+	@Override
 	@Value.Default default LinkFunction getLink() {return LinkFunction.NONE;}
+	@Override
 	@Value.Default @JsonIgnore
 	default double getMinSupport() {return getLink().getMinSupport();}
+	@Override
 	@Value.Default @JsonIgnore
 	default double getMaxSupport() {return getLink().getMaxSupport();}
 	
@@ -100,6 +104,7 @@ public interface HistogramDistribution extends Distribution, Serializable {
 		return getX()[index] + (getX()[index+1]-getX()[index])*mod; 
 	}
 	
+	@Override
 	@JsonIgnore
 	default double sample(Sampler rng) {
 		return interpolateY(rng.nextDouble());

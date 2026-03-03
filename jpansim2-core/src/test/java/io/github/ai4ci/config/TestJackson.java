@@ -21,7 +21,7 @@ import io.github.ai4ci.config.setup.AgeStratifiedDemography;
 import io.github.ai4ci.config.setup.SetupConfiguration;
 import io.github.ai4ci.functions.SimpleDistribution;
 import io.github.ai4ci.output.CSVMapper;
-import io.github.ai4ci.output.ImmutableLineListCSV;
+import io.github.ai4ci.output.ImmutableLineListDuckDB;
 import io.github.ai4ci.util.CSVUtil;
 
 class TestJackson {
@@ -81,7 +81,7 @@ class TestJackson {
 	@Test
 	void testJacksonCSV() throws IOException {
 		
-		ImmutableLineListCSV tmp = CSVMapper.INSTANCE.toCSV(
+		ImmutableLineListDuckDB tmp = CSVMapper.INSTANCE.toCSV(
 			TestUtils.mockPersonState()	
 		);
 		
@@ -98,7 +98,7 @@ class TestJackson {
 //			  System.out.println(strW.toString());
 //		}
 		
-		CSVUtil<ImmutableLineListCSV> conv = new CSVUtil<ImmutableLineListCSV>(ImmutableLineListCSV.class);
+		CSVUtil<ImmutableLineListDuckDB> conv = new CSVUtil<ImmutableLineListDuckDB>(ImmutableLineListDuckDB.class);
 		
 		System.out.println(conv.headers());
 		System.out.println(conv.row(tmp));

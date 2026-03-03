@@ -27,7 +27,7 @@
  * <ul>
  * <li>{@link io.github.ai4ci.output.DebugParametersCSV} - Debug and
  * configuration parameters exported to {@code debug.csv}</li>
- * <li>{@link io.github.ai4ci.output.PersonDemographicsCSV} - Initial
+ * <li>{@link io.github.ai4ci.output.PersonDemographicsDuckDB} - Initial
  * demographic data exported to {@code demog.duckdb}</li>
  * </ul>
  *
@@ -44,11 +44,11 @@
  * statistics exported to {@code contact-counts.csv}</li>
  * <li>{@link io.github.ai4ci.output.OutbreakBehaviourCountCSV} - Behavior state
  * counts exported to {@code behaviours.csv}</li>
- * <li>{@link io.github.ai4ci.output.LineListCSV} - Case line list data exported
+ * <li>{@link io.github.ai4ci.output.LineListDuckDB} - Case line list data exported
  * to {@code linelist.duckdb}</li>
- * <li>{@link io.github.ai4ci.output.PersonTestsCSV} - Individual test results
+ * <li>{@link io.github.ai4ci.output.PersonTestsDuckDB} - Individual test results
  * exported to {@code cases.duckdb}</li>
- * <li>{@link io.github.ai4ci.output.ContactCSV} - Contact tracing data exported
+ * <li>{@link io.github.ai4ci.output.ContactDuckDB} - Contact tracing data exported
  * to {@code contacts.duckdb}</li>
  * </ul>
  *

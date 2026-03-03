@@ -34,11 +34,13 @@ public class TestImmutableModifier {
 	
 	@Partial @Value.Immutable @SuppressWarnings("immutables")
 	public static interface _PartialTestClass extends TestClass, Modification<TestClass> {
+		@Override
 		default _PartialTestClass self() {return this;}
 	}
 	
 	@Partial @Value.Immutable @SuppressWarnings("immutables")
 	public static interface _PartialTestComplex extends TestComplex, Modification<TestComplex> {
+		@Override
 		default _PartialTestComplex self() {return this;}
 	}
 	

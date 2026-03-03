@@ -1,7 +1,6 @@
 # Copilot Notes — Coding Style and Important Paths
 
-Purpose
--------
+## Purpose
 
 This note collects the coding conventions, javadoc rules, significant
 file locations and CI/test commands that future chat sessions or a human
@@ -11,20 +10,19 @@ Keep this short and practical; the intention is to speed up future
 conversations and to remind a developer of repository conventions and
 where to find key files.
 
-Coding style (Java)
--------------------
+## Coding style (Java)
 
 - Follow standard Java conventions: camelCase for methods/fields, Pascal
  Case for classes and interfaces, and 4-space indentation.
 - Wrap at 80 characters.
 - Prefer immutability for small value objects where reasonable.
-- Use modern Java idioms (streams, Optional) sparingly and only when it
- improves clarity.
+- Use modern Java idioms (streams, Optional) whereever reasonable.
 - Keep methods short: prefer extracting private helper methods when a
  method grows beyond ~60-80 lines.
+- Eclipse formatting and style configuration in `code-style-xml` and
+`clean-up.xml` files
 
-Javadoc rules (project-wide)
-----------------------------
+## Javadoc rules (project-wide)
 
 - Write Javadoc only for public classes and public methods, interface
   default public methods, and public static fields.
@@ -45,109 +43,77 @@ Javadoc rules (project-wide)
   relevant (for example, which other modules or site pages depend on the
   class). Use plain URLs or relative references where helpful.
 
-Significant files and locations
--------------------------------
+# Significant files and locations
 
+## Top level Maven project
+- Useful places to open first: `jpansim2/pom.xml`,
+  `jpansim2/jpansim2-core/pom.xml`, 
+  `jpansim2/dev-notes.md`.  
 - Top-level repository root: this is the Maven reactor root and the
-  usual place to invoke `mvn` for aggregate tasks.
-- Parent `pom.xml`: `jpansim2/pom.xml` — defines common properties,
-  aggregation and the `distributionManagement` `site` configuration that
-  uses `${session.executionRootDirectory}` by default.
+  usual place to invoke `mvn` for aggregate tasks. 
+- Some project documentation lives in this parent project
+
+## Core module
 - Core module: `jpansim2/jpansim2-core/` — main sources, tests and the
   module that produces the distributable `-jar-with-dependencies.jar`.
+- Most user facing documentation will live in this module in the javadocs and
+`src/site/` directory
+
+### Packages
+- `io.github.ai4ci.config`: Specification of JSON configuration files for 
+input. `Partial` versions of configuration interfaces used to override or modify default
+settings of `Immutable` versions. N.B. some low level structural configuration is also in 
+`io.github.ai4ci.functions` package
+- `io.github.ai4ci.abm`: main structural classes of the agent based model.
+- `io.github.ai4ci.output`: specification of output views of model for CSV
+and DuckDB serialisation.
+- `io.github.ai4ci.flow`: simulation construction (`builders` subpackage), 
+execution (`mechanics` subpackage) and output (`output` subpackage)
+- `io.github.ai4ci.flow`:
+- Consult `package-info.java` javadocs to understand more detail on the 
+structure of the project.
+
+### Key classes
+- `io.github.ai4ci.flow.SimulationMonitor` entry point to an end to end 
+simulation run.
+- `io.github.ai4ci.flow.builders.AbstractModelBuilder` main entry 
+to things relating to building a simulation
+- `io.github.ai4ci.flow.mechanics.Updater` main per simulation step
+execution engine
+- `io.github.ai4ci.flow.output.SimulationExporter` responsible for 
+writing output
+- `io.github.ai4ci.abm.Outbreak` mutable main simulation data class.
+
+
+
+## Analysis subproject
+- (Work in progress)
+- Analysis: `jpansim2/analysis/` - An R package that provides analysis 
+tools to process the simulation output.
+
+# Documentation 
+
+- CI workflow: `.github/workflows/publish-javadoc.yaml`
+- Actually performs a full maven build and `site:staging` in a branch.
+- Site staging path: default is `${session.executionRootDirectory}/target/staging`.
+
+# CI and release notes
+
 - Release workflow: `.github/workflows/release.yml` (or similar) — builds
   the module, copies artefacts to the repo-root `staging/` and creates a
   GitHub Release.
-- Staging directory used by CI: `staging/` at the repository root (this
-  is where CI copies jars before upload).
-- Site staging path: default is `${session.executionRootDirectory}/target/staging`.
 
-CI and release notes
---------------------
+# Maven build
 
-- Workflows trigger on annotated tag pushes matching `v*.*.*`.
-- Important workflow details:
-  - Use `working-directory:` on steps that must run in a submodule;
-    `cd` inside a `run:` does not persist across steps.
-  - Copy the produced `jpansim2-core/*-jar-with-dependencies.jar` into
-    a repo-root `staging/` directory before upload.
-  - `actions/upload-artifact` and `softprops/action-gh-release` expect
-    paths relative to the workspace (repo root) by default.
-- Site staging: prefer running `mvn site:stage` from the repo root so
-  that `${session.executionRootDirectory}` points at the repo root and
-  aggregation happens in one place.
 
-Renaming artefacts
-------------------
+- Uses UML plugin to generate UML diagrams 
+- Uses plantuml plugin to generate addtional
+diagrams from `.puml` files in the source code hierarchy, which will generate
+`.png` files in the javadoc code hierarchy. 
+- Link to generated '.png' diagram files using relative paths from javadoc. 
+- Runs main class files in the `io.github.ai4ci.examples` package 
+during build to generate code
+- Uses Immutables and MapStruct to generate multi-threading safe code
 
-CI renames the `-jar-with-dependencies.jar` to a simpler `jpansim2-<ver>.jar`.
-Use the robust bash snippet below in workflows or scripts to do the
-rename reliably (no external `sed`):
-
-```bash
-shopt -s nullglob
-for old in staging/*-jar-with-dependencies.jar; do
-  base=$(basename -- "$old")
-  ver=${base#jpansim2-core-}
-  ver=${ver%-jar-with-dependencies.jar}
-  mv -- "$old" "staging/jpansim2-${ver}.jar"
-done
-```
-
-Useful commands
----------------
-
-From repo root (recommended):
-
-```bash
-# clean, build and stage site to repo-root/target/staging
-mvn -B -DskipTests clean package site site:stage
-
-# list staged site
-ls -la target/staging
-```
-
-Run site staging from a child module but target the repo root:
-
-```bash
-mvn site:stage -Dsite.staging.dir=/absolute/path/to/repo/target/staging
-```
-
-Tagging and releasing
----------------------
-
-Use an annotated tag to trigger the release workflow:
-
-```bash
-git tag -a v1.2.3 -m "Release jpansim2 v1.2.3"
-git push origin v1.2.3
-```
-
-Debugging CI when uploads fail
------------------------------
-
-Add a debug step in the workflow to list files and show the workspace
-path before upload:
-
-```yaml
-- name: Debug staging content
-  run: |
-    echo "Workspace: $GITHUB_WORKSPACE"
-    ls -la
-    ls -la staging || true
-```
-
-Notes for future chat sessions
------------------------------
-
-- Useful places to open first: `jpansim2/pom.xml`,
-  `jpansim2/jpansim2-core/pom.xml`, `.github/workflows/release.yml`, and
-  `jpansim2/dev-notes.md`.
-- If asked about staging paths, explain the distinction between the
-  invocation directory and the reactor root; mention
-  `${session.executionRootDirectory}` and the CLI override
-  `-Dsite.staging.dir=...`.
-- If asked to modify workflows, prefer `working-directory:` over `cd`
-  and ensure a repo-root `staging/` directory exists before upload.
 
 Last updated: 2026-02-13

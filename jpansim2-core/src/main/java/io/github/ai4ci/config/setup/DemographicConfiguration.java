@@ -15,7 +15,7 @@ import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.functions.EmpiricalDistribution;
-import io.github.ai4ci.util.ExoticDistributions;
+import io.github.ai4ci.functions.ExoticDistributions;
 import io.github.ai4ci.util.Sampler;
 
 /**

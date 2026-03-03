@@ -1,0 +1,54 @@
+Package: jpansim2analysis
+Title: Visualisation and analysis of JPanSim2 outputs
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Robert",
+           family = "Challen",
+           role = c("aut", "cre","cph"),
+           email = "rob.challen@bristol.ac.uk",
+           comment = c(ORCID = "0000-0002-5504-7768"))
+Description: JPanSim2 is a large agent based model. This package contains 
+  functions to visualise the output,
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE, roclets = c("collate", "rd", "namespace"), packages = "pkgtools")
+RoxygenNote: 7.3.3.9007
+URL: https://ai4ci.github.io/jpansim2/analysis,
+    https://github.com/ai4ci/jpansim2/
+Config/testthat/edition: 3
+Depends: 
+    R (>= 3.5)
+LazyData: true
+LazyDataCompression: gzip
+Language: en-GB
+Config/Needs/build: terminological/pkgtools
+Imports: 
+    base64enc,
+    dplyr,
+    flextable,
+    fs,
+    ggplot2,
+    grDevices,
+    htmltools,
+    huxtable,
+    jsonlite,
+    knitr,
+    magrittr,
+    officer,
+    pdftools,
+    purrr,
+    ragg,
+    rappdirs,
+    readr,
+    rlang,
+    rmarkdown,
+    rstudioapi,
+    rsvg,
+    scales,
+    stats,
+    stringr,
+    svglite,
+    systemfonts,
+    testthat,
+    tibble,
+    utils
