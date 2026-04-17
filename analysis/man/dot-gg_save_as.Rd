@@ -36,14 +36,15 @@ formatted css specification for webfonts in the plot. This is for internal
 use and does not need to be changed.}
 
 \item{...}{
-  Named arguments passed on to \code{\link[svglite:svglite]{svglite::svglite}}\describe{
+  Arguments passed on to \code{\link[svglite:svglite]{svglite::svglite}}
+  \describe{
     \item{\code{pointsize}}{Default point size.}
-\item{\code{standalone}}{Produce a standalone svg file? If \code{FALSE}, omits
+    \item{\code{standalone}}{Produce a standalone svg file? If \code{FALSE}, omits
 xml header and default namespace.}
-\item{\code{id}}{A character vector of ids to assign to the generated SVG's. If
+    \item{\code{id}}{A character vector of ids to assign to the generated SVG's. If
 creating more SVG files than supplied ids the exceeding SVG's will not have
 an id tag and a warning will be thrown.}
-\item{\code{fix_text_size}}{Should the width of strings be fixed so that it doesn't
+    \item{\code{fix_text_size}}{Should the width of strings be fixed so that it doesn't
 change between svg renderers depending on their font rendering? Defaults to
 \code{TRUE}. If \code{TRUE} each string will have the \code{textLength} CSS property set
 to the width calculated by systemfonts and
@@ -52,15 +53,15 @@ beneficial for heavy post-processing that may change content or style of
 strings, but may lead to inconsistencies between strings and graphic
 elements that depend on the dimensions of the string (e.g. label borders
 and background).}
-\item{\code{scaling}}{A scaling factor to apply to the rendered line width and text
+    \item{\code{scaling}}{A scaling factor to apply to the rendered line width and text
 size. Useful for getting the right sizing at the dimension that you
 need.}
-\item{\code{always_valid}}{Should the svgfile be a valid svg file while it is being
+    \item{\code{always_valid}}{Should the svgfile be a valid svg file while it is being
 written to? Setting this to \code{TRUE} will incur a considerable performance
 hit (>50\% additional rendering time) so this should only be set to \code{TRUE}
 if the file is being parsed while it is still being written to.}
-\item{\code{file}}{Identical to \code{filename}. Provided for backward compatibility.}
-}}
+    \item{\code{file}}{Identical to \code{filename}. Provided for backward compatibility.}
+  }}
 }
 \value{
 the output is an sensible default object that can be displayed given

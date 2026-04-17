@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.OptBoolean;
 
+import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.abm.Calibration;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.OutbreakBaseline;
@@ -63,7 +64,7 @@ import io.github.ai4ci.util.Sampler;
 			name = "markov.modifier"
 	) }
 )
-public interface InHostConfiguration extends Serializable {
+public interface InHostConfiguration extends Serializable, Abstraction.Described {
 
 	/** logger for this class */
 	static Logger log = LoggerFactory.getLogger(InHostConfiguration.class);

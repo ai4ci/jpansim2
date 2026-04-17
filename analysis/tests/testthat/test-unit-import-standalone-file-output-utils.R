@@ -6,10 +6,12 @@ library(jpansim2analysis)
 # unit test start: .this_script ----
 
 test_that(".this_script unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .this_script
+  
 
   testthat::expect_no_error(withCallingHandlers(
     {
@@ -21,15 +23,11 @@ test_that(".this_script unit test", {
     }
   ))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(77, 1, 77 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(77, 1, 77+1, 1))
   )
 })
 
@@ -37,10 +35,12 @@ test_that(".this_script unit test", {
 # unit test start: .find_chrome ----
 
 test_that(".find_chrome unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .find_chrome
+  
 
   testthat::expect_no_error(withCallingHandlers(
     {
@@ -53,15 +53,11 @@ test_that(".find_chrome unit test", {
     }
   ))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(131, 1, 131 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(131, 1, 131+1, 1))
   )
 })
 
@@ -69,13 +65,15 @@ test_that(".find_chrome unit test", {
 # unit test start: .print_svg_with_chrome ----
 
 test_that(".print_svg_with_chrome unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .print_svg_with_chrome
+  
 
   tryCatch(.find_chrome(), error = function(e) testthat::skip())
-
+  
   plot <- ggplot2::ggplot(
     ggplot2::diamonds,
     ggplot2::aes(x = carat, y = price, color = color)
@@ -91,27 +89,23 @@ test_that(".print_svg_with_chrome unit test", {
     ggplot2::labs(tag = "A") +
     ggplot2::xlab("Carat\u2082") +
     ggplot2::ylab("price\u2265")
-
+  
   res <- plot %>% .gg_save_as(filename = tempfile(), formats = c("svg"))
-
+  
   # res_content = readr::read_file_raw(res$svg)
   # testthat::expect_equal(rlang::hash(res_content), "99e7c62601699705bbb13dacf621caca")
-
+  
   testthat::expect_no_error({
     .print_svg_with_chrome(res$svg)
   })
-
+  
   # exact binary copy may depend on versions of chrome etc:
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(195, 1, 195 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(195, 1, 195+1, 1))
   )
 })
 
@@ -119,18 +113,20 @@ test_that(".print_svg_with_chrome unit test", {
 # unit test start: .print_html_with_chrome ----
 
 test_that(".print_html_with_chrome unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .print_html_with_chrome
+  
 
   tryCatch(.find_chrome(), error = function(e) testthat::skip())
-
+  
   hux <- iris %>%
     huxtable::as_hux() %>%
     huxtable::theme_mondrian(font = "Roboto")
   html <- hux %>% huxtable::to_html()
-
+  
   testthat::expect_no_error({
     tmp <- .print_html_with_chrome(
       html,
@@ -139,20 +135,17 @@ test_that(".print_html_with_chrome unit test", {
     )
   })
   # browseURL(tmp)
-
+  
   # exact binary copy may depend on versions of chrome etc:
-
+  
+  
   # The resulting pdf has fonts embedded & is multipage.
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(294, 1, 294 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(294, 1, 294+1, 1))
   )
 })
 
@@ -160,10 +153,12 @@ test_that(".print_html_with_chrome unit test", {
 # unit test start: .convert_pdf_to_pngs ----
 
 test_that(".convert_pdf_to_pngs unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .convert_pdf_to_pngs
+  
 
   testthat::expect_no_error(withCallingHandlers(
     {
@@ -184,15 +179,11 @@ test_that(".convert_pdf_to_pngs unit test", {
     }
   ))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(386, 1, 386 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(386, 1, 386+1, 1))
   )
 })
 
@@ -200,22 +191,21 @@ test_that(".convert_pdf_to_pngs unit test", {
 # unit test start: .gg_save_as ----
 
 test_that(".gg_save_as unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .gg_save_as
+  
 
   testthat::expect_no_error(withCallingHandlers(
     {
       .gg_pedantic(fontSize = 6)
-      p <- ggplot2::ggplot(
-        mtcars,
-        ggplot2::aes(mpg, wt, colour = as.factor(cyl))
-      ) +
+      p <- ggplot2::ggplot(mtcars, ggplot2::aes(mpg, wt, colour = as.factor(cyl))) +
         ggplot2::geom_point()
       # p %>% .gg_save_as(filename="~/tmp/plot_example",maxWidth=4,maxHeight=4)
       p %>% .gg_save_as(filename = tempfile(), maxWidth = 2, maxHeight = 1.5)
-
+  
       plot <- ggplot2::ggplot(
         ggplot2::diamonds,
         ggplot2::aes(x = carat, y = price, color = color)
@@ -231,10 +221,9 @@ test_that(".gg_save_as unit test", {
         ggplot2::labs(tag = "A") +
         ggplot2::xlab("Carat\u2082") +
         ggplot2::ylab("price\u2265")
-
+  
       # plot %>% .gg_save_as(filename="~/tmp/plot_example_2")
-      res <- plot %>%
-        .gg_save_as(filename = tempfile(), formats = c("png", "eps"))
+      res <- plot %>% .gg_save_as(filename = tempfile(), formats = c("png", "eps"))
       as.character(res)
       res
     },
@@ -244,15 +233,11 @@ test_that(".gg_save_as unit test", {
     }
   ))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(542, 1, 542 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(542, 1, 542+1, 1))
   )
 })
 
@@ -260,10 +245,12 @@ test_that(".gg_save_as unit test", {
 # unit test start: .hux_save_as ----
 
 test_that(".hux_save_as unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .hux_save_as
+  
 
   testthat::expect_no_error(withCallingHandlers(
     {
@@ -272,7 +259,7 @@ test_that(".hux_save_as unit test", {
         huxtable::theme_mondrian(font = "Roboto")
       out <- .hux_save_as(hux, tempfile())
       # browseURL(out$html)
-
+  
       out2 <- .hux_save_as(hux, tempfile(), formats = c("pdf", "png"))
       as.character(out2)
       # The resulting pdf has fonts embedded & is multipage.
@@ -283,15 +270,11 @@ test_that(".hux_save_as unit test", {
     }
   ))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-file-output-utils.R"),
-      c(863, 1, 863 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(863, 1, 863+1, 1))
   )
 })
 

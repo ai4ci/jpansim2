@@ -3,11 +3,11 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<parent>
 		<groupId>io.github.ai4ci</groupId>
 		<artifactId>jpansim2-parent</artifactId>
-		<version>0.3.2</version>
+		<version>0.3.3</version>
 	</parent>
 
 	<artifactId>jpansim2-core</artifactId>
@@ -25,7 +25,7 @@
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
 		<org.immutables.version>2.12.1</org.immutables.version>
 		<org.apache.logging.log4j.version>2.25.3</org.apache.logging.log4j.version>
-		<com.fasterxml.jackson.version>2.17.0</com.fasterxml.jackson.version>
+		<com.fasterxml.jackson.version>2.21.0</com.fasterxml.jackson.version>
 		<version>${project.version}</version>
 	</properties>
 
@@ -183,12 +183,12 @@
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
-			<version>4.38.0</version>
+			<version>5.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>4.38.0</version>
+			<version>5.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ejml</groupId>
@@ -265,6 +265,28 @@
 					</execution>
 				</executions>
 			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.apache.maven.plugins</groupId>-->
+<!--				<artifactId>maven-shade-plugin</artifactId>-->
+<!--				<version>3.6.2</version>-->
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<phase>package</phase>-->
+<!--						<goals>-->
+<!--							<goal>shade</goal>-->
+<!--						</goals>-->
+<!--						<configuration>-->
+<!--							<minimizeJar>true</minimizeJar>-->
+<!--							<transformers>-->
+<!--								<transformer-->
+<!--									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
+<!--									<mainClass>io.github.ai4ci.JPanSim2</mainClass>-->
+<!--								</transformer>-->
+<!--							</transformers>-->
+<!--						</configuration>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
 			<plugin>
 				<groupId>com.github.davidmoten</groupId>
 				<artifactId>plantuml-maven-plugin</artifactId>
@@ -315,7 +337,8 @@
 							<classpathScope>compile</classpathScope>
 							<arguments>
 								<argument>io.github.ai4ci.config.refdata</argument>
-								<argument>${project.build.directory}/analysis/schemas.R</argument>
+								<argument>
+									${project.build.directory}/analysis/schemas.R</argument>
 							</arguments>
 						</configuration>
 					</execution>
@@ -406,7 +429,7 @@
 				<version>3.12.0</version>
 				<configuration>
 					<linksource>true</linksource>
-					
+
 					<sourceFileExcludes>
 						<sourceFileExclude>**/Immutable*.java</sourceFileExclude>
 						<sourceFileExclude>**/Modifiable*.java</sourceFileExclude>
@@ -418,24 +441,34 @@
 					</sourceFileExcludes>
 					<javadocDirectory>${project.build.directory}/reports/apidocs</javadocDirectory>
 					<doclet>nl.talsmasoftware.umldoclet.UMLDoclet</doclet>
-					<!-- https://github.com/talsma-ict/umldoclet/blob/develop-v1/docs/USAGE.md -->
+					<!--
+					https://github.com/talsma-ict/umldoclet/blob/develop-v1/docs/USAGE.md -->
 					<docletArtifact>
-						<groupId>com.github.terminological</groupId>
-	    				<artifactId>umldoclet</artifactId>
-	    				<version>jitpack-f389191ef6-1</version>
-						<!--<groupId>nl.talsmasoftware</groupId>-->
-						<!--<artifactId>umldoclet</artifactId>-->
-						<!--<version>2.2.5</version>-->
+						<!--						<groupId>com.github.terminological</groupId>-->
+						<!--	    				<artifactId>umldoclet</artifactId>-->
+						<!--	    				<version>jitpack-f389191ef6-1</version>-->
+						<groupId>nl.talsmasoftware</groupId>
+						<artifactId>umldoclet</artifactId>
+						<version>2.3.0</version>
 					</docletArtifact>
-					
+
 					<additionalOptions>
 						<additionalOption>--allow-script-in-comments</additionalOption>
-						<additionalOption>-header '&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
-						<additionalOption>-umlExcludedTypeReferences "java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
-						<additionalOption>-umlCustomDirective "left to right direction"</additionalOption>
-						<additionalOption>--uml-exclude-package-dependencies true</additionalOption>
-						<!--						<additionalOption>uml-exclude-package-diagram true</additionalOption>-->
-						<!--						<additionalOption>uml-exclude-class-diagrams true</additionalOption>-->
+						<additionalOption>
+							-header '&lt;script
+							type="text/javascript"
+							src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
+						<additionalOption>
+							-umlExcludedTypeReferences
+							"java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
+						<additionalOption>-umlCustomDirective "left to right
+							direction"</additionalOption>
+						<additionalOption>--uml-exclude-package-dependencies
+							true</additionalOption>
+						<!--						<additionalOption>uml-exclude-package-diagrams
+						true</additionalOption>-->
+						<!--						<additionalOption>uml-exclude-class-diagrams
+						true</additionalOption>-->
 					</additionalOptions>
 				</configuration>
 				<reportSets>
@@ -450,11 +483,11 @@
 			</plugin>
 		</plugins>
 	</reporting>
-	
+
 	<repositories>
 		<repository>
-		    <id>jitpack.io</id>
-		    <url>https://jitpack.io</url>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
 		</repository>
 	</repositories>
 

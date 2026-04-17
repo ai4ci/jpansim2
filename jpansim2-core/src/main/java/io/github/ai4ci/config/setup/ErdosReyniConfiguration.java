@@ -34,7 +34,11 @@ public interface ErdosReyniConfiguration extends NetworkConfiguration {
 	 * examples and tests that require a non‑trivial network.
 	 */
 	public static ImmutableErdosReyniConfiguration DEFAULT = ImmutableErdosReyniConfiguration
-			.builder().setNetworkSize(128 * 128).setNetworkDegree(100).build();
+			.builder()
+			.setDescription(
+				"A 128x128 Erdos-Reyni network with 100 contacts per node."
+			)
+			.setNetworkSize(128 * 128).setNetworkDegree(100).build();
 
 	/**
 	 * Populate the supplied social network graph using the stored parameters.

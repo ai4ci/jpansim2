@@ -39,6 +39,8 @@ import io.github.ai4ci.flow.SimulationMonitor;
  * <li><b>-c, --config &lt;config&gt;</b> — Path to the configuration JSON file.
  * By default the launcher looks for <code>config.json</code> in the output
  * directory.</li>
+ * <li><b>-g, --generate-config &lt;generate-config&gt;</b> — generates a default configuration</li>
+ * <li><b>-v, --validate-config &lt;validate-config&gt;</b> — parses a configuration file and displays a summary if successful</li>
  * </ul>
  *
  * Behaviour notes:
@@ -130,10 +132,21 @@ public class JPanSim2 {
 			.desc("The example configuration name to generate. One of: " + configs)
 			.required(false)
 			.build();
+		
+		var validateConfig = Option.builder("v")
+				.longOpt("validate-config")
+				.argName("validate-config")
+				.hasArg(false)
+				.desc("Parse the config file and make sure it is valid")
+				.required(false)
+				.build();
+		
+		var validate = false;
 
 		options.addOption(outputPath);
 		options.addOption(configPath);
 		options.addOption(generateConfigName);
+		options.addOption(validateConfig);
 		// define parser
 		CommandLine cmd;
 		CommandLineParser parser = new DefaultParser();
@@ -146,7 +159,7 @@ public class JPanSim2 {
 				var tmp = expand(cmd.getParsedOptionValue(outputPath));
 				dir = tmp;
 			}
-
+			
 			if (cmd.hasOption(generateConfigName)) {
 				var tmp = cmd.getParsedOptionValue(generateConfigName)
 					.toString();
@@ -165,6 +178,10 @@ public class JPanSim2 {
 				configFile = tmp;
 			} else {
 				configFile = dir.resolve("config.json");
+			}
+			
+			if (cmd.hasOption(validateConfig)) {
+				validate = true;
 			}
 
 		} catch (ParseException e) {
@@ -206,6 +223,28 @@ public class JPanSim2 {
 		}
 
 		var conf = ExperimentConfiguration.readConfig(configFile);
+		if (validate) {
+			System.out.println("================================");
+			System.out.println("Configuration file validated OK.");
+			var setup = conf.getSetup();
+			var expt = conf.getExecution();
+			System.out.println("================================");
+			System.out.println("Setup configurations:");
+			System.out.println("================================");
+			setup.stream().forEach(System.out::println);
+			System.out.println("Execution configurations:");
+			System.out.println("================================");
+			setup.stream().forEach(System.out::println);
+			System.out.println("================================");
+			System.out.println("SUMMARY:");
+			System.out.println("================================");
+			System.out.println("- Contains "+setup.size()+" setup configurations");
+			System.out.println("- Each setup contains "+expt.size()+" execution configurations");
+			System.out.println("Total simulations to run: "+setup.size()*expt.size());
+			System.out.println("================================");
+			System.out.println("SUCESS");
+			System.exit(0);
+		}
 
 		// Common SLURM options
 		SlurmAwareLogger.setupLogger(conf, dir, Level.INFO, Level.DEBUG);

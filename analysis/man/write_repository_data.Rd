@@ -16,27 +16,34 @@ if a set of dataframes, and the variable name will be used as the entity
 name}
 }
 \description{
+This function takes a set of R dataframes, writes them as CSV files, and
+generates a Java class containing @Import interfaces that correspond to the
+structure of the dataframes. The generated Java class will include methods
+for loading the data from the CSV files and defining the structure of the
+data as Java interfaces.
+}
+\details{
 The dataframes must have a column named \code{id} which is unique. References to
 other dataframe rows must be named \verb{<relationship>_<dataframe>} or just
 \verb{<dataframe>} where \verb{<dataframe>} is the name of the entity in a dataframe
 supplied to \code{...}, see examples.
 }
 \examples{
-library(tibble)
+
 # Example data
-country <- tibble::tibble(
+country <- dplyr::tibble(
   id = c("1", "2", "3"),
   country_name = c("France", "Germany", "Italy")
 )
 
-city <- tibble::tibble(
+city <- dplyr::tibble(
   id = c("101", "102", "103"),
   town_name = c("Paris", "Marseille", "Berlin"),
   country = c("1", "1", "2"),  # matches country$id
   capital = c(TRUE,FALSE,TRUE)
 )
 
-person <- tibble::tibble(
+person <- dplyr::tibble(
   id = c("1001", "1002","1003"),
   first_name = c("Alice", "Bob", "Sasha"),
   given_gender = factor(c("female","male","non binary")),
@@ -45,11 +52,14 @@ person <- tibble::tibble(
 )
 
 # Generate Java + CSV
-writeRepositoryData(
-  directory = "~/tmp/data/",
+write_repository_data(
+  directory = fs::path(tempdir(),"repo-test"),
   fqn = "com.example.model.RepositoryData",
   country,
   city,
   person
 )
+
+fs::dir_tree(fs::path(tempdir(),"repo-test"))
+
 }

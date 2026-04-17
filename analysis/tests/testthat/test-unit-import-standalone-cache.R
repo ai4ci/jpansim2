@@ -6,10 +6,12 @@ library(jpansim2analysis)
 # unit test start: .cached ----
 
 test_that(".cached unit test", {
+
   # Automatically generated test case from roxygen @unit tag
   # Do not edit here - follow the link to the source file.
   # or navigate to topic with <F2>
   F2 = .cached
+  
 
   # we use `rnorm` here to prove that the cache is working but in reality
   # you would normally only use something deterministic in `.expr`:
@@ -17,20 +19,16 @@ test_that(".cached unit test", {
   tmp <- .cached(stats::rnorm(x), x)
   tmp2 <- .cached(stats::rnorm(x), x)
   testthat::expect_equal(tmp, tmp2)
-
+  
   x <- 200
   tmp3 <- .cached(stats::rnorm(x), x)
   testthat::expect_equal(x, length(tmp3))
 
-  # generates a failure if the overall test is failing with a link to the
+  # generates a failure if the overall test is failing with a link to the 
   # source of the unit test:
-  testthat::expect(
-    rlang::caller_env(n = 2)$ok,
+  testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(
-      srcfile("../../R/import-standalone-cache.R"),
-      c(62, 1, 62 + 1, 1)
-    )
+    srcref = srcref(srcfile("../../R/import-standalone-cache.R"), c(62, 1, 62+1, 1))
   )
 })
 

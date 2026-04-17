@@ -43,6 +43,7 @@ try_mutate = function(df, ...) {
 #' urn_groups(urns)
 #'
 urn_groups = function(urns) {
+  if (is.null(urns)) return(NULL)
   unique(unlist(lapply(stringr::str_split(urns, ":"), function(x) {
     if (length(x) < 2) character() else x[c(TRUE, FALSE)]
   })))
@@ -72,7 +73,74 @@ split_urn = function(urns) {
     if (length(x) < 2) {
       return(NULL)
     }
-    names(values) = x[c(TRUE, FALSE)]
-    return(as_tibble(as.list(values)))
+    names(values) = sprintf("%sDimension",x[c(TRUE, FALSE)])
+    return(dplyr::as_tibble(as.list(values)))
   }))
+}
+
+
+
+
+#' Get preserved group characteristics
+#'
+#' @param grp_df a grouped data frame
+#' @param distinct defaults to `TRUE`, creates a unique row for every group.
+#'
+#' @returns a dataframe that contains the groups and other variables that do not 
+#'   vary within group
+#' @keywords internal
+#'
+#' @examples
+#' grp_df = ggplot2::diamonds %>% 
+#'   dplyr::mutate(idx = as.numeric(cut) * as.numeric(color), dup=1) %>% 
+#'   dplyr::group_by(cut, color) 
+#' grp_df %>% invariants()
+invariants = function(grp_df, distinct = TRUE) {
+  grps = grp_df %>% dplyr::group_vars()
+  cols = grp_df %>% 
+    dplyr::summarise(dplyr::across(dplyr::everything(), dplyr::n_distinct),.groups = "keep") %>%
+    dplyr::ungroup() %>%
+    dplyr::select(dplyr::where(~ is.numeric(.x) && all(.x == 1))) %>% 
+    colnames()
+  tmp = grp_df %>% dplyr::select(dplyr::all_of(c(grps,cols)))
+  if (distinct) tmp = tmp %>% dplyr::distinct()
+  return(tmp)
+}
+
+
+#' Get preserved group characteristics that define groups
+#'
+#' @param grp_df a grouped data frame
+#'
+#' @returns a dataframe that contains the groups and other variables that do not 
+#'   vary within group but do vary between groups.
+#' @keywords internal
+#'
+#' @examples
+#' grp_df = ggplot2::diamonds %>% 
+#'   dplyr::mutate(idx = as.numeric(cut) * as.numeric(color), dup=1) %>% 
+#'   dplyr::group_by(cut, color) 
+#' grp_df %>% group_deltas()
+group_deltas = function(grp_df) {
+  
+  grps = grp_df %>% dplyr::group_vars()
+  
+  .recurse_filt = function(tmp) {
+    for (nm in setdiff(colnames(tmp),grps)) {
+      if (is.data.frame(tmp[[nm]])) {
+        # handle nested data frames
+        tmp[[nm]] = .recurse_filt(tmp[[nm]])
+      } else {
+        if (length(unique(tmp[[nm]]))==1) tmp[[nm]]=NULL
+      }
+      # TODO: 
+    }
+    if (ncol(tmp) == 0) return(NULL)
+    return(tmp)
+  }
+  
+  return(grp_df %>% invariants() %>% dplyr::ungroup() %>% .recurse_filt())
+  
+  # grps = tmp %>% dplyr::group_vars()
+  # tmp %>% dplyr::ungroup() %>% dplyr::select(dplyr::where(~ length(unique(.x))>1))
 }

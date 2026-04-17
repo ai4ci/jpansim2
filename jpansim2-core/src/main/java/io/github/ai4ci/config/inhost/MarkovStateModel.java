@@ -49,6 +49,10 @@ public interface MarkovStateModel extends InHostConfiguration,
 	 */
 	public static ImmutableMarkovStateModel DEFAULT = ImmutableMarkovStateModel
 			.builder()
+			.setDescription(
+				"A SEIR like in host model with incubation period ~ 5 days, infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
+				"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
+			)
 			.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
 			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
 			.setInfectiousDuration(SimpleDistribution.logNorm(8D, 3D))

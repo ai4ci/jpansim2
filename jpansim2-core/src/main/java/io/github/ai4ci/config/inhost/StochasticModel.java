@@ -48,7 +48,11 @@ public interface StochasticModel extends InHostConfiguration {
 	 * {@link InHostStochasticState}.
 	 */
 	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel
-			.builder().setTargetCellCount(10000)
+			.builder()
+			.setDescription(
+				"A complex in host model with a target cell model with immunity, and virion components"
+			)
+			.setTargetCellCount(10000)
 			.setImmuneTargetRatio(SimpleDistribution.logNorm(1D, 0.1))
 			.setImmuneActivationRate(SimpleDistribution.logNorm(1D, 0.1))
 			.setImmuneWaningRate(SimpleDistribution.logNorm(1D / 150, 0.01))

@@ -47,7 +47,7 @@ GitHub Actions pages deployment
 
 - Checks out repository
 - Sets up Java and caches Maven dependencies.
-- Calls mvn `-B -DskipTests clean package site site:stage` from parent root with target
+- Calls `mvn -B -DskipTests clean package site site:stage` from parent root with target
 directory `target/staging`
 - Copies `target/staging`
 - JavaDoc generation is not aggregated but run in individual root packages. Have to

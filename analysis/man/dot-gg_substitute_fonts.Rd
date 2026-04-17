@@ -16,10 +16,13 @@ system (names are the requested font family)
 \description{
 Pick a locally installed font family that matches requested
 }
-\examples{
-try({
-.gg_substitute_fonts(c("Roboto","Arial","Kings","Unmatched"))
-})
-}
 \concept{ggplot}
 \keyword{internal}
+
+\section{Unit tests}{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{
+
+.gg_substitute_fonts(c("Roboto","Arial","Kings","Unmatched"))
+}\if{html}{\out{</div>}}
+}
+

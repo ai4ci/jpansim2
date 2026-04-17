@@ -5,7 +5,7 @@ import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
 import io.github.ai4ci.abm.behaviour.SmartAgentLFTTesting;
 import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
 import io.github.ai4ci.abm.behaviour.Symptomatic;
-import io.github.ai4ci.abm.behaviour.Test;
+import io.github.ai4ci.abm.behaviour.FixedBehaviour;
 import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.abm.policy.ReactiveLockdown;
 import io.github.ai4ci.abm.policy.Trigger.Value;
@@ -91,7 +91,7 @@ public enum Experiment {
 					"behaviour",
 					PartialExecutionConfiguration.builder()
 						.setName("ignore")
-						.setDefaultBehaviourModelName(Test.class.getSimpleName())
+						.setDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("smart-agent")
@@ -135,7 +135,7 @@ public enum Experiment {
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(Test.class.getSimpleName())
+						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
 						.withImportationProbability(0D) // .001D)
 //						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
 //						// .withInHostConfiguration(StochasticModel.DEFAULT)
@@ -164,20 +164,25 @@ public enum Experiment {
 	AGE_STRAT(
 			"age-stratification",
 			ExperimentConfiguration.DEFAULT
+				.withDescription("An uncontrolled outbreak with no controls, and fixed behaviour, in an age stratified population")
 				.withBatchConfig(
 					BatchConfiguration.DEFAULT.withSimulationDuration(200)
 						.withUrnBase("age-stratification")
 						.withExporters(Exporters.values())
+						.withDescription("Exports all available data")
 				)
 				.withSetupConfig(
 					SetupConfiguration.DEFAULT
 						.withDemographics(AgeStratifiedDemography.DEFAULT)
+						.withDescription()
 				)
 				.withSetupReplications(1)
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
+						.withDescription("A configuration with no behaviour or policy control.",
+							"Symptoms are completely sensitive and specific for disease.")
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(Test.class.getSimpleName())
+						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
 						.withImportationProbability(0D)
 						.withDemographicAdjustment(DemographicAdjustment.AGE_DEFAULT)
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
@@ -196,8 +201,12 @@ public enum Experiment {
 				)
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
+						.withDescription(
+							"A default phenomenomolgical in-host model with no behaviour or policy control.",
+							"Symptoms are completely sensitive and specific for disease."
+						)
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(Test.class.getSimpleName())
+						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
 						.withImportationProbability(0D)
 						.withSymptomSensitivity(SimpleDistribution.point(1D))
 						.withSymptomSpecificity(SimpleDistribution.point(1D))
@@ -205,14 +214,17 @@ public enum Experiment {
 				.withFacet(
 					"in-host-models",
 					PartialExecutionConfiguration.builder()
+						.setDescription("Uses a markov-state model for in host viral load")
 						.setName("markov")
 						.setInHostConfiguration(MarkovStateModel.DEFAULT)
 						.build(),
 					PartialExecutionConfiguration.builder()
+						.setDescription("Uses a phenomenological model for in host viral load")
 						.setName("phenomenological")
 						.setInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.build(),
 					PartialExecutionConfiguration.builder()
+						.setDescription("Uses a target cell model for in host viral load")
 						.setName("stochastic")
 						.setInHostConfiguration(StochasticModel.DEFAULT)
 						.build()
@@ -232,6 +244,7 @@ public enum Experiment {
 				)
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
+						.withDescription("A markov-state in-host, with agents who will seek tests based on symptoms.")
 						.withInHostConfiguration(MarkovStateModel.DEFAULT)
 						.withDefaultBehaviourModelName(
 							ReactiveTestAndIsolate.class.getSimpleName()
@@ -242,10 +255,12 @@ public enum Experiment {
 				.withFacet(
 					"trigger",
 					PartialExecutionConfiguration.builder()
+						.setDescription("A default policy with no controls")
 						.setName("none")
 						.setDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
+						.setDescription("Reactive lockdowns when screening tests have a 5% positivity")
 						.setName("5%-1%")
 						.setDefaultPolicyModelName(
 							ReactiveLockdown.class.getSimpleName()
@@ -257,6 +272,7 @@ public enum Experiment {
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("10%-2%")
+						.setDescription("Reactive lockdowns when screening tests have a 10% positivity")
 						.setDefaultPolicyModelName(
 							ReactiveLockdown.class.getSimpleName()
 						)
@@ -270,6 +286,7 @@ public enum Experiment {
 						.setDefaultPolicyModelName(
 							ReactiveLockdown.class.getSimpleName()
 						)
+						.setDescription("Reactive lockdowns when screening tests have a 15% positivity")
 						.setLockdownStartTrigger(0.15)
 						.setLockdownReleaseTrigger(0.03)
 						.setLockdownTriggerValue(Value.SCREENING_TEST_POSITIVITY)
@@ -280,24 +297,28 @@ public enum Experiment {
 					"isolation",
 					PartialExecutionConfiguration.builder()
 						.setName("none")
+						.setDescription("Lockdowns are completely ineffective")
 						.setMaximumSocialContactReduction(
 							SimpleDistribution.point(1.0)
 						)
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("mild")
+						.setDescription("Lockdowns reduce contacts by 25%")
 						.setMaximumSocialContactReduction(
 							SimpleDistribution.point(0.75)
 						)
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("moderate")
+						.setDescription("Lockdowns reduce contacts by 50%")
 						.setMaximumSocialContactReduction(
 							SimpleDistribution.point(0.5)
 						)
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("severe")
+						.setDescription("Lockdowns reduce contacts by 75%")
 						.setMaximumSocialContactReduction(
 							SimpleDistribution.point(0.25)
 						)
@@ -333,6 +354,7 @@ public enum Experiment {
 				)
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
+						.withDescription("A default phenomenomolgical in-host model with no behaviour or policy control.")
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.withDefaultBehaviourModelName(
 							NonCompliant.class.getSimpleName()
@@ -345,14 +367,17 @@ public enum Experiment {
 				.withFacet(
 					"R",
 					PartialExecutionConfiguration.builder()
+						.setDescription("R0 is calibrated around 1.")
 						.setName("1.0")
 						.setR0(1D)
 						.build(),
 					PartialExecutionConfiguration.builder()
+						.setDescription("R0 is calibrated around 2.")
 						.setName("2.0")
 						.setR0(2D)
 						.build(),
 					PartialExecutionConfiguration.builder()
+						.setDescription("R0 is calibrated around 3.")
 						.setName("3.0")
 						.setR0(3D)
 						.build()
@@ -378,6 +403,7 @@ public enum Experiment {
 				)
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
+						.withDescription("A default phenomenomolgical in-host model with no behaviour or policy control and R0 of 2.5.")
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.withDefaultBehaviourModelName(
 							NonCompliant.class.getSimpleName()

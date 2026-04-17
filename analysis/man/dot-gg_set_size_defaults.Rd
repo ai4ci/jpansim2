@@ -27,8 +27,13 @@ nothing
 Set the default sizes of lines, points and fonts in ggplot geoms, and text labels in ggplot axes
 to get a single consistent look and feel.
 }
-\examples{
-gg_set_size_defaults(lineSize = 0.25)
-}
 \concept{ggplot}
 \keyword{internal}
+
+\section{Unit tests}{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{
+
+.gg_set_size_defaults(lineSize = 0.25)
+}\if{html}{\out{</div>}}
+}
+

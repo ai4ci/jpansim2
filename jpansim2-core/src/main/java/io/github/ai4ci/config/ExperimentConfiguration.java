@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 
+import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.config.execution.ImmutableExecutionConfiguration;
 import io.github.ai4ci.config.setup.ImmutableSetupConfiguration;
@@ -92,7 +93,7 @@ import io.github.ai4ci.util.ReflectionUtils;
 @Value.Modifiable
 @JsonSerialize(as = ImmutableExperimentConfiguration.class)
 @JsonDeserialize(as = ImmutableExperimentConfiguration.class)
-public interface ExperimentConfiguration {
+public interface ExperimentConfiguration extends Abstraction.Described {
 
 	/**
 	 * Default immutable configuration instance used when no other configuration
@@ -130,7 +131,8 @@ public interface ExperimentConfiguration {
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.enable(JsonParser.Feature.ALLOW_COMMENTS);
 		om.registerModules(new GuavaModule());
-		om.setSerializationInclusion(Include.NON_NULL);
+		om.setDefaultPropertyInclusion(Include.NON_NULL);
+		// om.setSerializationInclusion(Include.NON_NULL);
 		var rt = (ExperimentConfiguration) om
 			.readerFor(ExperimentConfiguration.class)
 			.readValue(file.toFile());
@@ -507,7 +509,8 @@ public interface ExperimentConfiguration {
 		var om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.registerModules(new GuavaModule());
-		om.setSerializationInclusion(Include.NON_NULL);
+		om.setDefaultPropertyInclusion(Include.NON_NULL);
+		// om.setSerializationInclusion(Include.NON_NULL);
 		if (!directoryOrFile.toString()
 			.endsWith(".json")) {
 			directoryOrFile = directoryOrFile.resolve("config.json");

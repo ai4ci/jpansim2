@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Base interface defining abstraction layers for modeling different levels of
@@ -132,6 +133,20 @@ public interface Abstraction {
 
 	}
 
+	/**
+	 * Interface for objects that have optional description(s)
+	 */
+	public interface Described {
+		/**
+		 * The descriptions of this object, used for annotations.
+		 *
+		 * @return the list of descriptive text.
+		 */
+		@Value.Default
+		@JsonInclude(JsonInclude.Include.NON_EMPTY)
+		default String[] getDescription() {return new String[] {};}
+	}
+	
 	/**
 	 * Interface for objects that have a name identifier.
 	 */

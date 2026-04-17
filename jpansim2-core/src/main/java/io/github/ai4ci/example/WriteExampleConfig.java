@@ -17,8 +17,10 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 
 import io.github.ai4ci.config.ImmutableExperimentConfiguration;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * A small utility to write example configuration files for all experiments and
@@ -47,7 +49,7 @@ public class WriteExampleConfig {
 
 		Path d;
 		if (args.length == 0) {
-			d = Path.of(System.getProperty("user.dir"))
+			d = Path.of(System.getProperty("user.home"))
 				.resolve("tmp/test");
 		} else {
 			d = Path.of(args[0])
@@ -92,7 +94,10 @@ public class WriteExampleConfig {
 			});
 
 		var objectMapper = new ObjectMapper();
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		objectMapper.enable(
+			SerializationFeature.INDENT_OUTPUT
+		);
+		
 
 //		SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
 //		try {
@@ -106,10 +111,12 @@ public class WriteExampleConfig {
 //		 }
 
 		{
-			var module = new JacksonModule(
-					JacksonOption.ALWAYS_REF_SUBTYPES,
-					JacksonOption.INCLUDE_ONLY_JSONPROPERTY_ANNOTATED_METHODS
+			var module = new JacksonSchemaModule(
+					JacksonOption.ALWAYS_REF_SUBTYPES //,
+					// JacksonOption.INCLUDE_ONLY_JSONPROPERTY_ANNOTATED_METHODS
 			);
+			
+			
 
 			var configBuilder = new SchemaGeneratorConfigBuilder(
 					// SchemaVersion.DRAFT_7,
@@ -118,18 +125,19 @@ public class WriteExampleConfig {
 				Option.SCHEMA_VERSION_INDICATOR,
 				Option.DEFINITIONS_FOR_ALL_OBJECTS,
 				Option.DEFINITIONS_FOR_MEMBER_SUPERTYPES,
-				Option.DEFINITION_FOR_MAIN_SCHEMA
+				Option.DEFINITION_FOR_MAIN_SCHEMA,
+				Option.STRICT_TYPE_INFO,
+				Option.EXTRA_OPEN_API_FORMAT_VALUES
 			)
 				.with(module);
 			var config = configBuilder.build();
 			var generator = new SchemaGenerator(config);
-			JsonNode jsonSchema = generator
+			ObjectNode jsonSchema = generator
 				.generateSchema(ImmutableExperimentConfiguration.class);
 			try {
-				objectMapper.writeValue(
-					d.resolve("schema.json")
-						.toFile(),
-					jsonSchema
+				Files.write(
+					d.resolve("schema.json"),
+					jsonSchema.toPrettyString().getBytes()
 				);
 			} catch (Exception e) {
 				throw new RuntimeException(e);

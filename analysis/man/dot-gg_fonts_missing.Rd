@@ -15,11 +15,14 @@
 \description{
 Check if any fonts listed are missing
 }
-\examples{
-try({
-  .gg_fonts_missing("Arial")
-  .gg_fonts_missing(c("Roboto","Kings","ASDASDAS"))
-})
-}
 \concept{ggplot}
 \keyword{internal}
+
+\section{Unit tests}{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{
+
+.gg_fonts_missing("Arial")
+.gg_fonts_missing(c("Roboto","Kings","ASDASDAS"))
+}\if{html}{\out{</div>}}
+}
+

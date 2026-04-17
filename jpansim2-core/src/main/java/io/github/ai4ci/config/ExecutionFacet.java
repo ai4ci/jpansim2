@@ -32,7 +32,7 @@ import io.github.ai4ci.abm.Abstraction;
 @Value.Immutable
 @JsonSerialize(as = ImmutableExecutionFacet.class)
 @JsonDeserialize(as = ImmutableExecutionFacet.class)
-public interface ExecutionFacet extends Abstraction.Named {
+public interface ExecutionFacet extends Abstraction.Named, Abstraction.Described {
 	/**
 	 * Gets the list of modifications to apply to the execution configuration.
 	 * These modifications are used to customise the execution parameters for

@@ -1,5 +1,6 @@
 package io.github.ai4ci.util;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -8,7 +9,9 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.immutables.datatype.Datatype;
 
@@ -277,6 +280,9 @@ public class ReflectionUtils {
 
 							tmp.addAll((Collection<Object>) value1.get());
 							m.invoke(builder, tmp);
+						} else if (value1.get().getClass().isArray()) {
+							Optional<?> baseValue = get(base, m.getName());
+							m.invoke(builder, new Object[] {merge(baseValue.get(), value1.get())});
 						} else {
 							m.invoke(builder, value1.get());
 						}
@@ -296,6 +302,21 @@ public class ReflectionUtils {
 
 	}
 
+	@SuppressWarnings("unchecked")
+	private static <X> X[] merge(Object a_in, Object b_in) {
+		X[] a = (X[]) a_in;
+		X[] b = (X[]) b_in;
+		Class<X> type = (Class<X>) a.getClass().getComponentType();
+		X[] out = (X[]) Array.newInstance(type, a.length+b.length);
+		for (int i=0;i<a.length;i++) {
+			out[i] = a[i];
+		}
+		for (int i=0;i<b.length;i++) {
+			out[i+a.length] = b[i];
+		}
+		return out;
+	}
+	
 	/**
 	 * Apply demographic adjustments to a configuration object. This is similar
 	 * to merge but instead of replacing values with the modifier's values, it

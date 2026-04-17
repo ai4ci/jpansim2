@@ -42,7 +42,9 @@ public interface UnstratifiedDemography extends DemographicConfiguration {
 	 * A sensible default instance for tests and examples.
 	 */
 	ImmutableUnstratifiedDemography DEFAULT = ImmutableUnstratifiedDemography
-			.builder().build();
+			.builder()
+			.setDescription("This has a uniform distribution for the relationship strength between 2 people")
+			.build();
 
 	/**
 	 * Create a minimal person stub attached to the supplied outbreak.

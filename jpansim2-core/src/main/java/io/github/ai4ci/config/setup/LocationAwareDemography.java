@@ -44,7 +44,9 @@ public interface LocationAwareDemography extends DemographicConfiguration {
 	 * examples and tests.
 	 */
 	public static ImmutableLocationAwareDemography DEFAULT = ImmutableLocationAwareDemography
-			.builder().setContactProximityBias(2.0).build();
+			.builder()
+			.setDescription("An increased association between contact strength and proximity (OR=2).")
+			.setContactProximityBias(2.0).build();
 
 	/**
 	 * Create a minimal person stub attached to the supplied outbreak.

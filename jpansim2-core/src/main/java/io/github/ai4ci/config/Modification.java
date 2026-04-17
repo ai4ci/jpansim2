@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+import io.github.ai4ci.abm.Abstraction;
+
 /**
  * Interface for defining modifications to model configurations and parameters.
  *
@@ -25,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 			@Type(PartialMarkovStateModel.class),
 			@Type(PartialSetupConfiguration.class) }
 )
-public interface Modification<X> {
+public interface Modification<X> extends Abstraction.Described {
 	/**
 	 * Returns the modified object instance itself.
 	 *

@@ -54,6 +54,9 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	 */
 	public static ImmutableAgeStratifiedDemography DEFAULT = ImmutableAgeStratifiedDemography
 			.builder()
+			.setDescription(
+				"A test empirical demographic distribution and function for the odds of contact by age difference"
+			)
 			.setAgeDistribution(
 					ImmutableEmpiricalDistribution.builder().setMinimum(0)
 							.setMaximum(120).setX(18, 45, 65, 85)

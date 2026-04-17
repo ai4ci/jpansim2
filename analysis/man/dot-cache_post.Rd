@@ -22,15 +22,13 @@
 \item{as}{how the response is delivered?}
 
 \item{...}{
-  Named arguments passed on to \code{\link[httr:POST]{httr::POST}}\describe{
+  Arguments passed on to \code{\link[httr:POST]{httr::POST}}
+  \describe{
     \item{\code{config}}{Additional configuration settings such as http
 authentication (\code{\link[httr:authenticate]{authenticate()}}), additional headers
 (\code{\link[httr:add_headers]{add_headers()}}), cookies (\code{\link[httr:set_cookies]{set_cookies()}}) etc.
 See \code{\link[httr:config]{config()}} for full details and list of helpers.}
-\item{\code{...}}{Further named parameters, such as \code{query}, \code{path}, etc,
-passed on to \code{\link[httr:modify_url]{modify_url()}}. Unnamed parameters will be combined
-with \code{\link[httr:config]{config()}}.}
-\item{\code{encode}}{If the body is a named list, how should it be encoded? Can be
+    \item{\code{encode}}{If the body is a named list, how should it be encoded? Can be
 one of form (application/x-www-form-urlencoded), multipart,
 (multipart/form-data), or json (application/json).
 
@@ -41,14 +39,14 @@ parameters are automatically "unboxed" (i.e. length 1 vectors are
 converted to scalars). To preserve a length 1 vector as a vector,
 wrap in \code{I()}. For "raw", either a character or raw vector. You'll
 need to make sure to set the \code{\link[httr:content_type]{content_type()}} yourself.}
-\item{\code{handle}}{The handle to use with this request. If not
+    \item{\code{handle}}{The handle to use with this request. If not
 supplied, will be retrieved and reused from the \code{\link[httr:handle_pool]{handle_pool()}}
 based on the scheme, hostname and port of the url. By default \pkg{httr}
 requests to the same scheme/host/port combo. This substantially reduces
 connection time, and ensures that cookies are maintained over multiple
 requests to the same host. See \code{\link[httr:handle_pool]{handle_pool()}} for more
 details.}
-}}
+  }}
 
 \item{.nocache}{an option to defeat the cacheing which can be set globally as
 \code{options("cache.disable"=TRUE)}}

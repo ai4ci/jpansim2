@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.abm.Person;
 
 /**
@@ -43,7 +44,7 @@ import io.github.ai4ci.abm.Person;
 			name = "barabasi-albert"
 	) }
 )
-public interface NetworkConfiguration extends Serializable {
+public interface NetworkConfiguration extends Serializable, Abstraction.Described {
 
 	/**
 	 * Generate a social network graph according to the concrete configuration

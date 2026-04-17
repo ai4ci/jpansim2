@@ -38,7 +38,11 @@ import io.github.ai4ci.abm.Person;
 public interface WattsStrogatzConfiguration extends NetworkConfiguration {
 
 	ImmutableWattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration
-			.builder().setNetworkSize(128 * 128).setNetworkDegree(100)
+			.builder()
+			.setDescription(
+				"A 128x128 Watts-Strogatz network with 100 contacts per node where 15% of the nodes are reassigned."
+			)
+			.setNetworkSize(128 * 128).setNetworkDegree(100)
 			.setNetworkRandomness(0.15).build();
 
 	/**

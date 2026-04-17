@@ -74,7 +74,7 @@ import io.github.ai4ci.util.ShallowList;
 @JsonSerialize(as = ImmutableExecutionConfiguration.class)
 @JsonDeserialize(as = ImmutableExecutionConfiguration.class)
 public interface ExecutionConfiguration
-		extends Abstraction.Named, Abstraction.Replica, Serializable,
+		extends Abstraction.Named, Abstraction.Described, Abstraction.Replica, Serializable,
 		DemographicAdjustment.Execution<Distribution, Double> {
 
 	/**
@@ -109,7 +109,8 @@ public interface ExecutionConfiguration
 	 * </ul>
 	 */
 	public static ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration
-			.builder().setName("execution").setR0(1.75)
+			.builder()
+			.setName("execution").setR0(1.75)
 			.setAsymptomaticFraction(0.5).setCaseHospitalisationRate(0.05)
 			.setCaseFatalityRate(0.01)
 

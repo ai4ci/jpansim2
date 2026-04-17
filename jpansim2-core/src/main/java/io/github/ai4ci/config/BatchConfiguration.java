@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import io.github.ai4ci.abm.Abstraction;
+
 /**
  * Configuration for running a set of experiments as a batch job. This auto
  * detects if the job is running in the context of a SLURM multi-node batch job
@@ -18,7 +20,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableBatchConfiguration.class)
 @JsonDeserialize(as = ImmutableBatchConfiguration.class)
-public interface BatchConfiguration {
+public interface BatchConfiguration extends Abstraction.Described {
 
 	/**
 	 * A sensible default batch configuration used in examples and tests.
@@ -31,7 +33,9 @@ public interface BatchConfiguration {
 	 * @see io.github.ai4ci.example.Experiment
 	 */
 	public static ImmutableBatchConfiguration DEFAULT = ImmutableBatchConfiguration
-			.builder().setSimulationDuration(200).setUrnBase("default")
+			.builder()
+			.setSimulationDuration(200)
+			.setUrnBase("default")
 			.setExporters(
 					Exporters.DEMOGRAPHICS, Exporters.SUMMARY,
 					Exporters.INFECTIVITY_PROFILE, Exporters.FINAL_STATE,

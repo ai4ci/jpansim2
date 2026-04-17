@@ -51,4 +51,7 @@ Imports:
     systemfonts,
     testthat,
     tibble,
-    utils
+    tidyr,
+    utils,
+    duckdb,
+    ggnewscale

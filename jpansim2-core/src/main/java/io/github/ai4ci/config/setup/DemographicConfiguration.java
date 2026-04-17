@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.OptBoolean;
 
+import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.abm.ModifiablePerson;
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.Person;
@@ -56,7 +57,7 @@ import io.github.ai4ci.util.Sampler;
 			name = "location-aware"
 	) }
 )
-public interface DemographicConfiguration extends Serializable {
+public interface DemographicConfiguration extends Serializable, Abstraction.Described {
 
 	/**
 	 * Create a modifiable person stub attached to the supplied outbreak.

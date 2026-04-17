@@ -61,11 +61,15 @@ public interface PhenomenologicalModel extends InHostConfiguration,
 	 */
 	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel
 			.builder()
+			.setDescription(
+				"A phenomenological in host model with incubation period ~ 5 days, peak infectivity 2 days later and infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
+				"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
+			)
 
 			// .setSymptomCutoff(0.5)
 			.setInfectiousnessCutoff(0.2)
 
-			.setIncubationPeriod(SimpleDistribution.logNorm(4D, 2D))
+			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
 			.setApproxPeakViralLoad(SimpleDistribution.unimodalBeta(0.5, 0.1))
 			.setIncubationToPeakViralLoadDelay(SimpleDistribution.logNorm(2D, 1D))
 			.setPeakToRecoveryDelay(SimpleDistribution.logNorm(6D, 3D))

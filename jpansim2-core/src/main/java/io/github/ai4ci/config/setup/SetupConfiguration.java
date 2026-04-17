@@ -43,7 +43,7 @@ import io.github.ai4ci.abm.Abstraction;
 @JsonSerialize(as = ImmutableSetupConfiguration.class)
 @JsonDeserialize(as = ImmutableSetupConfiguration.class)
 public interface SetupConfiguration
-		extends Abstraction.Named, Abstraction.Replica, Serializable {
+		extends Abstraction.Named, Abstraction.Described, Abstraction.Replica, Serializable {
 
 	/**
 	 * Default setup configuration used in examples and tests.

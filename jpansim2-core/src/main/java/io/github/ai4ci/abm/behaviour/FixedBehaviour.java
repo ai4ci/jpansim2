@@ -12,16 +12,16 @@ import io.github.ai4ci.util.Sampler;
  *
  * @author Rob Challen
  */
-public enum Test implements BehaviourModel, DefaultNoTesting {
+public enum FixedBehaviour implements BehaviourModel, DefaultNoTesting {
 
 	/** A test behaviour model that does nothing. */
-	NONE {
+	DO_NOTHING {
 		@Override
 		public State.BehaviourState nextState(
 				ImmutablePersonState.Builder builder, PersonState person,
 				StateMachineContext context, Sampler rng
 		) {
-			return Test.NONE;
+			return FixedBehaviour.DO_NOTHING;
 		}
 	};
 

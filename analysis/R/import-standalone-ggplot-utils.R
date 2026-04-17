@@ -577,7 +577,7 @@
 #'  scale_y_percent()
 .gg_scale_y_percent = function(..., sf = 2) {
   return(ggplot2::scale_y_continuous(
-    labels = ~ sprintf("%.*g%%", sf, .x * 100),
+    labels = ~ paste0(format(.x * 100, digits=sf, scientific=FALSE),"%"),
     ...
   ))
 }
@@ -592,7 +592,7 @@
 #' @concept ggplot
 .gg_scale_x_percent = function(..., sf = 2) {
   return(ggplot2::scale_y_continuous(
-    labels = ~ sprintf("%.*g%%", sf, .x * 100),
+    labels = ~ paste0(format(.x * 100, digits=sf, scientific=FALSE),"%"),
     ...
   ))
 }

@@ -40,7 +40,11 @@ public interface BarabasiAlbertConfiguration extends NetworkConfiguration {
 	 * @see io.github.ai4ci.config.setup.SetupConfiguration#DEFAULT
 	 */
 	ImmutableBarabasiAlbertConfiguration DEFAULT = ImmutableBarabasiAlbertConfiguration
-			.builder().setNetworkSize(128 * 128).setNetworkDegree(100).build();
+			.builder()
+			.setDescription(
+				"A 128x128 Barbasi Albert network with on average 100 contacts per node."
+			)
+			.setNetworkSize(128 * 128).setNetworkDegree(100).build();
 
 	// Integer getMinimumDegree();
 	// Integer getMParameter();

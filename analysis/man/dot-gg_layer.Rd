@@ -26,7 +26,7 @@ these are checked for their relevance to the \code{geom} before being passed on}
 
 \item{.default}{a list containing default aesthetics e.g.
 \code{list(colour='blue')} that can be overridden by the user if they supply a
-\code{...} or \code{mapping} aesthethic that overrides.}
+\code{...} or \code{mapping} aesthetic that overrides.}
 
 \item{.switch_fill}{do you want to use the colour aesthetic for fill for this
 layer. Most commonly I want to do this with ribbons.}
@@ -43,22 +43,29 @@ you to pass on data, augment a aesthetic mapping, and pass on other styling
 to a set of layers filtering them so they are relevant to the geom. I almost
 never want \code{inherit.aes} to be true.
 }
-\examples{
+\keyword{internal}
+
+\section{Unit tests}{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{
+
 # top level function contains `...` and `mapping` extensions points:
 myPlot = function(data, formula, ..., mapping = .gg_check_for_aes(...)) {
-    xCol = rlang::f_lhs(formula)
-    yCol = rlang::f_rhs(formula)
-    ggplot(data)+
-    .gg_layer(
-      ggplot2::GeomPoint,
-      data = data,
-      mapping=ggplot2::aes(x=!!xCol, y=!!yCol, !!!mapping),
-      ...,
-      .default = list(size=10)
-     )
+xCol = rlang::as_quosure(rlang::f_lhs(formula), env = rlang::caller_env())
+yCol = rlang::as_quosure(rlang::f_rhs(formula), env = rlang::caller_env())
+ggplot2::ggplot(data) +
+  .gg_layer(
+    ggplot2::GeomPoint,
+    data = data,
+    mapping = ggplot2::aes(x = !!xCol, y = !!yCol, !!!mapping),
+    ...,
+    .default = list(size = 10)
+  )
 }
-myPlot(iris, Sepal.Length~Sepal.Width, mapping=aes(colour=Species))
-myPlot(iris, Sepal.Length~Petal.Length, mapping=aes(colour=Species), shape="+", size=5)
-myPlot(mtcars, mpg~wt, mapping=aes(colour=as.factor(cyl), size=hp))
+myPlot(iris, Sepal.Length~Sepal.Width, mapping=ggplot2::aes(colour=Species))
+myPlot(iris, Sepal.Length~Petal.Length, mapping=ggplot2::aes(colour=Species), shape="+", size=5)
+myPlot(mtcars, mpg~wt, mapping=ggplot2::aes(colour=as.factor(cyl), size=hp))
+# check we made it this far without calling expect_no_errors
+testthat::expect_equal(1,1)
+}\if{html}{\out{</div>}}
 }
-\keyword{internal}
+
