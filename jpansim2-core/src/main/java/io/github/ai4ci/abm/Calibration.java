@@ -336,7 +336,9 @@ public class Calibration {
 	 */
 	public static double averageContactDegree(Outbreak o) {
 		var nodeDegree = networkDegreePerPerson(o);
-		return DoubleStream.of(nodeDegree).average().orElse(0);
+		return DoubleStream.of(nodeDegree)
+			.average()
+			.orElse(0);
 	}
 
 	/**
@@ -349,16 +351,21 @@ public class Calibration {
 	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 
 		var social = outbreak.getSocialNetwork();
-		var totalContactProbability = social.parallelStream().mapToDouble(r -> {
-			Person person1 = r.getSource(outbreak);
-			Person person2 = r.getTarget(outbreak);
-			return r.contactProbability(
-					person1.getBaseline().getMobilityBaseline(),
-					person2.getBaseline().getMobilityBaseline()
-			);
-		}).sum();
+		var totalContactProbability = social.parallelStream()
+			.mapToDouble(r -> {
+				var person1 = r.getSource(outbreak);
+				var person2 = r.getTarget(outbreak);
+				return r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
+			})
+			.sum();
 		// Each contact involves 2 people so we have to count them twice
-		return totalContactProbability * 2 / outbreak.getPeople().size();
+		return totalContactProbability * 2 / outbreak.getPeople()
+			.size();
 
 	}
 
@@ -377,34 +384,45 @@ public class Calibration {
 			Outbreak outbreak, double[][] dd, double parameter
 	) {
 
-		return outbreak.getSocialNetwork().parallelStream().mapToDouble(r -> {
-			var person1 = r.getSource(outbreak);
-			var person2 = r.getTarget(outbreak);
-			// Per day probability of contact between two people (baseline) on any
-			// day
-			// This is equivalent to what happens in {@link Contact#contactNetwork}
-			var pContact = r.contactProbability(
-					person1.getBaseline().getMobilityBaseline(),
-					person2.getBaseline().getMobilityBaseline()
-			);
+		return outbreak.getSocialNetwork()
+			.parallelStream()
+			.mapToDouble(r -> {
+				var person1 = r.getSource(outbreak);
+				var person2 = r.getTarget(outbreak);
+				// Per day probability of contact between two people (baseline) on
+				// any
+				// day
+				// This is equivalent to what happens in {@link
+				// Contact#contactNetwork}
+				var pContact = r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
 
-			var meanPAnyExposure = Arrays.stream(dd).parallel()
+				var meanPAnyExposure = Arrays.stream(dd)
+					.parallel()
 					.mapToDouble(
-							profile -> pAnyExposure(pContact, profile, parameter)
-					).average().orElse(0);
+						profile -> pAnyExposure(pContact, profile, parameter)
+					)
+					.average()
+					.orElse(0);
 
-			// This is the probability that an exposure passes over a
-			// single edge in the social network graph (assuming that
-			// one end of the edge is infected) it takes into account
-			// the probability of contact and the delay in transmission
-			// due to the in host (i.e. it is aggregated in time - like R0)
-			return meanPAnyExposure;
+				// This is the probability that an exposure passes over a
+				// single edge in the social network graph (assuming that
+				// one end of the edge is infected) it takes into account
+				// the probability of contact and the delay in transmission
+				// due to the in host (i.e. it is aggregated in time - like R0)
+				return meanPAnyExposure;
 
-		})
-				.map(
-						d -> d * outbreak.getSocialNetwork().size() * 2
-								/ outbreak.getPopulationSize()
-				).average().getAsDouble();
+			})
+			.map(
+				d -> d * outbreak.getSocialNetwork()
+					.size() * 2 / outbreak.getPopulationSize()
+			)
+			.average()
+			.getAsDouble();
 		// So here we need to look at spread of distribution in a way
 		// that is deterministic.
 
@@ -440,8 +458,11 @@ public class Calibration {
 	) {
 
 		var dist = InHostConfiguration.getPeakSeverity(
-				outbreak.getExecutionConfiguration().getInHostConfiguration(),
-				outbreak.getExecutionConfiguration(), 1000, 50
+			outbreak.getExecutionConfiguration()
+				.getInHostConfiguration(),
+			outbreak.getExecutionConfiguration(),
+			1000,
+			50
 		);
 		// N.B. only interested in the in host peak hence we can use a shorter
 		// duration.
@@ -476,12 +497,25 @@ public class Calibration {
 	public static double inferViralLoadTransmissionParameter(
 			Outbreak outbreak, double R0
 	) {
-
 		// So we need to forward simulate the number of exposures given viral load
-		// for
-		// every potential contact in the outbreak
-		var dd = outbreak.getExecutionConfiguration().getViralLoadProfile();
-		return inferViralLoadTransmissionParameter(outbreak, dd, R0);
+		// for every potential contact in the outbreak
+		double parameter;
+		try {
+			parameter = Calibration.inferViralLoadTransmissionParameterQuick(
+				outbreak,
+				outbreak.getExecutionConfiguration()
+					.getViralLoadProfile(),
+				R0
+			);
+		} catch (Exception e) {
+			parameter = Calibration.inferViralLoadTransmissionParameter(
+				outbreak,
+				outbreak.getExecutionConfiguration()
+					.getViralLoadProfile(),
+				R0
+			);
+		}
+		return parameter;
 	}
 
 	/**
@@ -494,30 +528,35 @@ public class Calibration {
 	 * @param R0       the target basic reproduction number to match
 	 * @return the inferred transmission parameter
 	 */
-	public static double inferViralLoadTransmissionParameter(
+	protected static double inferViralLoadTransmissionParameter(
 			Outbreak outbreak, double[][] dd, double R0
 	) {
 		var solver = new BrentSolver(0.001);
 		var adjR0 = adjustR0(outbreak, R0);
-		UnivariateFunction fnR0 = (toInfer) -> {
-			return expectedExposuresPerInfection(outbreak, dd, toInfer) - adjR0;
-		};
+		UnivariateFunction fnR0 = toInfer -> (expectedExposuresPerInfection(
+			outbreak,
+			dd,
+			toInfer
+		) - adjR0);
 
 		log.info(
-				"Max R0 for this network is: " + expectedExposuresPerInfection(
-						outbreak, dd, Double.POSITIVE_INFINITY
-				)
+			"Max R0 for this network is: " + expectedExposuresPerInfection(
+				outbreak,
+				dd,
+				Double.POSITIVE_INFINITY
+			)
 		);
 
 		try {
 			var inferred = solver.solve(10000, fnR0, 0, 1);
 			log.info(
-					"P(transmission|infectious contact with viral load 1.5): {}, for RO: {} (adjusted for network: {})",
-					String.format(
-							"%1.4f",
-							OutbreakBaseline
-									.transmissibilityFromViralLoad(1.5, inferred)
-					), R0, adjR0
+				"P(transmission|infectious contact with viral load 1.5): {}, for RO: {} (adjusted for network: {})",
+				String.format(
+					"%1.4f",
+					OutbreakBaseline.transmissibilityFromViralLoad(1.5, inferred)
+				),
+				R0,
+				adjR0
 			);
 			return inferred;
 		} catch (NoBracketingException e) {
@@ -554,42 +593,51 @@ public class Calibration {
 	 * @throws RuntimeException if no solution is found within the valid
 	 *                          parameter range [0, 0.1]
 	 */
-	public static double inferViralLoadTransmissionParameterQuick(
-			Outbreak outbreak, double R0
+	protected static double inferViralLoadTransmissionParameterQuick(
+			Outbreak outbreak, double[][] viralLoadProfile, double R0
 	) {
-		var viralLoadProfile = outbreak.getExecutionConfiguration()
-				.getViralLoadProfile();
-		var contactProbability = outbreak.getSocialNetwork().parallelStream()
-				.mapToDouble(r -> {
-					Person person1 = r.getSource(outbreak);
-					Person person2 = r.getTarget(outbreak);
-					// Per day probability of contact between two people (baseline)
-					// on any day
-					// This is equivalent to what happens in {@link
-					// Contact#contactNetwork}
-					return r.contactProbability(
-							person1.getBaseline().getMobilityBaseline(),
-							person2.getBaseline().getMobilityBaseline()
-					);
-				}).toArray();
+		var contactProbability = outbreak.getSocialNetwork()
+			.parallelStream()
+			.mapToDouble(r -> {
+				var person1 = r.getSource(outbreak);
+				var person2 = r.getTarget(outbreak);
+				// Per day probability of contact between two people (baseline)
+				// on any day
+				// This is equivalent to what happens in {@link
+				// Contact#contactNetwork}
+				return r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
+			})
+			.toArray();
 		var est = new Estimator(viralLoadProfile, contactProbability);
 		var solver = new BrentSolver(0.001);
 		var adjR0 = adjustR0(outbreak, R0);
 		long countAgents = outbreak.getPopulationSize();
-		UnivariateFunction fnR0 = (toInfer) -> {
-			return est.fastPTransmission(toInfer) * 2 / countAgents - adjR0;
-		};
+		UnivariateFunction fnR0 = toInfer -> (est.fastPTransmission(toInfer) * 2
+				/ countAgents - adjR0);
 
 		try {
 			var inferred = solver.solve(10000, fnR0, 0, 0.1);
 			log.info(
-					"P(transmission|infectious contact with viral load 1.5): {}, for RO: {} (adjusted for network: {})",
-					String.format(
-							"%1.4f",
-							OutbreakBaseline
-									.transmissibilityFromViralLoad(1.5, inferred)
-					), R0, adjR0
+				"P(transmission|infectious contact with viral load 1.5): {}, for RO: {} (adjusted for network: {})",
+				String.format(
+					"%1.4f",
+					OutbreakBaseline.transmissibilityFromViralLoad(1.5, inferred)
+				),
+				R0,
+				adjR0
 			);
+			if (inferred > 0.099 || inferred < 0.001) {
+				log.warn(
+					"Quick calibration returned boundary value ({}); falling back to full simulation",
+					inferred
+				);
+				throw new RuntimeException(); // Trigger fallback
+			}
 			return inferred;
 		} catch (NoBracketingException e) {
 			throw new RuntimeException("No solution for R0 in the range 0 to 1");
@@ -604,9 +652,12 @@ public class Calibration {
 	 * @return the maximum R0 the network topology can support
 	 */
 	public static double maxR0(Outbreak outbreak) {
-		var dd = outbreak.getExecutionConfiguration().getViralLoadProfile();
+		var dd = outbreak.getExecutionConfiguration()
+			.getViralLoadProfile();
 		return expectedExposuresPerInfection(
-				outbreak, dd, Double.POSITIVE_INFINITY
+			outbreak,
+			dd,
+			Double.POSITIVE_INFINITY
 		);
 	}
 
@@ -625,17 +676,21 @@ public class Calibration {
 	public static double[] networkDegreePerPerson(Outbreak o) {
 		var degrees = new AtomicDoubleArray(o.getPopulationSize());
 
-		o.getSocialNetwork().parallelStream().forEach(r -> {
-			var person1 = r.getSource(o);
-			var person2 = r.getTarget(o);
-			var p = r.contactProbability(
-					person1.getBaseline().getMobilityBaseline(),
-					person2.getBaseline().getMobilityBaseline()
-			);
-			degrees.addAndGet(person1.getId(), p);
-			degrees.addAndGet(person2.getId(), p);
+		o.getSocialNetwork()
+			.parallelStream()
+			.forEach(r -> {
+				var person1 = r.getSource(o);
+				var person2 = r.getTarget(o);
+				var p = r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
+				degrees.addAndGet(person1.getId(), p);
+				degrees.addAndGet(person2.getId(), p);
 
-		});
+			});
 		return degrees.toArray();
 	}
 
@@ -648,7 +703,7 @@ public class Calibration {
 			// In the main simulation this transmissibility value is modified by
 			// various odds ratios
 			var pExposureGivenContact = OutbreakBaseline
-					.transmissibilityFromViralLoad(viralLoad, parameter);
+				.transmissibilityFromViralLoad(viralLoad, parameter);
 			pNonExposure = pNonExposure * (1 - pContact * pExposureGivenContact);
 		}
 		return 1 - pNonExposure;
@@ -701,26 +756,37 @@ public class Calibration {
 		var degrees = new AtomicDoubleArray(o.getPopulationSize());
 		var variances = new AtomicDoubleArray(o.getPopulationSize());
 
-		o.getSocialNetwork().parallelStream().forEach(r -> {
-			var person1 = r.getSource(o);
-			var person2 = r.getTarget(o);
-			var p = r.contactProbability(
-					person1.getBaseline().getMobilityBaseline(),
-					person2.getBaseline().getMobilityBaseline()
-			);
-			degrees.addAndGet(person1.getId(), p);
-			variances.addAndGet(person1.getId(), p * (1 - p));
-			degrees.addAndGet(person2.getId(), p);
-			variances.addAndGet(person2.getId(), p * (1 - p));
-		});
+		o.getSocialNetwork()
+			.parallelStream()
+			.forEach(r -> {
+				var person1 = r.getSource(o);
+				var person2 = r.getTarget(o);
+				var p = r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
+				degrees.addAndGet(person1.getId(), p);
+				variances.addAndGet(person1.getId(), p * (1 - p));
+				degrees.addAndGet(person2.getId(), p);
+				variances.addAndGet(person2.getId(), p * (1 - p));
+			});
 		// N.B. this is the average percolation threshold (average of average
 		// contact
 		// network degree ....
-		var k = degrees.stream().average().orElse(0);
+		var k = degrees.stream()
+			.average()
+			.orElse(0);
 		// Technically this should be the average of the product of the same
 		// Poisson Binomial Distributions, which is going to be wider than this.
-		var varK = degrees.stream().average().orElse(0);
-		var k2 = degrees.stream().map(d -> d * d).average().orElse(0) + varK;
+		var varK = degrees.stream()
+			.average()
+			.orElse(0);
+		var k2 = degrees.stream()
+			.map(d -> d * d)
+			.average()
+			.orElse(0) + varK;
 		return k / (k2 - k);
 	}
 
@@ -734,6 +800,136 @@ public class Calibration {
 	public static double perEdgeTransmissionProbability(double R0, Outbreak o) {
 		var Tc = percolationThreshold(o);
 		return R0 * Tc;
+	}
+
+	/**
+	 * Calibrates the transmission parameter based on a ER network of similar
+	 * characteristics as the actual outbreak social network. This allows for a
+	 * fixed reference point for the transmission parameter which is independent
+	 * of the actual network for the situations where we are comparing networks
+	 * against each other and we want a comparator that is calibrated against a
+	 * gold standard, so we can demonstrate network structure effects in
+	 * transmission.
+	 * 
+	 * @param outbreak the outbreak configuration - used for getting
+	 *                 configuration but not for calibration
+	 * @param R0       the target basic reproduction number to match in an ER
+	 *                 network
+	 * @return the inferred transmission parameter
+	 */
+	public static double inferViralLoadTransmissionParameterErdosReyni(
+			Outbreak outbreak, Double R0
+	) {
+		var viralLoadProfile = outbreak.getExecutionConfiguration()
+			.getViralLoadProfile();
+
+		// Compute average contact probability from the actual network
+		// This will be used as the uniform contact probability for the ER
+		// reference
+		var avgContactProb = outbreak.getSocialNetwork()
+			.parallelStream()
+			.mapToDouble(r -> {
+				var person1 = r.getSource(outbreak);
+				var person2 = r.getTarget(outbreak);
+				return r.contactProbability(
+					person1.getBaseline()
+						.getMobilityBaseline(),
+					person2.getBaseline()
+						.getMobilityBaseline()
+				);
+			})
+			.average()
+			.orElse(0.0);
+
+		// For ER network reference, all edges have the same contact probability
+		// Use the same number of edges as the actual network for the Estimator
+		var numEdges = outbreak.getSocialNetwork()
+			.size();
+		var erContactProbs = new double[numEdges];
+		Arrays.fill(erContactProbs, avgContactProb);
+
+		// === ATTEMPT 1: Fast polynomial approximation ===
+		try {
+			var est = new Estimator(viralLoadProfile, erContactProbs);
+			var solver = new BrentSolver(0.001);
+			var targetR0 = R0; // No percolation adjustment for ER reference
+			long countAgents = outbreak.getPopulationSize();
+
+			UnivariateFunction fnR0 = toInfer -> (est.fastPTransmission(toInfer)
+					* 2 / countAgents - targetR0);
+
+			var inferred = solver.solve(10000, fnR0, 0, 0.1);
+
+			// Validate that solution is not at boundary (indicates approximation
+			// breakdown)
+			if (inferred > 0.099 || inferred < 0.001) {
+				log.warn(
+					"Quick ER calibration returned boundary value ({}); falling back to full simulation",
+					inferred
+				);
+				throw new RuntimeException(); // Trigger fallback
+			}
+
+			log.info(
+				"P(transmission|infectious contact with viral load 1.5): {}, for R0: {} (ER reference, quick method)",
+				String.format(
+					"%1.4f",
+					OutbreakBaseline.transmissibilityFromViralLoad(1.5, inferred)
+				),
+				R0
+			);
+			return inferred;
+
+		} catch (RuntimeException e) {
+			log.info(
+				"Quick ER approximation failed or unreliable; falling back to full simulation-based calibration"
+			);
+			// Fall through to full simulation method below
+		}
+
+		// === ATTEMPT 2: Full simulation-based calibration (ER assumptions) ===
+		var solver = new BrentSolver(0.001);
+		var targetR0 = R0; // No percolation adjustment for ER reference
+		long countAgents = outbreak.getPopulationSize();
+
+		// Pre-compute the uniform contact probability for efficiency
+		final var uniformPContact = avgContactProb;
+
+		UnivariateFunction fnR0 = toInfer -> {
+			// Compute expected exposures using full pAnyExposure simulation
+			var meanPAnyExposure = Arrays.stream(viralLoadProfile)
+				.parallel()
+				.mapToDouble(
+					profile -> pAnyExposure(uniformPContact, profile, toInfer)
+				)
+				.average()
+				.orElse(0);
+
+			// Scale by network size: mean_p * (2E/N) = mean_p * mean_degree
+			return meanPAnyExposure * 2 * numEdges / countAgents - targetR0;
+		};
+
+		log.info(
+			"Max R0 for ER reference network is: {}",
+			fnR0.value(Double.POSITIVE_INFINITY) + targetR0
+		);
+
+		try {
+			var inferred = solver.solve(10000, fnR0, 0, 1);
+			log.info(
+				"P(transmission|infectious contact with viral load 1.5): {}, for R0: {} (ER reference, full simulation)",
+				String.format(
+					"%1.4f",
+					OutbreakBaseline.transmissibilityFromViralLoad(1.5, inferred)
+				),
+				R0
+			);
+			return inferred;
+		} catch (NoBracketingException e) {
+			throw new RuntimeException(
+					"No solution for R0 in the range 0 to 1 for ER reference network (full simulation)"
+			);
+		}
 	}
 
 }

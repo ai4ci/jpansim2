@@ -109,7 +109,7 @@ public class SimulationFactory extends PauseableThread {
 			SimulationMonitor mon
 	) {
 
-		SimulationFactory tmp = new SimulationFactory(
+		var tmp = new SimulationFactory(
 				setups, executions, urnBase, mon
 		);
 		tmp.start();
@@ -169,8 +169,8 @@ public class SimulationFactory extends PauseableThread {
 			@Override
 			public Outbreak next() {
 
-				int setup = this.count / executions.size();
-				int exec = this.count % executions.size();
+				var setup = this.count / executions.size();
+				var exec = this.count % executions.size();
 
 				if (!this.hasNext())
 					throw new NoSuchElementException("Iterator exhausted");
@@ -180,7 +180,7 @@ public class SimulationFactory extends PauseableThread {
 
 				if (exec == 0) {
 					// Click back to new setup
-					SetupConfiguration setupCfg = setups.get(setup);
+					var setupCfg = setups.get(setup);
 					SimulationFactory.this.activity = "building new model: "
 							+ setupCfg.getName() + ":" + setupCfg.getReplicate();
 					this.setupBuilder = new ExecutionBuilder(setupCfg);
@@ -194,29 +194,28 @@ public class SimulationFactory extends PauseableThread {
 							SimulationFactory.this.activity = "sizing model";
 							try {
 								SimulationFactory.this.objSize = Cloner
-										.estimateSize(this.setupBuilder.outbreak);
+									.estimateSize(this.setupBuilder.outbreak);
 								log.info(
-										"Each simulation takes up about " + String.format(
-												"%1.0f",
-												((double) SimulationFactory.this.objSize)
-														/ (1024 * 1024)
-										) + "Mb before configuration."
+									"Each simulation takes up about " + String.format(
+										"%1.0f",
+										((double) SimulationFactory.this.objSize)
+												/ (1024 * 1024)
+									) + "Mb before configuration."
 								);
 							} catch (Exception e) {
 								log.error(
-										"Could't establish initial simulation size. It is possibly too big to be cloned."
+									"Could't establish initial simulation size. It is possibly too big to be cloned."
 								);
 								SimulationFactory.this.objSize = 20 * 1024 * 1024;
 							}
 						}
 						SimulationFactory.this.activity = "cloning model";
 						builder2 = this.setupBuilder
-								.copy(SimulationFactory.this.objSize);
-					} else {
+							.copy(SimulationFactory.this.objSize);
+					} else
 						builder2 = this.setupBuilder;
-					}
 
-					ExecutionConfiguration exCfg = executions.get(exec);
+					var exCfg = executions.get(exec);
 					SimulationFactory.this.activity = "initialising model baseline: "
 							+ exCfg.getName() + ":" + exCfg.getReplicate();
 					builder2.baselineModel(exCfg);
@@ -251,24 +250,23 @@ public class SimulationFactory extends PauseableThread {
 	 *         ready
 	 */
 	Outbreak deliver() {
-		Outbreak out = this.queue.poll();
+		var out = this.queue.poll();
 		return out;
 	}
 
 	@Override
 	public void doLoop() {
-		if (this.cacheFull()) {
+		if (this.cacheFull())
 			this.pause();
-		} else {
+		else
 			try {
-				Outbreak tmp = this.builder.next();
+				var tmp = this.builder.next();
 				this.queue.add(tmp);
 				this.mon.notifyFactoryReady(this);
 			} catch (Exception e) {
 				this.mon.handle(e);
 				this.halt();
 			}
-		}
 
 	}
 
@@ -329,9 +327,8 @@ public class SimulationFactory extends PauseableThread {
 		if (!completedNormally) {
 			log.error("Simulation factory did not complete all simulations.");
 			this.activity = "factory terminated without completing";
-		} else {
+		} else
 			this.activity = "all simulations built";
-		}
 
 	}
 
@@ -343,10 +340,15 @@ public class SimulationFactory extends PauseableThread {
 	@Override
 	public String status() {
 		return String.format(
-				"model %d/%d; execution %d/%d; queued %d/%d; %s - (%s)",
-				this.setupStage + 1, this.setupSize, this.execStage + 1,
-				this.execSize, this.queue.size(), this.cacheSize.get(),
-				this.activity, super.status()
+			"model %d/%d; execution %d/%d; queued %d/%d; %s - (%s)",
+			this.setupStage + 1,
+			this.setupSize,
+			this.execStage + 1,
+			this.execSize,
+			this.queue.size(),
+			this.cacheSize.get(),
+			this.activity,
+			super.status()
 		);
 	}
 
@@ -359,6 +361,6 @@ public class SimulationFactory extends PauseableThread {
 	 */
 	@Override
 	public void unpause() {
-		if (!this.cacheFull()) { super.unpause(); }
+		if (!this.cacheFull()) super.unpause();
 	}
 }

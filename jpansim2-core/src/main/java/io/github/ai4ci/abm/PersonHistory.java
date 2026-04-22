@@ -1,6 +1,7 @@
 package io.github.ai4ci.abm;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -22,6 +23,7 @@ import org.immutables.value.Value;
  *
  */
 @Value.Immutable
+@SuppressWarnings("immutable")
 public interface PersonHistory extends PersonTemporalState {
 
 	/**
@@ -38,7 +40,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 *         historical period.
 	 */
 	default Stream<Contact> getHistoricalContacts(int limit) {
-		if (limit == 0) { return Arrays.stream(this.getTodaysContacts()); }
+		if (limit == 0) return Arrays.stream(this.getTodaysContacts());
 		return Stream.concat(
 			Arrays.stream(this.getTodaysContacts()),
 			this.getPrevious()
@@ -61,8 +63,8 @@ public interface PersonHistory extends PersonTemporalState {
 	 *         historical period.
 	 */
 	default Stream<TestResult> getHistoricalTests(int limit) {
-		if (limit == 0) { return this.getTodaysTests()
-			.stream(); }
+		if (limit == 0) return this.getTodaysTests()
+			.stream();
 		return Stream.concat(
 			this.getTodaysTests()
 				.stream(),
@@ -89,10 +91,10 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	@Value.Lazy @Deprecated
 	default Optional<PersonHistory> getInfectionStart() {
-		if (!this.isInfectious()) { return Optional.empty(); }
-		if (this.isIncidentInfection()) { return Optional.of(this); }
+		if (!this.isInfectious()) return Optional.empty();
+		if (this.isIncidentInfection()) return Optional.of(this);
 		return this.getPrevious()
-			.flatMap(p -> p.getInfectionStart());
+			.flatMap(PersonHistory::getInfectionStart);
 	}
 
 	// HISTORY NAVIGATION:
@@ -123,8 +125,7 @@ public interface PersonHistory extends PersonTemporalState {
 					.flatMap(
 						e -> Arrays.stream(e.getTodaysExposures())
 							.max(
-								(c1, c2) -> Double
-									.compare(c1.getExposure(), c2.getExposure())
+								Comparator.comparing(Exposure::getExposure)
 							)
 					)
 			);
@@ -152,7 +153,7 @@ public interface PersonHistory extends PersonTemporalState {
 	default Optional<PersonHistory> getInfector() {
 		return this.getInfectiousContact()
 			.map(exposure -> exposure.getExposer(this))
-			.flatMap(exposer -> exposer.getInfectionStart());
+			.flatMap(PersonHistory::getInfectionStart);
 	}
 
 	/**
@@ -172,9 +173,9 @@ public interface PersonHistory extends PersonTemporalState {
 	 *         exposure.
 	 */
 	default Optional<PersonHistory> getLastExposure() {
-		if (this.isIncidentExposure()) { return Optional.of(this); }
+		if (this.isIncidentExposure()) return Optional.of(this);
 		return this.getPrevious()
-			.flatMap(p -> p.getLastExposure());
+			.flatMap(PersonHistory::getLastExposure);
 	}
 
 	/**
@@ -191,7 +192,7 @@ public interface PersonHistory extends PersonTemporalState {
 	default int getMaxDelay() {
 		return (int) this.getTodaysTests()
 			.stream()
-			.mapToLong(tr -> tr.getDelay())
+			.mapToLong(TestResult::getDelay)
 			.max()
 			.orElse(0);
 	}
@@ -206,7 +207,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	@Deprecated @Value.Lazy
 	default Optional<PersonHistory> getNewInfection() {
-		if (this.isIncidentInfection()) { return Optional.of(this); }
+		if (this.isIncidentInfection()) return Optional.of(this);
 		return Optional.empty();
 	}
 
@@ -249,7 +250,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 *         the current day and going backwards.
 	 */
 	default Stream<PersonHistory> getPrevious(int limit) {
-		if (limit == 0) { return Stream.of(this); }
+		if (limit == 0) return Stream.of(this);
 		return Stream.concat(Stream.of(this), this.getPrevious(limit - 1));
 	}
 
@@ -269,7 +270,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	default Stream<TestResult> getResultsBySampleDate(int time) {
 		var lim = time - this.getTime();
-		if (lim < 0) { return Stream.empty(); }
+		if (lim < 0) return Stream.empty();
 		return this.getTodaysTests()
 			.stream()
 			.filter(tr -> tr.isResultAvailable(time));
@@ -287,7 +288,7 @@ public interface PersonHistory extends PersonTemporalState {
 	 */
 	default Stream<Contact> getStillRelevantDetectedContacts() {
 		return this.getHistoricalContacts(this.infPeriod())
-			.filter(c -> c.isDetected());
+			.filter(Contact::isDetected);
 	}
 
 	/**
@@ -380,8 +381,8 @@ public interface PersonHistory extends PersonTemporalState {
 	default boolean isContinuously(
 			Predicate<PersonTemporalState> test, int limit
 	) {
-		if (limit == 0) { return test.test(this); }
-		if (!test.test(this)) { return false; }
+		if (limit == 0) return test.test(this);
+		if (!test.test(this)) return false;
 		return this.getPrevious()
 			.map(p -> p.isContinuously(test, limit - 1))
 			.orElse(Boolean.FALSE);
@@ -404,8 +405,8 @@ public interface PersonHistory extends PersonTemporalState {
 	 *         period, {@code false} otherwise.
 	 */
 	default boolean isRecently(Predicate<PersonTemporalState> test, int limit) {
-		if (limit == 0) { return test.test(this); }
-		if (test.test(this)) { return true; }
+		if (limit == 0) return test.test(this);
+		if (test.test(this)) return true;
 		return this.getPrevious()
 			.map(p -> p.isRecently(test, limit - 1))
 			.orElse(Boolean.FALSE);

@@ -25,12 +25,17 @@ import org.slf4j.LoggerFactory;
 @Deprecated
 public class FastWriteOnlyOutputStream extends OutputStream {
 
+	@Deprecated
 	static Logger log = LoggerFactory.getLogger(FastWriteOnlyOutputStream.class);
 	
+	@Deprecated
 	FileChannel channel;
+	@Deprecated
 	ByteBuffer buffer;
+	@Deprecated
 	FileLock lock;
 	
+	@Deprecated
 	public FastWriteOnlyOutputStream(Path file, int blocks) throws IOException {
 		long bs = Files.getFileStore(file.getRoot()).getBlockSize();
 		buffer = ByteBuffer.allocateDirect((int) (blocks*bs));
@@ -40,6 +45,7 @@ public class FastWriteOnlyOutputStream extends OutputStream {
 		log.debug("File: "+file+" opened for writing. Buffer is "+blocks+"*"+bs);
 	}
 	
+	@Deprecated
 	@Override
 	public synchronized void write(byte[] b) throws IOException {
 		int start = 0;
@@ -52,6 +58,7 @@ public class FastWriteOnlyOutputStream extends OutputStream {
 		buffer.put(b, start, b.length-start);
 	}
 
+	@Deprecated
 	@Override
 	public synchronized void flush() throws IOException {
 		buffer.flip();
@@ -59,6 +66,7 @@ public class FastWriteOnlyOutputStream extends OutputStream {
 		buffer.clear();
 	}
 
+	@Deprecated
 	@Override
 	public synchronized void close() throws IOException {
 		flush();
@@ -66,6 +74,7 @@ public class FastWriteOnlyOutputStream extends OutputStream {
 		channel.close();
 	}
 
+	@Deprecated
 	@Override
 	public synchronized void write(int b) throws IOException {
 		if (buffer.remaining() == 0) {

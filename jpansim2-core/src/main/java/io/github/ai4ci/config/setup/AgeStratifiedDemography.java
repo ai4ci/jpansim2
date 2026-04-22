@@ -3,6 +3,8 @@ package io.github.ai4ci.config.setup;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -42,6 +44,9 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 @JsonSerialize(as = ImmutableAgeStratifiedDemography.class)
 @JsonDeserialize(as = ImmutableAgeStratifiedDemography.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("age-stratified")
+@SuppressWarnings("immutables")
 public interface AgeStratifiedDemography extends LocationAwareDemography {
 
 	/**
@@ -52,21 +57,28 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	 * describes relative contact likelihood by age difference. Tests and
 	 * examples may rely on this instance as a compact baseline.
 	 */
-	public static ImmutableAgeStratifiedDemography DEFAULT = ImmutableAgeStratifiedDemography
-			.builder()
-			.setDescription(
-				"A test empirical demographic distribution and function for the odds of contact by age difference"
-			)
-			.setAgeDistribution(
-					ImmutableEmpiricalDistribution.builder().setMinimum(0)
-							.setMaximum(120).setX(18, 45, 65, 85)
-							.setCumulativeProbability(0.1, 0.5, 0.75, 0.9).build()
-			)
-			.setOddsContactFromAgeDifference(
-					ImmutableEmpiricalFunction.builder().setX(0, 10, 25, 40, 60, 70)
-							.setY(2, 0.5, 1.5, 0.5, 1, 0.5).setLink(LinkFunction.LOG)
-							.build()
-			).setContactProximityBias(2.0).build();
+	ImmutableAgeStratifiedDemography DEFAULT = ImmutableAgeStratifiedDemography
+		.builder()
+		.setDescription(
+			"A test empirical demographic distribution and function for the odds of contact by age difference"
+		)
+		.setAgeDistribution(
+			ImmutableEmpiricalDistribution.builder()
+				.setMinimum(0)
+				.setMaximum(120)
+				.setX(18, 45, 65, 85)
+				.setCumulativeProbability(0.1, 0.5, 0.75, 0.9)
+				.build()
+		)
+		.setOddsContactFromAgeDifference(
+			ImmutableEmpiricalFunction.builder()
+				.setX(0, 10, 25, 40, 60, 70)
+				.setY(2, 0.5, 1.5, 0.5, 1, 0.5)
+				.setLink(LinkFunction.LOG)
+				.build()
+		)
+		.setContactProximityBias(2.0)
+		.build();
 
 	/**
 	 * Adjust a base contact probability by the age difference between two
@@ -84,11 +96,15 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	 * @return a probability adjusted for age-based contact odds
 	 */
 	default double adjustedProbabilityContact(double p, Person one, Person two) {
-		double age1 = one.getDemographic().getAge();
-		double age2 = two.getDemographic().getAge();
-		double diff = Math.abs(age1 - age2);
+		var age1 = one.getDemographic()
+			.getAge();
+		var age2 = two.getDemographic()
+			.getAge();
+		var diff = Math.abs(age1 - age2);
 		return Conversions.scaleProbabilityByOR(
-				p, this.getNormalisedOddsContactFromAgeDifference().value(diff)
+			p,
+			this.getNormalisedOddsContactFromAgeDifference()
+				.value(diff)
 		);
 	}
 
@@ -109,10 +125,15 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	 */
 	@Override
 	default ModifiablePerson createPersonStub(Outbreak outbreak) {
-		ModifiablePerson tmp = Person.createPersonStub(outbreak);
+		var tmp = Person.createPersonStub(outbreak);
 		tmp.setDemographic(
-				ImmutablePersonDemographic.builder().from(tmp.getDemographic())
-						.setAge(this.getAgeDistribution().sample()).build()
+			ImmutablePersonDemographic.builder()
+				.from(tmp.getDemographic())
+				.setAge(
+					this.getAgeDistribution()
+						.sample()
+				)
+				.build()
 		);
 		return tmp;
 	}
@@ -140,13 +161,11 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	default SimpleFunction getNormalisedOddsContactFromAgeDifference() {
 		if (this.getOddsContactFromAgeDifference() instanceof EmpiricalFunction)
 			return this.getAgeDistribution()
-					.combine(
-							this.getAgeDistribution(), (d1, d2) -> Math.abs(d1 - d2)
-					).getInterpolation()
-					.baselineOdds(
-							((EmpiricalFunction) this
-									.getOddsContactFromAgeDifference())
-					);
+				.combine(this.getAgeDistribution(), (d1, d2) -> Math.abs(d1 - d2))
+				.getInterpolation()
+				.baselineOdds(
+					((EmpiricalFunction) this.getOddsContactFromAgeDifference())
+				);
 		return this.getOddsContactFromAgeDifference();
 	}
 
@@ -182,13 +201,17 @@ public interface AgeStratifiedDemography extends LocationAwareDemography {
 	 * @return a relationship strength used as an odds/probability modifier
 	 */
 	@Override
-	default public double getRelationshipStrength(
+	default double getRelationshipStrength(
 			Person source, Person target, Sampler sampler
 	) {
 		return this.adjustedProbabilityContact(
-				LocationAwareDemography.super.getRelationshipStrength(
-						source, target, sampler
-				), source, target
+			LocationAwareDemography.super.getRelationshipStrength(
+				source,
+				target,
+				sampler
+			),
+			source,
+			target
 		);
 	}
 

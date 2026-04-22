@@ -19,14 +19,17 @@ import io.github.ai4ci.util.Binomial;
  * model and is replaced at each time step.
  */
 @Value.Immutable
+@SuppressWarnings("immutable")
 public interface OutbreakState extends OutbreakTemporalState {
 
 	// @Value.Default default Double getViralActivityModifier() {return 1.0D;}
 
 	@Override @Value.Lazy
 	default long getAdmissionIncidence() {
-		return ModelNav.peopleState(this).filter(p -> !p.isDead())
-				.filter(p -> p.isIncidentHospitalisation()).count();
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.filter(PersonState::isIncidentHospitalisation)
+			.count();
 	}
 
 	/**
@@ -40,7 +43,9 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Value.Lazy
 	default double getAverageCompliance() {
 		return ModelNav.peopleState(this)
-				.mapToDouble(p -> p.getAdjustedCompliance()).average().orElse(1);
+			.mapToDouble(PersonState::getAdjustedCompliance)
+			.average()
+			.orElse(1);
 	}
 
 	/**
@@ -53,8 +58,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default double getAverageImmuneActivity() {
-		return ModelNav.peopleState(this).mapToDouble(p -> p.getImmuneActivity())
-				.average().orElse(1);
+		return ModelNav.peopleState(this)
+			.mapToDouble(PersonState::getImmuneActivity)
+			.average()
+			.orElse(1);
 	}
 
 	/**
@@ -68,7 +75,9 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Value.Lazy
 	default double getAverageMobility() {
 		return ModelNav.peopleState(this)
-				.mapToDouble(p -> p.getAdjustedMobility()).average().orElse(1);
+			.mapToDouble(PersonState::getAdjustedMobility)
+			.average()
+			.orElse(1);
 	}
 
 	/**
@@ -82,7 +91,9 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Value.Lazy
 	default double getAverageViralLoad() {
 		return ModelNav.peopleState(this)
-				.mapToDouble(p -> p.getNormalisedViralLoad()).average().orElse(1);
+			.mapToDouble(PersonState::getNormalisedViralLoad)
+			.average()
+			.orElse(1);
 	}
 
 	/**
@@ -104,11 +115,14 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default Map<String, Long> getBehaviourCounts() {
-		return ModelNav.people(this).map(p -> p.getCurrentState()).collect(
+		return ModelNav.people(this)
+			.map(Person::getCurrentState)
+			.collect(
 				Collectors.groupingByConcurrent(
-						ps -> ps.getBehaviour(), Collectors.counting()
+					PersonState::getBehaviour,
+					Collectors.counting()
 				)
-		);
+			);
 	}
 
 	/**
@@ -129,11 +143,14 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default Map<Long, Long> getContactCounts() {
-		return ModelNav.people(this).map(p -> p.getCurrentState()).collect(
+		return ModelNav.people(this)
+			.map(Person::getCurrentState)
+			.collect(
 				Collectors.groupingByConcurrent(
-						ps -> ps.getContactCount(), Collectors.counting()
+					PersonState::getContactCount,
+					Collectors.counting()
 				)
-		);
+			);
 	}
 
 	/**
@@ -157,13 +174,15 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Override @Value.Lazy
 	default long getCumulativeAdmissions() {
 		return this.getAdmissionIncidence() + ModelNav.history(this)
-				.map(h -> h.getCumulativeAdmissions()).orElse(0L);
+			.map(OutbreakHistory::getCumulativeAdmissions)
+			.orElse(0L);
 	}
 
 	@Override @Value.Lazy
 	default double getCumulativeComplianceDecrease() {
 		return this.getTotalComplianceDecrease() + ModelNav.history(this)
-				.map(h -> h.getCumulativeComplianceDecrease()).orElse(0D);
+			.map(OutbreakHistory::getCumulativeComplianceDecrease)
+			.orElse(0D);
 	}
 
 	/**
@@ -178,19 +197,23 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getCumulativeDeaths() {
-		return ModelNav.peopleState(this).filter(p -> p.isDead()).count();
+		return ModelNav.peopleState(this)
+			.filter(PersonState::isDead)
+			.count();
 	}
 
 	@Override @Value.Lazy
 	default long getCumulativeInfections() {
 		return this.getIncidence() + ModelNav.history(this)
-				.map(h -> h.getCumulativeInfections()).orElse(0L);
+			.map(OutbreakHistory::getCumulativeInfections)
+			.orElse(0L);
 	}
 
 	@Override @Value.Lazy
 	default double getCumulativeMobilityDecrease() {
 		return this.getTotalMobilityDecrease() + ModelNav.history(this)
-				.map(h -> h.getCumulativeMobilityDecrease()).orElse(0D);
+			.map(OutbreakHistory::getCumulativeMobilityDecrease)
+			.orElse(0D);
 	}
 
 	/**
@@ -205,9 +228,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default Binomial getHospitalisationRate() {
-		return ModelNav.peopleState(this).filter(p -> !p.isDead())
-				.map(p -> p.isRequiringHospitalisation())
-				.collect(Binomial.collectBinary());
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.map(PersonState::isRequiringHospitalisation)
+			.collect(Binomial.collectBinary());
 	}
 
 	/**
@@ -222,19 +246,23 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Override @Value.Lazy
 	default long getHospitalisedCount() {
-		return this.getHospitalisationRate().getNumerator();
+		return this.getHospitalisationRate()
+			.getNumerator();
 	}
 
 	@Override @Value.Lazy
 	default long getIncidence() {
 		return ModelNav.peopleCurrentHistory(this)
-				.filter(p -> p.isIncidentInfection()).count();
+			.filter(PersonHistory::isIncidentInfection)
+			.count();
 	}
 
 	@Override @Value.Lazy
 	default long getInfectedCount() {
-		return ModelNav.peopleState(this).filter(p -> !p.isDead())
-				.filter(p -> p.isInfectious()).count();
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.filter(PersonState::isInfectious)
+			.count();
 	}
 
 	/**
@@ -245,31 +273,37 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 * @return a numerator denominator pair.
 	 */
 	default Binomial getLockdownTrigger() {
-		return this.getTriggerValue().select(this);
+		return this.getTriggerValue()
+			.select(this);
 	}
 
 	@Override @Value.Lazy
 	default long getMaximumHospitalBurden() {
 		return Math.max(
-				this.getHospitalisedCount(),
-				ModelNav.history(this).map(h -> h.getMaximumHospitalBurden())
-						.orElse(0L)
+			this.getHospitalisedCount(),
+			ModelNav.history(this)
+				.map(OutbreakHistory::getMaximumHospitalBurden)
+				.orElse(0L)
 		);
 	}
 
 	@Override @Value.Lazy
 	default long getMaximumIncidence() {
 		return Math.max(
-				this.getIncidence(),
-				ModelNav.history(this).map(h -> h.getMaximumIncidence()).orElse(0L)
+			this.getIncidence(),
+			ModelNav.history(this)
+				.map(OutbreakHistory::getMaximumIncidence)
+				.orElse(0L)
 		);
 	}
 
 	@Override @Value.Lazy
 	default double getMaximumPrevalence() {
 		return Math.max(
-				this.getPrevalence(),
-				ModelNav.history(this).map(h -> h.getMaximumPrevalence()).orElse(0D)
+			this.getPrevalence(),
+			ModelNav.history(this)
+				.map(OutbreakHistory::getMaximumPrevalence)
+				.orElse(0D)
 		);
 	}
 
@@ -281,7 +315,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default String getPolicy() {
-		return this.getEntity().getStateMachine().getState().getName();
+		return this.getEntity()
+			.getStateMachine()
+			.getState()
+			.getName();
 	}
 
 	/**
@@ -381,29 +418,33 @@ public interface OutbreakState extends OutbreakTemporalState {
 	default Binomial getPresumedTestPositivity(
 			Predicate<TestResult> filter, boolean wasTested
 	) {
-		return ModelNav.peopleState(this).filter(p -> !p.isDead())
-				.map(
-						p -> p.getStillRelevantTests()
-								.filter(tr -> tr.isResultAvailable(this.getTime()))
-								.filter(filter).map(tr -> tr.getFinalObservedResult())
-								.collect(Binomial.collectBinary())
-						// result of this is the Binomial of tests for an individual
-				).filter(
-						// exclude people that have had no tests
-						b -> wasTested ? b.getDenominator() != 0 : true
-				).map(
-						// any positive results will be collected in the numerator
-						// This is true = any positive tests; false = no positive
-						// tests
-						b -> b.getNumerator() > 0
-				).collect(Binomial.collectBinary());
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.map(
+				p -> p.getStillRelevantTests()
+					.filter(tr -> tr.isResultAvailable(this.getTime()))
+					.filter(filter)
+					.map(TestResult::getFinalObservedResult)
+					.collect(Binomial.collectBinary())
+				// result of this is the Binomial of tests for an individual
+			)
+			.filter(
+				// exclude people that have had no tests
+				b -> wasTested ? b.getDenominator() != 0 : true
+			)
+			.map(
+				// any positive results will be collected in the numerator
+				// This is true = any positive tests; false = no positive
+				// tests
+				b -> b.getNumerator() > 0
+			)
+			.collect(Binomial.collectBinary());
 	}
 
 	@Override @Value.Lazy
 	default double getPrevalence() {
-		return ((double) this.getInfectedCount())
-				/ (this.getEntity().getPopulationSize()
-						- this.getCumulativeDeaths());
+		return ((double) this.getInfectedCount()) / (this.getEntity()
+			.getPopulationSize() - this.getCumulativeDeaths());
 	}
 
 	/**
@@ -426,12 +467,18 @@ public interface OutbreakState extends OutbreakTemporalState {
 		var numerator = this.getIncidence();
 		// people with capability to infect today. (n.b. those infected today will
 		// have zero capability)
-		var dd = this.getEntity().getBaseline().getInfectivityProfile();
+		var dd = this.getEntity()
+			.getBaseline()
+			.getInfectivityProfile();
 
-		var denominator = IntStream.range(0, (int) dd.size()).mapToDouble(
-				tau -> this.getEntity().getHistory(tau).map(oh -> oh.getIncidence())
-						.orElse(0L) * dd.condDensity(tau)
-		).sum();
+		var denominator = IntStream.range(0, (int) dd.size())
+			.mapToDouble(
+				tau -> this.getEntity()
+					.getHistory(tau)
+					.map(OutbreakHistory::getIncidence)
+					.orElse(0L) * dd.condDensity(tau)
+			)
+			.sum();
 
 		return denominator == 0 ? Double.NaN : (numerator) / denominator;
 	}
@@ -469,7 +516,9 @@ public interface OutbreakState extends OutbreakTemporalState {
 	@Value.Lazy
 	default Binomial getScreeningTestPositivity() {
 		return this.getPresumedTestPositivity(
-				t -> t.getIndication().equals(Indication.SCREENING), true
+			t -> t.getIndication()
+				.equals(Indication.SCREENING),
+			true
 		);
 	}
 
@@ -485,8 +534,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getSymptomaticCount() {
-		return ModelNav.peopleState(this).filter(p -> !p.isDead())
-				.filter(p -> p.isSymptomatic()).count();
+		return ModelNav.peopleState(this)
+			.filter(p -> !p.isDead())
+			.filter(PersonState::isSymptomatic)
+			.count();
 	}
 
 	/**
@@ -505,15 +556,20 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getTestNegativesByResultDate() {
-		return ModelNav.peopleCurrentHistory(this).mapToInt(p -> {// If any of a
-																						// persons
-																						// results are
-																						// positive
-																						// today
-			if (p.getTodaysResults().isEmpty()) return 0;
-			return p.getTodaysResults().stream().map(t -> t.getFinalResult())
+		return ModelNav.peopleCurrentHistory(this)
+			.mapToInt(p -> {// If any of a
+									// persons
+									// results are
+									// positive
+									// today
+				if (p.getTodaysResults()
+					.isEmpty()) return 0;
+				return p.getTodaysResults()
+					.stream()
+					.map(TestResult::getFinalResult)
 					.allMatch(tr -> tr.equals(Result.NEGATIVE)) ? 1 : 0;
-		}).sum();
+			})
+			.sum();
 	}
 
 	/**
@@ -531,20 +587,25 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default long getTestPositivesByResultDate() {
-		return ModelNav.peopleCurrentHistory(this).mapToInt(p ->
-		// If any of a persons results are positive today
-		p.getTodaysResults().stream().map(t -> t.getFinalResult())
+		return ModelNav.peopleCurrentHistory(this)
+			.mapToInt(p ->
+			// If any of a persons results are positive today
+			p.getTodaysResults()
+				.stream()
+				.map(TestResult::getFinalResult)
 				.anyMatch(tr -> tr.equals(Result.POSITIVE)) ? 1 : 0
-		).sum();
+			)
+			.sum();
 	}
 
 	@Override @Value.Lazy
 	default long getTimeToMaximumIncidence() {
 		if (this.getIncidence() > ModelNav.history(this)
-				.map(h -> h.getMaximumIncidence()).orElse(0L))
-			return this.getTime();
-		return ModelNav.history(this).map(h -> h.getTimeToMaximumIncidence())
-				.orElse(0L);
+			.map(OutbreakHistory::getMaximumIncidence)
+			.orElse(0L)) return this.getTime();
+		return ModelNav.history(this)
+			.map(OutbreakHistory::getTimeToMaximumIncidence)
+			.orElse(0L);
 	}
 
 	/**
@@ -560,8 +621,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default double getTotalComplianceDecrease() {
-		return ModelNav.peopleState(this).filter(state -> !state.isDead())
-				.mapToDouble(p -> p.getAbsoluteComplianceDecrease()).sum();
+		return ModelNav.peopleState(this)
+			.filter(state -> !state.isDead())
+			.mapToDouble(PersonState::getAbsoluteComplianceDecrease)
+			.sum();
 	}
 
 	/**
@@ -579,8 +642,10 @@ public interface OutbreakState extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default double getTotalMobilityDecrease() {
-		return ModelNav.peopleState(this).filter(state -> !state.isDead())
-				.mapToDouble(p -> p.getAbsoluteMobilityDecrease()).sum();
+		return ModelNav.peopleState(this)
+			.filter(state -> !state.isDead())
+			.mapToDouble(PersonState::getAbsoluteMobilityDecrease)
+			.sum();
 	}
 
 	/**

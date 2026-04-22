@@ -9,10 +9,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
-
 import org.immutables.datatype.Datatype;
 
 import io.github.ai4ci.abm.PersonDemographic;

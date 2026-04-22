@@ -6,7 +6,6 @@ import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.abm.TestUtils;
 import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
 import io.github.ai4ci.config.inhost.MarkovStateModel;
-import io.github.ai4ci.flow.mechanics.Updater;
 
 public class TestRiskModel {
 

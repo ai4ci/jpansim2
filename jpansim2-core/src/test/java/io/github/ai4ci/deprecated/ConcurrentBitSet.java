@@ -11,32 +11,37 @@ public class ConcurrentBitSet {
 	    
 	    private final AtomicWordArray data;
 	    
-	    public ConcurrentBitSet(int size) {
+	    @Deprecated
+		public ConcurrentBitSet(int size) {
 	        this.data = new AtomicWordArray((size + WORD_SIZE - 1) / WORD_SIZE);
 	    }
 
-	    public boolean get(int bitIndex) {
+	    @Deprecated
+		public boolean get(int bitIndex) {
 	        int wordIndex = bitIndex / WORD_SIZE;
 	        int bitOffset = bitIndex % WORD_SIZE;
 	        int bitMask = 1 << bitOffset;
 	        return (this.data.getWordVolatile(wordIndex) & bitMask) >> bitOffset != 0;
 	    }
 
-	    public void set(int bitIndex) {
+	    @Deprecated
+		public void set(int bitIndex) {
 	        int wordIndex = bitIndex / WORD_SIZE;
 	        int bitOffset = bitIndex % WORD_SIZE;
 	        int bitMask = 1 << bitOffset;
 	        this.data.setWordVolatile(wordIndex, (word) -> (byte) (word | bitMask));
 	    }
 
-	    public void clear(int bitIndex) {
+	    @Deprecated
+		public void clear(int bitIndex) {
 	        int wordIndex = bitIndex / WORD_SIZE;
 	        int bitOffset = bitIndex % WORD_SIZE;
 	        int bitMask = 1 << bitOffset;
 	        this.data.setWordVolatile(wordIndex, (word) -> (byte) (word & ~bitMask));
 	    }
 
-	    public void flip(int bitIndex) {
+	    @Deprecated
+		public void flip(int bitIndex) {
 	        int wordIndex = bitIndex / WORD_SIZE;
 	        int bitOffset = bitIndex % WORD_SIZE;
 	        int bitMask = 1 << bitOffset;

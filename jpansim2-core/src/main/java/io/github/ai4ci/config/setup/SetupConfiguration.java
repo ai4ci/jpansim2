@@ -42,16 +42,18 @@ import io.github.ai4ci.abm.Abstraction;
 @Value.Immutable
 @JsonSerialize(as = ImmutableSetupConfiguration.class)
 @JsonDeserialize(as = ImmutableSetupConfiguration.class)
-public interface SetupConfiguration
-		extends Abstraction.Named, Abstraction.Described, Abstraction.Replica, Serializable {
+public interface SetupConfiguration extends Abstraction.Named,
+		Abstraction.Described, Abstraction.Replica, Serializable {
 
 	/**
 	 * Default setup configuration used in examples and tests.
 	 */
-	public ImmutableSetupConfiguration DEFAULT = ImmutableSetupConfiguration
-			.builder().setName("default").setInitialImports(30)
-			.setDemographics(LocationAwareDemography.DEFAULT)
-			.setNetwork(ErdosReyniConfiguration.DEFAULT).build();
+	ImmutableSetupConfiguration DEFAULT = ImmutableSetupConfiguration.builder()
+		.setName("default")
+		.setInitialImports(30)
+		.setDemographics(LocationAwareDemography.DEFAULT)
+		.setNetwork(ErdosReyniConfiguration.DEFAULT)
+		.build();
 
 	/**
 	 * Demographic configuration.
@@ -98,10 +100,11 @@ public interface SetupConfiguration
 	 */
 	@JsonIgnore
 	default double[] getHilbertCoords(Integer id) {
-		double size = this.getNetwork().getNetworkSize();
+		double size = this.getNetwork()
+			.getNetworkSize();
 		var hilbert = this.hilbertBits();
 		var tmp = hilbert
-				.point((long) (id / size * Math.pow(2, hilbert.bits() * 2)));
+			.point((long) (id / size * Math.pow(2, hilbert.bits() * 2)));
 		return new double[] { (tmp[0]) / Math.pow(2, hilbert.bits()),
 				(tmp[1]) / Math.pow(2, hilbert.bits()), };
 	}
@@ -120,6 +123,15 @@ public interface SetupConfiguration
 	 * @return the number of initial imports to seed
 	 */
 	Integer getInitialImports();
+
+	/**
+	 * Should the R0 value be normalised to each individual network (true) or
+	 * against a uniform Erdos-Reyni network
+	 * 
+	 * @return true if R0 is normalised to the network topology, false otherwise.
+	 */
+	@Value.Default
+	default boolean isR0NetworkNormalised() { return true; }
 
 	/**
 	 * Network generation configuration.
@@ -160,9 +172,12 @@ public interface SetupConfiguration
 	 */
 	@JsonIgnore
 	default SmallHilbertCurve hilbertBits() {
-		double size = this.getNetwork().getNetworkSize();
+		double size = this.getNetwork()
+			.getNetworkSize();
 		var bits = (int) Math.ceil(0.5 * Math.log(size) / Math.log(2));
-		return HilbertCurve.small().bits(bits).dimensions(2);
+		return HilbertCurve.small()
+			.bits(bits)
+			.dimensions(2);
 	}
 
 }

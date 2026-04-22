@@ -2,6 +2,8 @@ package io.github.ai4ci.config;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -32,6 +34,8 @@ public interface Partials {
 	@SuppressWarnings("immutables")
 	@JsonSerialize(as = PartialMarkovStateModel.class)
 	@JsonDeserialize(as = PartialMarkovStateModel.class)
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("markov.modifier")
 	public interface _PartialMarkovStateModel
 			extends MarkovStateModel, Modification<MarkovStateModel> {
 		@Override
@@ -45,6 +49,8 @@ public interface Partials {
 	@SuppressWarnings("immutables")
 	@JsonSerialize(as = PartialPhenomenologicalModel.class)
 	@JsonDeserialize(as = PartialPhenomenologicalModel.class)
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("phenomenological.modifier")
 	public interface _PartialPhenomenologicalModel
 			extends PhenomenologicalModel, Modification<PhenomenologicalModel> {
 		@Override
@@ -71,6 +77,8 @@ public interface Partials {
 	@SuppressWarnings("immutables")
 	@JsonSerialize(as = PartialStochasticModel.class)
 	@JsonDeserialize(as = PartialStochasticModel.class)
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("stochastic.modifier")
 	public interface _PartialStochasticModel
 			extends StochasticModel, Modification<StochasticModel> {
 		@Override

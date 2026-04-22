@@ -83,7 +83,8 @@ public interface PersonTemporalState extends TemporalState<Person> {
 	 * @return The estimated incubation period in days.
 	 */
 	default int incubPeriod() {
-		return ModelNav.modelState(this).getPresumedIncubationPeriod();
+		return ModelNav.modelState(this)
+			.getPresumedIncubationPeriod();
 	}
 
 	/**
@@ -98,8 +99,8 @@ public interface PersonTemporalState extends TemporalState<Person> {
 	 * @return The estimated infectious period in days.
 	 */
 	default int infPeriod() {
-		return this.incubPeriod()
-				+ ModelNav.modelState(this).getPresumedInfectiousPeriod();
+		return this.incubPeriod() + ModelNav.modelState(this)
+			.getPresumedInfectiousPeriod();
 	}
 
 	/**
@@ -190,4 +191,7 @@ public interface PersonTemporalState extends TemporalState<Person> {
 	 *         otherwise.
 	 */
 	boolean isSymptomatic();
+
+	@Override
+	Person getEntity();
 }

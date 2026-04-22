@@ -5,6 +5,8 @@ import org.jgrapht.generate.GnpRandomGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -23,6 +25,8 @@ import io.github.ai4ci.abm.Person;
 @Value.Immutable
 @JsonSerialize(as = ImmutableErdosReyniConfiguration.class)
 @JsonDeserialize(as = ImmutableErdosReyniConfiguration.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("erdos-reyni")
 public interface ErdosReyniConfiguration extends NetworkConfiguration {
 
 	/**
@@ -33,12 +37,14 @@ public interface ErdosReyniConfiguration extends NetworkConfiguration {
 	 * 16,384 nodes and an average degree of 100. This is a compact baseline for
 	 * examples and tests that require a non‑trivial network.
 	 */
-	public static ImmutableErdosReyniConfiguration DEFAULT = ImmutableErdosReyniConfiguration
-			.builder()
-			.setDescription(
-				"A 128x128 Erdos-Reyni network with 100 contacts per node."
-			)
-			.setNetworkSize(128 * 128).setNetworkDegree(100).build();
+	ImmutableErdosReyniConfiguration DEFAULT = ImmutableErdosReyniConfiguration
+		.builder()
+		.setDescription(
+			"A 128x128 Erdos-Reyni network with 100 contacts per node."
+		)
+		.setNetworkSize(128 * 128)
+		.setNetworkDegree(100)
+		.build();
 
 	/**
 	 * Populate the supplied social network graph using the stored parameters.
@@ -47,7 +53,7 @@ public interface ErdosReyniConfiguration extends NetworkConfiguration {
 	 */
 	@Override
 	default void generateGraph(SimpleGraph<Person, DefaultEdge> socialNetwork) {
-		GnpRandomGraphGenerator<Person, DefaultEdge> gen = new GnpRandomGraphGenerator<>(
+		var gen = new GnpRandomGraphGenerator<Person, DefaultEdge>(
 				this.getNetworkSize(),
 				((double) this.getNetworkDegree() + 1.0) / this.getNetworkSize()
 		);

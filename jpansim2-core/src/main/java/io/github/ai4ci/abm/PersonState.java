@@ -48,6 +48,7 @@ import io.github.ai4ci.util.Sampler;
  * @author Rob Challen
  */
 @Value.Immutable
+@SuppressWarnings("immutable")
 public interface PersonState extends PersonTemporalState {
 
 	/**
@@ -69,8 +70,9 @@ public interface PersonState extends PersonTemporalState {
 	 * @return the absolute compliance decrease (baseline - current)
 	 */
 	default double getAbsoluteComplianceDecrease() {
-		return this.getEntity().getBaseline().getComplianceBaseline()
-				- this.getAdjustedCompliance();
+		return this.getEntity()
+			.getBaseline()
+			.getComplianceBaseline() - this.getAdjustedCompliance();
 	}
 
 	/**
@@ -80,8 +82,9 @@ public interface PersonState extends PersonTemporalState {
 	 * @return the absolute mobility decrease
 	 */
 	default double getAbsoluteMobilityDecrease() {
-		return this.getEntity().getBaseline().getMobilityBaseline()
-				- this.getAdjustedMobility();
+		return this.getEntity()
+			.getBaseline()
+			.getMobilityBaseline() - this.getAdjustedMobility();
 	}
 
 	/**
@@ -93,8 +96,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default double getAdjustedAppUseProbability() {
 		var tmp = Conversions.scaleProbabilityByOR(
-				this.getEntity().getBaseline().getAppUseProbability(),
-				this.getAppUseModifier()
+			this.getEntity()
+				.getBaseline()
+				.getAppUseProbability(),
+			this.getAppUseModifier()
 		);
 		return tmp;
 	}
@@ -109,8 +114,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default double getAdjustedCompliance() {
 		return Conversions.scaleProbabilityByOR(
-				this.getEntity().getBaseline().getComplianceBaseline(),
-				this.getComplianceModifier()
+			this.getEntity()
+				.getBaseline()
+				.getComplianceBaseline(),
+			this.getComplianceModifier()
 		);
 	}
 
@@ -124,8 +131,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default double getAdjustedMobility() {
 		var tmp = Conversions.scaleProbabilityByOR(
-				this.getEntity().getBaseline().getMobilityBaseline(),
-				this.getMobilityModifier()
+			this.getEntity()
+				.getBaseline()
+				.getMobilityBaseline(),
+			this.getMobilityModifier()
 		);
 		return tmp;
 	}
@@ -140,10 +149,11 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default double getAdjustedTransmissibility() {
 		var tmp = Conversions.scaleProbabilityByOR(
-				ModelNav.modelBase(this)
-						.getTransmissibilityBaseline(this.getNormalisedViralLoad()),
-				ModelNav.modelState(this).getTransmissibilityModifier() // sim wide
-						* this.getTransmissibilityModifier()
+			ModelNav.modelBase(this)
+				.getTransmissibilityBaseline(this.getNormalisedViralLoad()),
+			ModelNav.modelState(this)
+				.getTransmissibilityModifier() // sim wide
+					* this.getTransmissibilityModifier()
 		); // individual
 		return tmp;
 	}
@@ -167,7 +177,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy
 	default String getBehaviour() {
-		return this.getEntity().getStateMachine().getState().getName();
+		return this.getEntity()
+			.getStateMachine()
+			.getState()
+			.getName();
 	}
 
 	/**
@@ -188,17 +201,20 @@ public interface PersonState extends PersonTemporalState {
 	 * @return true contact count for today
 	 */
 	default long getContactCount() {
-		return ModelNav.history(this).map(m -> m.getTodaysContacts().length)
-				.orElse(0);
+		return ModelNav.history(this)
+			.map(m -> m.getTodaysContacts().length)
+			.orElse(0);
 	}
 
 	@Override @Value.Lazy
 	default double getContactExposure() {
 		return Math.min(
-				MAX_EXPOSURE,
-				ModelNav.history(this).stream()
-						.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()))
-						.mapToDouble(p -> p.getExposure()).sum()
+			MAX_EXPOSURE,
+			ModelNav.history(this)
+				.stream()
+				.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()))
+				.mapToDouble(Exposure::getExposure)
+				.sum()
 		);
 	}
 
@@ -211,7 +227,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Stream<Contact> getContactHistory() {
 		return ModelNav.history(this, this.infPeriod())
-				.flatMap(ph -> Arrays.stream(ph.getTodaysContacts()));
+			.flatMap(ph -> Arrays.stream(ph.getTodaysContacts()));
 	}
 
 	/**
@@ -221,8 +237,9 @@ public interface PersonState extends PersonTemporalState {
 	 * @return count of infectious exposures today
 	 */
 	default long getExposureCount() {
-		return ModelNav.history(this).map(m -> m.getTodaysExposures().length)
-				.orElse(0);
+		return ModelNav.history(this)
+			.map(m -> m.getTodaysExposures().length)
+			.orElse(0);
 	}
 
 	/**
@@ -234,7 +251,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Stream<Exposure> getExposureHistory() {
 		return ModelNav.history(this, this.infPeriod())
-				.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()));
+			.flatMap(ph -> Arrays.stream(ph.getTodaysExposures()));
 	}
 
 	/**
@@ -244,7 +261,8 @@ public interface PersonState extends PersonTemporalState {
 	 * @return immune activity derived from the in-host model
 	 */
 	default double getImmuneActivity() {
-		return this.getInHostModel().getImmuneActivity();
+		return this.getInHostModel()
+			.getImmuneActivity();
 	}
 
 	/**
@@ -290,7 +308,8 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Lazy
 	default Optional<TestResult> getLastResult() {
 		return this.getStillRelevantTests()
-				.filter(t -> t.isResultAvailable(this.getTime())).findFirst();
+			.filter(t -> t.isResultAvailable(this.getTime()))
+			.findFirst();
 	}
 
 	/**
@@ -301,7 +320,8 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy
 	default Optional<TestResult> getLastTest() {
-		return this.getStillRelevantTests().findFirst();
+		return this.getStillRelevantTests()
+			.findFirst();
 	}
 
 	/**
@@ -316,20 +336,24 @@ public interface PersonState extends PersonTemporalState {
 
 	@Override
 	default double getNormalisedSeverity() {
-		return this.getInHostModel().getNormalisedSeverity();
+		return this.getInHostModel()
+			.getNormalisedSeverity();
 	}
 
 	@Override
 	default double getNormalisedViralLoad() {
-		return this.getInHostModel().getNormalisedViralLoad();
+		return this.getInHostModel()
+			.getNormalisedViralLoad();
 	}
 
 	@Override @Value.Lazy
 	default double getPresumedLocalPrevalence() {
-		var prev = this.getContactHistory().filter(c -> c.isDetected())
-				.map(c -> c.getParticipantState(this))
-				.mapToDouble(ph -> ph.getProbabilityInfectiousToday()).average()
-				.orElse(0D);
+		var prev = this.getContactHistory()
+			.filter(Contact::isDetected)
+			.map(c -> c.getParticipantState(this))
+			.mapToDouble(PersonState::getProbabilityInfectiousToday)
+			.average()
+			.orElse(0D);
 		// The local prevalence will be problematic if it is zero
 		return prev != 0 ? prev : 0.0001;
 	}
@@ -342,7 +366,8 @@ public interface PersonState extends PersonTemporalState {
 	 * @return probability the person is infectious today (model estimate)
 	 */
 	default double getProbabilityInfectiousToday() {
-		return this.getRiskModel().getProbabilityInfectiousToday();
+		return this.getRiskModel()
+			.getProbabilityInfectiousToday();
 	}
 
 	/**
@@ -353,7 +378,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Stream<TestResult> getRecentRuleOutTests() {
 		return ModelNav.history(this, this.incubPeriod())
-				.flatMap(ph -> ph.getTodaysTests().stream());
+			.flatMap(
+				ph -> ph.getTodaysTests()
+					.stream()
+			);
 	}
 
 	/**
@@ -379,7 +407,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default Stream<TestResult> getStillRelevantTests() {
 		return ModelNav.history(this, this.infPeriod())
-				.flatMap(ph -> ph.getTodaysTests().stream());
+			.flatMap(
+				ph -> ph.getTodaysTests()
+					.stream()
+			);
 	}
 
 	/**
@@ -400,7 +431,7 @@ public interface PersonState extends PersonTemporalState {
 	 *
 	 * @return total exposure for the day
 	 */
-	public default double getTotalExposure() {
+	default double getTotalExposure() {
 		return this.getContactExposure() + this.getImportationExposure();
 	}
 
@@ -424,9 +455,11 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy
 	default double getTrueLocalPrevalence() {
-		return this.getContactHistory().map(c -> c.getParticipantState(this))
-				.mapToDouble(ph -> ph.isInfectious() ? 1.0 : 0.0).average()
-				.orElse(0D);
+		return this.getContactHistory()
+			.map(c -> c.getParticipantState(this))
+			.mapToDouble(ph -> ph.isInfectious() ? 1.0 : 0.0)
+			.average()
+			.orElse(0D);
 	}
 
 	/**
@@ -438,7 +471,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Derived
 	default boolean isCompliant() {
-		if (this.isDead()) { return false; }
+		if (this.isDead()) return false;
 		var rng = Sampler.getSampler();
 		return rng.bern(this.getAdjustedCompliance());
 	}
@@ -453,25 +486,27 @@ public interface PersonState extends PersonTemporalState {
 	default boolean isContinuation(
 			Predicate<PersonTemporalState> test, int limit
 	) {
-		if (limit < 0) { return false; }
-		if (limit == 0) { return test.test(this); }
-		if (!test.test(this) || !this.getEntity().getCurrentHistory().isPresent()
-				|| this.getEntity().getCurrentHistory().get()
-						.isRecently(test, limit - 1)) {
+		if (limit < 0) return false;
+		if (limit == 0) return test.test(this);
+		if (!test.test(this) || !this.getEntity()
+			.getCurrentHistory()
+			.isPresent() || this.getEntity()
+				.getCurrentHistory()
+				.get()
+				.isRecently(test, limit - 1))
 			return false;
-		}
 		return true;
 	}
 
 	@Override @Value.Derived
 	default boolean isDead() {
 		// Sampler rng = Sampler.getSampler();
-		if (this.getEntity().getStateMachine().getState()
-				.equals(NonCompliant.DEAD)) {
-			return true;
-		}
+		if (this.getEntity()
+			.getStateMachine()
+			.getState()
+			.equals(NonCompliant.DEAD)) return true;
 		return this.getNormalisedSeverity() >= ModelNav.modelBase(this)
-				.getSeverityDeathCutoff();
+			.getSeverityDeathCutoff();
 	}
 
 	/**
@@ -485,14 +520,16 @@ public interface PersonState extends PersonTemporalState {
 	 * @return true if the event is incident within the window
 	 */
 	default boolean isIncident(Predicate<PersonTemporalState> test, int limit) {
-		if (limit <= 0) { return test.test(this); }
-		if (!test.test(this)) { return false; }
+		if (limit <= 0) return test.test(this);
+		if (!test.test(this)) return false;
 		// This assumes that a positive at the start of the simulation is new.
-		if (!this.getEntity().getCurrentHistory().isPresent()) { return true; }
-		if (this.getEntity().getCurrentHistory().get()
-				.isRecently(test, limit - 1)) {
-			return false;
-		}
+		if (!this.getEntity()
+			.getCurrentHistory()
+			.isPresent()) return true;
+		if (this.getEntity()
+			.getCurrentHistory()
+			.get()
+			.isRecently(test, limit - 1)) return false;
 		return true;
 	}
 
@@ -505,11 +542,10 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Lazy
 	default boolean isIncidentDeath() {
-		if (!this.isDead() || ModelNav.history(this).map(ph -> ph.isDead())
-				.orElse(Boolean.FALSE)) { // dead
-			// yesterday:
+		if (!this.isDead() || ModelNav.history(this)
+			.map(PersonHistory::isDead)
+			.orElse(Boolean.FALSE)) // yesterday:
 			return false;
-		}
 		// was not dead yesterday
 		return true;
 	}
@@ -517,8 +553,9 @@ public interface PersonState extends PersonTemporalState {
 	@Override @Value.Lazy
 	default boolean isIncidentExposure() {
 		return this.isIncident(
-				ph -> ph.getContactExposure() > 0,
-				ModelNav.modelBase(this).getInfectiveDuration()
+			ph -> ph.getContactExposure() > 0,
+			ModelNav.modelBase(this)
+				.getInfectiveDuration()
 		);
 	}
 
@@ -533,24 +570,26 @@ public interface PersonState extends PersonTemporalState {
 	@Value.Lazy
 	default boolean isIncidentHospitalisation() {
 		return this.isIncident(
-				ph -> ph.isRequiringHospitalisation(),
-				ModelNav.modelBase(this).getSymptomDuration()
+			PersonTemporalState::isRequiringHospitalisation,
+			ModelNav.modelBase(this)
+				.getSymptomDuration()
 		);
 	}
 
 	@Override @Value.Lazy
 	default boolean isIncidentInfection() {
 		return this.isIncident(
-				ph -> ph.isInfectious(),
-				ModelNav.modelBase(this).getInfectiveDuration()
+			PersonTemporalState::isInfectious,
+			ModelNav.modelBase(this)
+				.getInfectiveDuration()
 		);
 	}
 
 	@Override @Value.Derived
 	default boolean isInfectious() {
-		if (this.isDead()) { return false; }
+		if (this.isDead()) return false;
 		return ModelNav.modelBase(this)
-				.getTransmissibilityBaseline(this.getNormalisedViralLoad()) > 0;
+			.getTransmissibilityBaseline(this.getNormalisedViralLoad()) > 0;
 	}
 
 	/**
@@ -566,8 +605,9 @@ public interface PersonState extends PersonTemporalState {
 		// because at the point this is run in the update cycle the
 		// history has not yet been updated.
 		Optional<Result> o = this.getLastTest()
-				.map(tr -> tr.resultOnDay(this.getTime()));
-		return o.isPresent() && o.get().equals(result);
+			.map(tr -> tr.resultOnDay(this.getTime()));
+		return o.isPresent() && o.get()
+			.equals(result);
 	}
 
 	/**
@@ -595,41 +635,57 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	default boolean isRecentlyTested(Type type, int days) {
 		return ModelNav.history(this, days)
-				.flatMap(ph -> ph.getTodaysTests().stream())
-				.filter(
-						t -> type.params().getTestName()
-								.equals(t.getTestParams().getTestName())
-				).findFirst().isPresent();
+			.flatMap(
+				ph -> ph.getTodaysTests()
+					.stream()
+			)
+			.filter(
+				t -> type.params()
+					.getTestName()
+					.equals(
+						t.getTestParams()
+							.getTestName()
+					)
+			)
+			.findFirst()
+			.isPresent();
 	}
 
 	@Override @Value.Derived
 	default boolean isReportedSymptomatic() {
 		// assume user is not going to lie about symptoms
-		if (!this.isSymptomatic()) { return false; }
+		if (!this.isSymptomatic()) return false;
 		return this.isUsingAppToday();
 	}
 
 	@Override @Value.Derived
 	default boolean isRequiringHospitalisation() {
-		if (this.isDead()) { return false; }
+		if (this.isDead()) return false;
 		// Sampler rng = Sampler.getSampler();
 		return this.getNormalisedSeverity() >= ModelNav.modelBase(this)
-				.getSeverityHospitalisationCutoff();
+			.getSeverityHospitalisationCutoff();
 	}
 
 	@Override @Value.Derived
 	default boolean isSymptomatic() {
-		if (this.isDead()) { return false; }
+		if (this.isDead()) return false;
 		var rng = Sampler.getSampler();
-		var adjSev = this.getNormalisedSeverity()
-				/ ModelNav.modelBase(this).getSeveritySymptomsCutoff();
+		var adjSev = this.getNormalisedSeverity() / ModelNav.modelBase(this)
+			.getSeveritySymptomsCutoff();
 		adjSev = TestParameters.applyNoise(
-				adjSev, this.getEntity().getBaseline().getSymptomSensitivity(),
-				this.getEntity().getBaseline().getSymptomSpecificity(),
-				this.getEntity().getOutbreak().getBaseline()
-						.getSeveritySymptomsCutoff(), // limit of detection of
-																// symptoms
-				rng
+			adjSev,
+			this.getEntity()
+				.getBaseline()
+				.getSymptomSensitivity(),
+			this.getEntity()
+				.getBaseline()
+				.getSymptomSpecificity(),
+			this.getEntity()
+				.getOutbreak()
+				.getBaseline()
+				.getSeveritySymptomsCutoff(), // limit of detection of
+														// symptoms
+			rng
 		);
 		return adjSev >= 1;
 	}
@@ -645,8 +701,8 @@ public interface PersonState extends PersonTemporalState {
 	 * @return true if symptomatic for at least the specified consecutive days
 	 */
 	default boolean isSymptomaticConsecutively(int days) {
-		if (days <= 0) { return false; }
-		return this.isContinuation(h -> h.isSymptomatic(), days - 1);
+		if (days <= 0) return false;
+		return this.isContinuation(PersonTemporalState::isSymptomatic, days - 1);
 	}
 
 	/**
@@ -658,7 +714,7 @@ public interface PersonState extends PersonTemporalState {
 	 */
 	@Value.Derived
 	default boolean isUsingAppToday() {
-		if (this.isDead()) { return false; }
+		if (this.isDead()) return false;
 		var rng = Sampler.getSampler();
 		return rng.bern(this.getAdjustedAppUseProbability());
 	}

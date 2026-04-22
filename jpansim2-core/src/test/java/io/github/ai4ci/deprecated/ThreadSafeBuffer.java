@@ -20,12 +20,18 @@ import org.apache.commons.lang3.NotImplementedException;
 @Deprecated
 public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 	
+	@Deprecated
 	Class<X> type;
+	@Deprecated
 	X[] data = null;
+	@Deprecated
 	int capacity;
+	@Deprecated
 	AtomicInteger next;
+	@Deprecated
 	AtomicInteger tail;
 	
+	@Deprecated
 	@SuppressWarnings("unchecked")
 	public ThreadSafeBuffer(Class<X> type, int size) {
 		this.data = (X[]) Array.newInstance(type, size);
@@ -35,6 +41,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		this.tail = new AtomicInteger(0);
 	}
 	
+	@Deprecated
 	@Override
 	public void put(X value) {
 		int p = next.getAndIncrement();
@@ -50,11 +57,13 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		}
 	}
 	
+	@Deprecated
 	@Override
 	public boolean isEmpty() {
 		return next.get() == tail.get();
 	}
 	
+	@Deprecated
 	@Override
 	public X poll() {
 		if (isEmpty()) return null;
@@ -62,17 +71,20 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return this.data[p % capacity];
 	}
 	
+	@Deprecated
 	public X next() {
 		if (isEmpty()) throw new NoSuchElementException();
 		int p = tail.getAndIncrement();
 		return this.data[p % capacity];
 	}
 	
+	@Deprecated
 	@Override
 	public int size() {
 		return next.get() - tail.get();
 	}
 
+	@Deprecated
 	@Override
 	public X[] toArray() {
 		int b = next.get();
@@ -89,47 +101,56 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return out;
 	}
 	
+	@Deprecated
 	@Override
 	public boolean contains(Object o) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public Iterator<X> iterator() {
 		return Arrays.asList(toArray()).iterator();
 	}
 
+	@Deprecated
 	@Override
 	public <T> T[] toArray(T[] a) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean remove(Object o) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean containsAll(Collection<?> c) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean addAll(Collection<? extends X> c) {
 		c.forEach(this::add);
 		return true;
 	}
 
+	@Deprecated
 	@Override
 	public boolean removeAll(Collection<?> c) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public boolean retainAll(Collection<?> c) {
 		throw new NotImplementedException();
 	}
 
+	@Deprecated
 	@Override
 	public void clear() {
 		synchronized(this) {
@@ -138,11 +159,13 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		}
 	}
 
+	@Deprecated
 	@Override
 	public boolean add(X e) {
 		return offer(e);
 	}
 
+	@Deprecated
 	@Override
 	public boolean offer(X e) {
 		synchronized(next) {
@@ -156,12 +179,14 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		}
 	}
 
+	@Deprecated
 	@Override
 	public X remove() {
 		if (this.isEmpty()) throw new NoSuchElementException();
 		return poll();
 	}
 
+	@Deprecated
 	@Override
 	public X element() {
 		if (this.isEmpty()) throw new NoSuchElementException();
@@ -169,6 +194,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return data[p % capacity];
 	}
 
+	@Deprecated
 	@Override
 	public X peek() {
 		if (this.isEmpty()) return null;
@@ -176,6 +202,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return data[p % capacity];
 	}
 
+	@Deprecated
 	@Override
 	public boolean offer(X e, long timeout, TimeUnit unit) throws InterruptedException {
 		return offer(e, System.currentTimeMillis()+unit.toMillis(timeout) );
@@ -188,12 +215,14 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return offer(e,before);
 	}
 
+	@Deprecated
 	@Override
 	public X take() throws InterruptedException {
 		while(isEmpty()) Thread.onSpinWait();
 		return poll();
 	}
 
+	@Deprecated
 	@Override
 	public X poll(long timeout, TimeUnit unit) throws InterruptedException {
 		return poll(System.currentTimeMillis()+unit.toMillis(timeout));
@@ -204,11 +233,13 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return poll();
 	}
 
+	@Deprecated
 	@Override
 	public int remainingCapacity() {
 		return capacity-size();
 	}
 
+	@Deprecated
 	@Override
 	public int drainTo(Collection<? super X> c) {
 		int b = next.get();
@@ -218,6 +249,7 @@ public class ThreadSafeBuffer<X> implements Serializable, BlockingQueue<X> {
 		return 0;
 	}
 
+	@Deprecated
 	@Override
 	public int drainTo(Collection<? super X> c, int maxElements) {
 		int b = next.get();

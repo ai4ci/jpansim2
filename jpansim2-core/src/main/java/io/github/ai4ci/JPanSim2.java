@@ -39,8 +39,10 @@ import io.github.ai4ci.flow.SimulationMonitor;
  * <li><b>-c, --config &lt;config&gt;</b> — Path to the configuration JSON file.
  * By default the launcher looks for <code>config.json</code> in the output
  * directory.</li>
- * <li><b>-g, --generate-config &lt;generate-config&gt;</b> — generates a default configuration</li>
- * <li><b>-v, --validate-config &lt;validate-config&gt;</b> — parses a configuration file and displays a summary if successful</li>
+ * <li><b>-g, --generate-config &lt;generate-config&gt;</b> — generates a
+ * default configuration</li>
+ * <li><b>-v, --validate-config &lt;validate-config&gt;</b> — parses a
+ * configuration file and displays a summary if successful</li>
  * </ul>
  *
  * Behaviour notes:
@@ -62,13 +64,11 @@ import io.github.ai4ci.flow.SimulationMonitor;
 public class JPanSim2 {
 
 	private static Path expand(Path path) {
-		if (path.startsWith("~" + File.separator)) {
-			path = Paths.get(
-				System.getProperty("user.home"),
-				path.toString()
-					.substring(1)
-			);
-		}
+		if (path.startsWith(
+			"~" + File.separator
+		)) path = Paths.get(System.getProperty("user.home"), path.toString()
+			.substring(1)
+		);
 		return path;
 	}
 
@@ -132,15 +132,15 @@ public class JPanSim2 {
 			.desc("The example configuration name to generate. One of: " + configs)
 			.required(false)
 			.build();
-		
+
 		var validateConfig = Option.builder("v")
-				.longOpt("validate-config")
-				.argName("validate-config")
-				.hasArg(false)
-				.desc("Parse the config file and make sure it is valid")
-				.required(false)
-				.build();
-		
+			.longOpt("validate-config")
+			.argName("validate-config")
+			.hasArg(false)
+			.desc("Parse the config file and make sure it is valid")
+			.required(false)
+			.build();
+
 		var validate = false;
 
 		options.addOption(outputPath);
@@ -159,7 +159,7 @@ public class JPanSim2 {
 				var tmp = expand(cmd.getParsedOptionValue(outputPath));
 				dir = tmp;
 			}
-			
+
 			if (cmd.hasOption(generateConfigName)) {
 				var tmp = cmd.getParsedOptionValue(generateConfigName)
 					.toString();
@@ -176,13 +176,10 @@ public class JPanSim2 {
 			if (cmd.hasOption(configPath)) {
 				var tmp = expand(cmd.getParsedOptionValue(configPath));
 				configFile = tmp;
-			} else {
+			} else
 				configFile = dir.resolve("config.json");
-			}
-			
-			if (cmd.hasOption(validateConfig)) {
-				validate = true;
-			}
+
+			if (cmd.hasOption(validateConfig)) validate = true;
 
 		} catch (ParseException e) {
 			System.out.println(e.getMessage());
@@ -206,11 +203,9 @@ public class JPanSim2 {
 		}
 
 		if (!Files.exists(configFile)) {
-			if (experiment == null) {
-				throw new RuntimeException(
-						"Could not find configuration at: " + configFile
-				);
-			}
+			if (experiment == null) throw new RuntimeException(
+					"Could not find configuration at: " + configFile
+			);
 			experiment.config.writeConfig(configFile, false);
 			System.out.println(
 				String.format(
@@ -231,16 +226,22 @@ public class JPanSim2 {
 			System.out.println("================================");
 			System.out.println("Setup configurations:");
 			System.out.println("================================");
-			setup.stream().forEach(System.out::println);
+			setup.stream()
+				.forEach(System.out::println);
 			System.out.println("Execution configurations:");
 			System.out.println("================================");
-			setup.stream().forEach(System.out::println);
+			setup.stream()
+				.forEach(System.out::println);
 			System.out.println("================================");
 			System.out.println("SUMMARY:");
 			System.out.println("================================");
-			System.out.println("- Contains "+setup.size()+" setup configurations");
-			System.out.println("- Each setup contains "+expt.size()+" execution configurations");
-			System.out.println("Total simulations to run: "+setup.size()*expt.size());
+			System.out
+				.println("- Contains " + setup.size() + " setup configurations");
+			System.out.println(
+				"- Each setup contains " + expt.size() + " execution configurations"
+			);
+			System.out
+				.println("Total simulations to run: " + setup.size() * expt.size());
 			System.out.println("================================");
 			System.out.println("SUCESS");
 			System.exit(0);

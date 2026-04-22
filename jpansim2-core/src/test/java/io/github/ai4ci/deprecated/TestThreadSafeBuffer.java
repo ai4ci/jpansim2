@@ -17,13 +17,15 @@ public class TestThreadSafeBuffer {
 
     private BlockingQueue<Integer> queue;
 
-    @BeforeEach
+    @Deprecated
+	@BeforeEach
     void setUp() {
         // queue = new ArrayBlockingQueue<>(2); // Capacity of 2
         queue = new ThreadSafeBuffer<Integer>(Integer.class,2); // Capacity of 2
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testOfferAndPoll() throws InterruptedException {
         assertTrue(queue.offer(1));
         assertTrue(queue.offer(2));
@@ -34,7 +36,8 @@ public class TestThreadSafeBuffer {
         assertNull(queue.poll()); // Should return null if empty
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testPutAndTake() throws InterruptedException {
         queue.put(10);
         queue.put(20);
@@ -57,7 +60,8 @@ public class TestThreadSafeBuffer {
         assertEquals(30, queue.take());
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testBlockingTake() throws InterruptedException {
         Thread t = new Thread(() -> {
             try {
@@ -78,14 +82,16 @@ public class TestThreadSafeBuffer {
         t.join();
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testTimedOffer() throws InterruptedException {
         assertTrue(queue.offer(1));
         assertTrue(queue.offer(2));
         assertFalse(queue.offer(3, 1, TimeUnit.SECONDS)); // Should timeout
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testTimedPoll() throws InterruptedException {
         assertNull(queue.poll(500, TimeUnit.MILLISECONDS)); // Should timeout and return null
 

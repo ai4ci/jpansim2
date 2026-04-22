@@ -10,12 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 @Deprecated
 class BlockingQueueConcurrencyTest2 {
 
+	@Deprecated
 	static BlockingQueue<Integer> newQueue(int size) {
 		//return new ArrayBlockingQueue<>(size);
 		return new ThreadSafeBuffer<Integer>(Integer.class,size);
 	}
 	
-    @Test
+    @Deprecated
+	@Test
     void testTakeBlocksUntilElementIsAdded() {
         BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(1);
         CountDownLatch takeStarted = new CountDownLatch(1);
@@ -43,7 +45,8 @@ class BlockingQueueConcurrencyTest2 {
         });
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testPutBlocksUntilSpaceIsAvailable() throws Exception {
         BlockingQueue<Integer> queue = newQueue(1);
         queue.put(0); // Fill the queue
@@ -72,7 +75,8 @@ class BlockingQueueConcurrencyTest2 {
         });
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testPollWithTimeoutReturnsNullAfterTimeout() throws Exception {
         BlockingQueue<Integer> queue = newQueue(1);
         assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
@@ -81,7 +85,8 @@ class BlockingQueueConcurrencyTest2 {
         });
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testPollWithTimeoutReturnsElementIfAddedBeforeTimeout() throws Exception {
         BlockingQueue<Integer> queue = newQueue(1);
 
@@ -105,7 +110,8 @@ class BlockingQueueConcurrencyTest2 {
         assertFalse(adderThread.isAlive());
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testOfferWithTimeoutReturnsFalseWhenFull() throws Exception {
         BlockingQueue<Integer> queue = newQueue(1);
         queue.put(0); // Fill the queue
@@ -117,7 +123,8 @@ class BlockingQueueConcurrencyTest2 {
         });
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testOfferWithTimeoutReturnsTrueWhenSpaceBecomesAvailable() throws Exception {
         BlockingQueue<Integer> queue = newQueue(1);
         queue.put(0); // Fill the queue
@@ -141,7 +148,8 @@ class BlockingQueueConcurrencyTest2 {
         assertEquals(Integer.valueOf(789), queue.take());
     }
 
-    @Test
+    @Deprecated
+	@Test
     void testRemainingCapacityReflectsQueueState() throws Exception {
         BlockingQueue<Integer> queue = newQueue(3);
         assertEquals(3, queue.remainingCapacity());

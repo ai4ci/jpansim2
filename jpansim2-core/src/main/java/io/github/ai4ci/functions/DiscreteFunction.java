@@ -8,6 +8,8 @@ import org.mariuszgromada.math.mxparser.Expression;
 import org.mariuszgromada.math.mxparser.mXparser;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -30,6 +32,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableDiscreteFunction.class)
 @JsonDeserialize(as = ImmutableDiscreteFunction.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("function")
 public interface DiscreteFunction extends Serializable, KernelFunction {
 
 	// NB this probably needs a lot of refactoring.

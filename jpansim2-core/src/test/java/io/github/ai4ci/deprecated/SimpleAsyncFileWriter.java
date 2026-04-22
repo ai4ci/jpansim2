@@ -15,7 +15,8 @@ public class SimpleAsyncFileWriter { //implements QueueWriter.Queue<String> {
     private int size;
     private static final int FLUSH_INTERVAL_MS = 2000;
 
-    public SimpleAsyncFileWriter(File file, int size, String name, String headers) throws IOException {
+    @Deprecated
+	public SimpleAsyncFileWriter(File file, int size, String name, String headers) throws IOException {
         // this.queue = new ArrayBlockingQueue<>(size*1024);
         this.queue = new ThreadSafeBuffer<String>(String.class, size*1024);
         this.size = size;
@@ -27,7 +28,8 @@ public class SimpleAsyncFileWriter { //implements QueueWriter.Queue<String> {
         this.writerThread.start();
     }
 
-    public void submit(String line) throws InterruptedException {
+    @Deprecated
+	public void submit(String line) throws InterruptedException {
         queue.put(line); // blocks if queue is full (backpressure)
     }
 
@@ -79,11 +81,13 @@ public class SimpleAsyncFileWriter { //implements QueueWriter.Queue<String> {
         }
     }
 
-    public void halt() throws InterruptedException {
+    @Deprecated
+	public void halt() throws InterruptedException {
         running = false;
         writerThread.join();
     }
 
+	@Deprecated
 	public void flush() throws InterruptedException {
 		try {
 			outputStream.flush();
@@ -92,14 +96,17 @@ public class SimpleAsyncFileWriter { //implements QueueWriter.Queue<String> {
 		}
 	}
 	
+	@Deprecated
 	public boolean isWaiting() {
 		return queue.isEmpty() || queue.size() < size;
 	}
 
+	@Deprecated
 	public void join() throws InterruptedException {
 		writerThread.join();
 	}
 
+	@Deprecated
 	public String report() {
 		return isWaiting() ? "waiting" : "writing";
 	}

@@ -16,6 +16,7 @@ import org.immutables.value.Value;
  * {@link HistoryMapper} during the update cycle.
  */
 @Value.Immutable
+@SuppressWarnings("immutable")
 public interface OutbreakHistory extends OutbreakTemporalState {
 
 	/**
@@ -31,7 +32,9 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	default int getCurrentTestNegativesBySampleDate() {
 		return this.getTestNegativesBySampleDate(
-				this.getEntity().getCurrentState().getTime()
+			this.getEntity()
+				.getCurrentState()
+				.getTime()
 		);
 	}
 
@@ -51,7 +54,9 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	default int getCurrentTestPositivesBySampleDate() {
 		return this.getTestPositivesBySampleDate(
-				this.getEntity().getCurrentState().getTime()
+			this.getEntity()
+				.getCurrentState()
+				.getTime()
 		);
 	}
 
@@ -65,8 +70,10 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default int getMaxDelay() {
-		return ModelNav.peopleHistory(this).mapToInt(ph -> ph.getMaxDelay()).max()
-				.orElse(0);
+		return ModelNav.peopleHistory(this)
+			.mapToInt(PersonHistory::getMaxDelay)
+			.max()
+			.orElse(0);
 	}
 
 	/**
@@ -76,7 +83,8 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 *         this is the first entry (time=0).
 	 */
 	default Optional<OutbreakHistory> getPrevious() {
-		return this.getEntity().getHistoryEntry(this.getTime() - 1);
+		return this.getEntity()
+			.getHistoryEntry(this.getTime() - 1);
 	}
 
 	/**
@@ -92,14 +100,17 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default List<Integer> getTestNegativesBySampleDate() {
-		return IntStream.range(0, this.getMaxDelay()).mapToObj(delay -> {
-			return ModelNav.peopleHistory(this).mapToInt(p -> {
-				if (p.getTodaysTests().isEmpty()) { return 0; }
-				// If any of a persons results are positive today
-				return p.getResultsBySampleDate(this.getTime() + delay)
+		return IntStream.range(0, this.getMaxDelay())
+			.mapToObj(delay -> ModelNav.peopleHistory(this)
+				.mapToInt(p -> {
+					if (p.getTodaysTests()
+						.isEmpty()) return 0;
+					// If any of a persons results are positive today
+					return p.getResultsBySampleDate(this.getTime() + delay)
 						.allMatch(t -> !t.getFinalObservedResult()) ? 1 : 0;
-			}).sum();
-		}).collect(Collectors.toList());
+				})
+				.sum())
+			.collect(Collectors.toList());
 	}
 
 	/**
@@ -119,9 +130,12 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	default int getTestNegativesBySampleDate(int time) {
 		var lim = time - this.getTime();
-		if (lim < 0) { return 0; }
-		return this.getTestNegativesBySampleDate().stream().limit(lim)
-				.reduce(Integer::sum).orElse(0);
+		if (lim < 0) return 0;
+		return this.getTestNegativesBySampleDate()
+			.stream()
+			.limit(lim)
+			.reduce(Integer::sum)
+			.orElse(0);
 	}
 
 	/**
@@ -138,13 +152,14 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	@Value.Lazy
 	default List<Integer> getTestPositivesBySampleDate() {
-		return IntStream.range(0, this.getMaxDelay()).mapToObj(delay -> {
-			return ModelNav.peopleHistory(this).mapToInt(p ->
+		return IntStream.range(0, this.getMaxDelay())
+			.mapToObj(delay -> ModelNav.peopleHistory(this)
+				.mapToInt(p ->
 			// If any of a persons results are positive today
 			p.getResultsBySampleDate(this.getTime() + delay)
-					.anyMatch(t -> t.getFinalObservedResult()) ? 1 : 0
-			).sum();
-		}).collect(Collectors.toList());
+				.anyMatch(t -> t.getFinalObservedResult()) ? 1 : 0)
+				.sum())
+			.collect(Collectors.toList());
 	}
 
 	/**
@@ -162,9 +177,12 @@ public interface OutbreakHistory extends OutbreakTemporalState {
 	 */
 	default int getTestPositivesBySampleDate(int time) {
 		var lim = time - this.getTime();
-		if (lim < 0) { return 0; }
-		return this.getTestPositivesBySampleDate().stream().limit(lim)
-				.reduce(Integer::sum).orElse(0);
+		if (lim < 0) return 0;
+		return this.getTestPositivesBySampleDate()
+			.stream()
+			.limit(lim)
+			.reduce(Integer::sum)
+			.orElse(0);
 	}
 
 }

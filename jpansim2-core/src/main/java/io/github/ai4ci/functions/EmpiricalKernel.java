@@ -6,6 +6,8 @@ import java.util.Arrays;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -25,6 +27,8 @@ import io.github.ai4ci.functions.Coordinates.DuplicateResolution;
 @Value.Immutable
 @JsonSerialize(as = ImmutableEmpiricalKernel.class)
 @JsonDeserialize(as = ImmutableEmpiricalKernel.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("empirical")
 public interface EmpiricalKernel extends Serializable, KernelFunction {
 
 	/**
@@ -49,11 +53,19 @@ public interface EmpiricalKernel extends Serializable, KernelFunction {
 	default Interpolator getInterpolator() {
 
 		Coordinates tmp = ImmutableCoordinates.builder()
-				.setX(Arrays.stream(this.getT()).asDoubleStream().toArray())
-				.setY(this.getY()).setXMin(this.getMinimum())
-				.setXMax(this.getMaximum()).setXLink(LinkFunction.NONE)
-				.setYLink(this.getLink()).setIncreasing(false)
-				.setResolveDuplicates(DuplicateResolution.MEAN).build();
+			.setX(
+				Arrays.stream(this.getT())
+					.asDoubleStream()
+					.toArray()
+			)
+			.setY(this.getY())
+			.setXMin(this.getMinimum())
+			.setXMax(this.getMaximum())
+			.setXLink(LinkFunction.NONE)
+			.setYLink(this.getLink())
+			.setIncreasing(false)
+			.setResolveDuplicates(DuplicateResolution.MEAN)
+			.build();
 
 //		if (getX().length < 20) {
 
@@ -91,7 +103,9 @@ public interface EmpiricalKernel extends Serializable, KernelFunction {
 	 */
 	@Override @Value.Default
 	default int getMaximum() {
-		return Arrays.stream(this.getT()).max().orElse(0);
+		return Arrays.stream(this.getT())
+			.max()
+			.orElse(0);
 	}
 
 	/**
@@ -107,7 +121,9 @@ public interface EmpiricalKernel extends Serializable, KernelFunction {
 	 */
 	@Override @Value.Default
 	default int getMinimum() {
-		return Arrays.stream(this.getT()).min().orElse(0);
+		return Arrays.stream(this.getT())
+			.min()
+			.orElse(0);
 	}
 
 	/**
@@ -149,7 +165,11 @@ public interface EmpiricalKernel extends Serializable, KernelFunction {
 	 */
 	@Override
 	default double rawValue(int x) {
-		return this.getLink().invFn(this.getInterpolator().interpolate(x));
+		return this.getLink()
+			.invFn(
+				this.getInterpolator()
+					.interpolate(x)
+			);
 	}
 
 }

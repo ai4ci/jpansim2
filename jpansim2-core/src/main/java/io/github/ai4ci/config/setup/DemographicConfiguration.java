@@ -48,16 +48,12 @@ import io.github.ai4ci.util.Sampler;
 		requireTypeIdForSubtypes = OptBoolean.TRUE
 )
 @JsonSubTypes(
-	{ @Type(
-			value = ImmutableUnstratifiedDemography.class,
-			name = "unstratified"
-	), @Type(value = ImmutableAgeStratifiedDemography.class,
-			name = "age-stratified"
-	), @Type(value = ImmutableLocationAwareDemography.class,
-			name = "location-aware"
-	) }
+	{ @Type(value = ImmutableUnstratifiedDemography.class),
+			@Type(value = ImmutableAgeStratifiedDemography.class),
+			@Type(value = ImmutableLocationAwareDemography.class) }
 )
-public interface DemographicConfiguration extends Serializable, Abstraction.Described {
+public interface DemographicConfiguration
+		extends Serializable, Abstraction.Described {
 
 	/**
 	 * Create a modifiable person stub attached to the supplied outbreak.
@@ -90,13 +86,21 @@ public interface DemographicConfiguration extends Serializable, Abstraction.Desc
 	 */
 	default double getProximity(Person one, Person two) {
 		var dist = Math.sqrt(
-				Math.pow(
-						one.getDemographic().getLocationX()
-								- two.getDemographic().getLocationX(),
-						2
-				) + Math.pow(one.getDemographic().getLocationY() - two.getDemographic().getLocationY(), 2)
+			Math.pow(
+				one.getDemographic()
+					.getLocationX()
+						- two.getDemographic()
+							.getLocationX(),
+				2
+			) + Math.pow(one.getDemographic()
+				.getLocationY()
+					- two.getDemographic()
+						.getLocationY(),
+				2
+			)
 		) / Math.sqrt(2.0);
-		return 1 - this.getEuclidianDistanceCDF().getCumulative(dist);
+		return 1 - this.getEuclidianDistanceCDF()
+			.getCumulative(dist);
 	}
 
 	/**

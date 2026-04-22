@@ -20,18 +20,23 @@ import io.github.ai4ci.util.Sampler;
 // @JsonDeserialize(as = ImmutableHistogramDistribution.class)
 public interface HistogramDistribution extends Distribution, Serializable {
 
+	@Deprecated
 	@Override
 	double[] getSamples();
 	
+	@Deprecated
 	@Override
 	@Value.Default default LinkFunction getLink() {return LinkFunction.NONE;}
+	@Deprecated
 	@Override
 	@Value.Default @JsonIgnore
 	default double getMinSupport() {return getLink().getMinSupport();}
+	@Deprecated
 	@Override
 	@Value.Default @JsonIgnore
 	default double getMaxSupport() {return getLink().getMaxSupport();}
 	
+	@Deprecated
 	@JsonIgnore
 	@Value.Derived default double[] getX() {
 		double[] samples = getSamples();
@@ -39,11 +44,13 @@ public interface HistogramDistribution extends Distribution, Serializable {
 		return samples;
 	}
 	
+	@Deprecated
 	@JsonIgnore
 	@Value.Derived default double getMinimum() {
 		return getX()[0];
 	}
 	
+	@Deprecated
 	@JsonIgnore
 	@Value.Derived default double getMaximum() {
 		return getX()[getX().length-1];
@@ -104,27 +111,32 @@ public interface HistogramDistribution extends Distribution, Serializable {
 		return getX()[index] + (getX()[index+1]-getX()[index])*mod; 
 	}
 	
+	@Deprecated
 	@Override
 	@JsonIgnore
 	default double sample(Sampler rng) {
 		return interpolateY(rng.nextDouble());
 	}
 	
+	@Deprecated
 	@JsonIgnore
 	@Value.Lazy
 	default double getMean() {
 		return Arrays.stream(getX()).average().orElse(Double.NaN);
 	};
 	
+	@Deprecated
 	@JsonIgnore
 	default double getCumulative(double x) {
 		return interpolateX(x);
 	};
 	
+	@Deprecated
 	@JsonIgnore
 	default double getMedian() {
 		return interpolateY(0.5);
 	}
+	@Deprecated
 	@JsonIgnore
 	default double getDensity(double x) {
 		return gradientX(x);
@@ -138,6 +150,7 @@ public interface HistogramDistribution extends Distribution, Serializable {
 //		
 //	}
 	
+	@Deprecated
 	default public double getQuantile(double p) {
 		return interpolateY(p);
 	}

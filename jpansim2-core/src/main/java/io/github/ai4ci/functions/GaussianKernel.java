@@ -2,6 +2,8 @@ package io.github.ai4ci.functions;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -19,6 +21,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Value.Immutable
 @JsonSerialize(as = ImmutableGaussianKernel.class)
 @JsonDeserialize(as = ImmutableGaussianKernel.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("gaussian")
 public interface GaussianKernel extends KernelFunction {
 
 	/**
@@ -49,11 +53,10 @@ public interface GaussianKernel extends KernelFunction {
 	 * @return raw kernel value at t
 	 */
 	@Override
-	public default double rawValue(int t) {
-		double deltat = this.getMu() - t;
-		return Math.exp(
-				-((deltat * deltat) / (2 * this.getSigma() * this.getSigma()))
-		);
+	default double rawValue(int t) {
+		var deltat = this.getMu() - t;
+		return Math
+			.exp(-((deltat * deltat) / (2 * this.getSigma() * this.getSigma())));
 	}
 
 }

@@ -94,47 +94,49 @@ public interface DefaultOutbreakBaseliner {
 			ImmutableOutbreakBaseline.Builder builder, Outbreak outbreak,
 			Sampler sampler
 	) {
-		ExecutionConfiguration configuration = outbreak
-				.getExecutionConfiguration();
+		var configuration = outbreak.getExecutionConfiguration();
 
 		// N.B. happens after people are baselined.., I think
 		double parameter;
-		try {
-			parameter = Calibration.inferViralLoadTransmissionParameterQuick(
-					outbreak, configuration.getR0()
-			);
-		} catch (Exception e) {
+		if (outbreak.getSetupConfiguration()
+			.isR0NetworkNormalised()) {
 			parameter = Calibration.inferViralLoadTransmissionParameter(
-					outbreak, configuration.getR0()
+				outbreak,
+				configuration.getR0()
+			);
+		} else {
+			parameter = Calibration.inferViralLoadTransmissionParameterErdosReyni(
+				outbreak,
+				configuration.getR0()
 			);
 		}
 		builder.setDefaultPolicyState(configuration.getDefaultPolicyModel())
-				.setViralLoadTransmissibilityParameter(parameter)
-				.setExpectedContactsPerPersonPerDay(
-						Calibration.contactsPerPersonPerDay(outbreak)
-				)
-				.setSeveritySymptomsCutoff(
-						configuration.getInHostConfiguration()
-								.getSeveritySymptomsCutoff(outbreak, configuration)
-				)
-				.setSeverityHospitalisationCutoff(
-						configuration.getInHostConfiguration()
-								.getSeverityHospitalisationCutoff(
-										outbreak, configuration
-								)
-				)
-				.setSeverityDeathCutoff(
-						configuration.getInHostConfiguration()
-								.getSeverityFatalityCutoff(outbreak, configuration)
-				)
-				.setInfectivityProfile(
-						InHostConfiguration.getInfectivityProfile(
-								configuration, parameter, 100, 100
-						)
-				).setSymptomDuration(
-						configuration.getSeverityProfile().getQuantile(0.95)
-				);
-		outbreak.getStateMachine().init(configuration.getDefaultPolicyModel());
+			.setViralLoadTransmissibilityParameter(parameter)
+			.setExpectedContactsPerPersonPerDay(
+				Calibration.contactsPerPersonPerDay(outbreak)
+			)
+			.setSeveritySymptomsCutoff(
+				configuration.getInHostConfiguration()
+					.getSeveritySymptomsCutoff(outbreak, configuration)
+			)
+			.setSeverityHospitalisationCutoff(
+				configuration.getInHostConfiguration()
+					.getSeverityHospitalisationCutoff(outbreak, configuration)
+			)
+			.setSeverityDeathCutoff(
+				configuration.getInHostConfiguration()
+					.getSeverityFatalityCutoff(outbreak, configuration)
+			)
+			.setInfectivityProfile(
+				InHostConfiguration
+					.getInfectivityProfile(configuration, parameter, 100, 100)
+			)
+			.setSymptomDuration(
+				configuration.getSeverityProfile()
+					.getQuantile(0.95)
+			);
+		outbreak.getStateMachine()
+			.init(configuration.getDefaultPolicyModel());
 		return builder.build();
 	}
 

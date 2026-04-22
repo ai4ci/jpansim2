@@ -28,34 +28,18 @@ import io.github.ai4ci.util.Sampler;
 		requireTypeIdForSubtypes = OptBoolean.TRUE
 )
 @JsonSubTypes(
-	{ @Type(
-			value = ImmutableBinomialDistribution.class,
-			name = "binomial"
-	), @Type(value = ImmutablePoissonDistribution.class,
-			name = "poisson"
-	), @Type(value = ImmutableNegBinomialDistribution.class,
-			name = "neg-binomial"
-	), @Type(value = ImmutableGammaDistribution.class,
-			name = "gamma"
-	), @Type(value = ImmutableNormalDistribution.class,
-			name = "normal"
-	), @Type(value = ImmutableLogNormalDistribution.class,
-			name = "log-normal"
-	), @Type(value = ImmutableLogitNormalDistribution.class,
-			name = "logit-normal"
-	), @Type(value = ImmutableBetaDistribution.class,
-			name = "beta"
-	), @Type(value = ImmutableUnimodalBetaDistribution.class,
-			name = "unimodal-beta"
-	), @Type(value = ImmutableUniformDistribution.class,
-			name = "uniform"
-	), @Type(value = ImmutablePointDistribution.class,
-			name = "uniform"
-	), @Type(value = ImmutableEmpiricalDistribution.class,
-			name = "empirical"
-	)
-
-	}
+	{ @Type(value = ImmutableBinomialDistribution.class),
+			@Type(value = ImmutablePoissonDistribution.class),
+			@Type(value = ImmutableNegBinomialDistribution.class),
+			@Type(value = ImmutableGammaDistribution.class),
+			@Type(value = ImmutableNormalDistribution.class),
+			@Type(value = ImmutableLogNormalDistribution.class),
+			@Type(value = ImmutableLogitNormalDistribution.class),
+			@Type(value = ImmutableBetaDistribution.class),
+			@Type(value = ImmutableUnimodalBetaDistribution.class),
+			@Type(value = ImmutableUniformDistribution.class),
+			@Type(value = ImmutablePointDistribution.class),
+			@Type(value = ImmutableEmpiricalDistribution.class) }
 )
 public interface Distribution {
 
@@ -76,9 +60,12 @@ public interface Distribution {
 	default ResampledDistribution combine(
 			Distribution with, BiFunction<Double, Double, Double> using
 	) {
-		return ImmutableResampledDistribution.builder().setFirst(this)
-				.setSecond(with).setCombiner(using).setLink(LinkFunction.NONE)
-				.build();
+		return ImmutableResampledDistribution.builder()
+			.setFirst(this)
+			.setSecond(with)
+			.setCombiner(using)
+			.setLink(LinkFunction.NONE)
+			.build();
 	}
 
 	/**
@@ -113,9 +100,10 @@ public interface Distribution {
 	 * @return array of PRECISION samples from the distribution
 	 */
 	@JsonIgnore @Value.Redacted @Value.Derived
-	public default double[] getSamples() {
-		return IntStream.range(0, PRECISION).mapToDouble(i -> this.sample())
-				.toArray();
+	default double[] getSamples() {
+		return IntStream.range(0, PRECISION)
+			.mapToDouble(i -> this.sample())
+			.toArray();
 	}
 
 	/**

@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import org.mariuszgromada.math.mxparser.License;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.victools.jsonschema.generator.Option;
@@ -15,12 +15,10 @@ import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 
 import io.github.ai4ci.config.ImmutableExperimentConfiguration;
-import tools.jackson.databind.node.ObjectNode;
 
 /**
  * A small utility to write example configuration files for all experiments and
@@ -41,20 +39,20 @@ public class WriteExampleConfig {
 	 * first argument to the program.
 	 *
 	 * @param args the first argument is the path to the output directory
-	 * @throws RuntimeException if the output directory cannot be created or if
-	 *                          no output directory is provided
+	 * @throws JsonProcessingException
+	 * @throws RuntimeException        if the output directory cannot be created
+	 *                                 or if no output directory is provided
 	 *
 	 */
 	public static void main(String[] args) {
 
 		Path d;
-		if (args.length == 0) {
+		if (args.length == 0)
 			d = Path.of(System.getProperty("user.home"))
 				.resolve("tmp/test");
-		} else {
+		else
 			d = Path.of(args[0])
 				.resolve("examples");
-		}
 
 		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
 
@@ -65,9 +63,8 @@ public class WriteExampleConfig {
 
 		try {
 			Files.createDirectories(d);
-			if (!Files.exists(d.resolve(".nojekyll"))) {
+			if (!Files.exists(d.resolve(".nojekyll")))
 				Files.createFile(d.resolve(".nojekyll"));
-			}
 		} catch (IOException e) {
 			throw new RuntimeException(
 					"Could not create .nojekyll file in output directory.", e
@@ -75,7 +72,7 @@ public class WriteExampleConfig {
 		}
 
 		Arrays.stream(Experiment.values())
-			.forEach((a) -> {
+			.forEach(a -> {
 				try {
 					Files.createDirectories(d.resolve(a.name));
 					var tmp = d.resolve(a.name)
@@ -94,10 +91,7 @@ public class WriteExampleConfig {
 			});
 
 		var objectMapper = new ObjectMapper();
-		objectMapper.enable(
-			SerializationFeature.INDENT_OUTPUT
-		);
-		
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
 //		SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
 //		try {
@@ -111,12 +105,10 @@ public class WriteExampleConfig {
 //		 }
 
 		{
-			var module = new JacksonSchemaModule(
-					JacksonOption.ALWAYS_REF_SUBTYPES //,
-					// JacksonOption.INCLUDE_ONLY_JSONPROPERTY_ANNOTATED_METHODS
+			var module = new JacksonSchemaModule(JacksonOption.ALWAYS_REF_SUBTYPES
+			// // ,
+			// JacksonOption.INCLUDE_ONLY_JSONPROPERTY_ANNOTATED_METHODS
 			);
-			
-			
 
 			var configBuilder = new SchemaGeneratorConfigBuilder(
 					// SchemaVersion.DRAFT_7,
@@ -132,17 +124,46 @@ public class WriteExampleConfig {
 				.with(module);
 			var config = configBuilder.build();
 			var generator = new SchemaGenerator(config);
-			ObjectNode jsonSchema = generator
+			var jsonSchema = generator
 				.generateSchema(ImmutableExperimentConfiguration.class);
 			try {
 				Files.write(
 					d.resolve("schema.json"),
-					jsonSchema.toPrettyString().getBytes()
+					jsonSchema.toPrettyString()
+						.getBytes()
 				);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
+
+//		{
+//			var jsonSchemaGenerator = new JsonSchemaGenerator(
+//					objectMapper
+//			);
+//
+//			// If using JsonSchema to generate HTML5 GUI:
+//			// JsonSchemaGenerator html5 = new JsonSchemaGenerator(objectMapper,
+//			// JsonSchemaConfig.html5EnabledSchema() );
+//
+//			// If you want to configure it manually:
+//			// JsonSchemaConfig config = JsonSchemaConfig.create(...);
+//			// JsonSchemaGenerator generator = new
+//			// JsonSchemaGenerator(objectMapper, config);
+//
+//			var jsonSchema = jsonSchemaGenerator
+//				.generateJsonSchema(ImmutableExperimentConfiguration.class);
+//
+//			try {
+//				objectMapper.writeValue(
+//					d.resolve("schema2.json")
+//						.toFile(),
+//					jsonSchema
+//				);
+//			} catch (IOException e) {
+//				throw new RuntimeException(e);
+//			}
+//		}
 
 	}
 

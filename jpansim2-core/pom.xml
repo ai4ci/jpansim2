@@ -208,6 +208,19 @@
 			<version>4.8.164</version> <!-- Check for latest -->
 			<scope>compile</scope>
 		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.kjetland</groupId>-->
+<!--			<artifactId>mbknor-jackson-jsonschema_2.13</artifactId>-->
+<!--			<version>1.0.39</version>-->
+<!--		</dependency>-->
+<!--		 Source:-->
+<!--		https://mvnrepository.com/artifact/javax.validation/validation-api -->
+<!--		<dependency>-->
+<!--			<groupId>javax.validation</groupId>-->
+<!--			<artifactId>validation-api</artifactId>-->
+<!--			<version>2.0.1.Final</version>-->
+<!--			<scope>compile</scope>-->
+<!--		</dependency>-->
 	</dependencies>
 
 	<build>
@@ -265,28 +278,29 @@
 					</execution>
 				</executions>
 			</plugin>
-<!--			<plugin>-->
-<!--				<groupId>org.apache.maven.plugins</groupId>-->
-<!--				<artifactId>maven-shade-plugin</artifactId>-->
-<!--				<version>3.6.2</version>-->
-<!--				<executions>-->
-<!--					<execution>-->
-<!--						<phase>package</phase>-->
-<!--						<goals>-->
-<!--							<goal>shade</goal>-->
-<!--						</goals>-->
-<!--						<configuration>-->
-<!--							<minimizeJar>true</minimizeJar>-->
-<!--							<transformers>-->
-<!--								<transformer-->
-<!--									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
-<!--									<mainClass>io.github.ai4ci.JPanSim2</mainClass>-->
-<!--								</transformer>-->
-<!--							</transformers>-->
-<!--						</configuration>-->
-<!--					</execution>-->
-<!--				</executions>-->
-<!--			</plugin>-->
+			<!--			<plugin>-->
+			<!--				<groupId>org.apache.maven.plugins</groupId>-->
+			<!--				<artifactId>maven-shade-plugin</artifactId>-->
+			<!--				<version>3.6.2</version>-->
+			<!--				<executions>-->
+			<!--					<execution>-->
+			<!--						<phase>package</phase>-->
+			<!--						<goals>-->
+			<!--							<goal>shade</goal>-->
+			<!--						</goals>-->
+			<!--						<configuration>-->
+			<!--							<minimizeJar>true</minimizeJar>-->
+			<!--							<transformers>-->
+			<!--								<transformer-->
+			<!--
+			implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
+			<!--									<mainClass>io.github.ai4ci.JPanSim2</mainClass>-->
+			<!--								</transformer>-->
+			<!--							</transformers>-->
+			<!--						</configuration>-->
+			<!--					</execution>-->
+			<!--				</executions>-->
+			<!--			</plugin>-->
 			<plugin>
 				<groupId>com.github.davidmoten</groupId>
 				<artifactId>plantuml-maven-plugin</artifactId>

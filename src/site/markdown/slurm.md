@@ -1,3 +1,6 @@
+
+
+```sh
 #!/bin/bash
 #SBATCH --job-name=jpansim2
 #SBATCH --ntasks-per-node=1
@@ -11,6 +14,7 @@
 ## Load appropriate module
 ## module purge
 ## module load openjdk/17-arm
+## N.b. Isambard does not have this module
 
 ## Set JVM options, leaving 50g for non heap.
 export JAVA_OPTS="-Xms4g -Xmx150g"
@@ -30,5 +34,15 @@ export JAVA_OPTS="-Xms4g -Xmx150g"
 ## This is under tools > options > network > manual proxy settings
 ## Then connect add JMX connection and use localhost:9999
 
+## This command can be used to tunnel from local to compute node:
+##    ssh -N \
+##       -o BatchMode=yes \
+##       -o ServerAliveInterval=10 \
+##       -o ServerAliveCountMax=3 \
+##       -o ExitOnForwardFailure=yes \
+##       -L <localPort>:<computeHostname>:<serverPort> \
+##       <username>@<loginHost>
+
 ## Launch with correct CPU binding
 srun java $JAVA_OPTS -jar ~/bin/jpansim2-0.2.1-jar-with-dependencies.jar
+```

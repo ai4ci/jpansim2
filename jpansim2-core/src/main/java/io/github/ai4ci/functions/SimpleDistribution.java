@@ -5,6 +5,8 @@ import java.io.Serializable;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -24,8 +26,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableBetaDistribution.class)
 	@JsonDeserialize(as = ImmutableBetaDistribution.class)
-	public static interface BetaDistribution
-			extends SimpleDistribution, FromMoments {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("beta")
+	public interface BetaDistribution extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.LOGIT; }
@@ -48,7 +51,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableBinomialDistribution.class)
 	@JsonDeserialize(as = ImmutableBinomialDistribution.class)
-	public static interface BinomialDistribution
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("binomial")
+	public interface BinomialDistribution
 			extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
@@ -70,7 +75,7 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * Interface for distributions that can be parameterized by their mean and
 	 * standard deviation.
 	 */
-	public static interface FromMoments {
+	public interface FromMoments {
 
 		/**
 		 * The expected value of the distribution.
@@ -92,8 +97,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableGammaDistribution.class)
 	@JsonDeserialize(as = ImmutableGammaDistribution.class)
-	public static interface GammaDistribution
-			extends SimpleDistribution, FromMoments {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("gamma")
+	public interface GammaDistribution extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.LOG; }
@@ -116,7 +122,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableLogitNormalDistribution.class)
 	@JsonDeserialize(as = ImmutableLogitNormalDistribution.class)
-	public static interface LogitNormalDistribution extends SimpleDistribution {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("logit")
+	public interface LogitNormalDistribution extends SimpleDistribution {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.LOGIT; }
@@ -148,7 +156,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableLogNormalDistribution.class)
 	@JsonDeserialize(as = ImmutableLogNormalDistribution.class)
-	public static interface LogNormalDistribution
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("log-normal")
+	public interface LogNormalDistribution
 			extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
@@ -172,7 +182,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableNegBinomialDistribution.class)
 	@JsonDeserialize(as = ImmutableNegBinomialDistribution.class)
-	public static interface NegBinomialDistribution
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("neg-binomial")
+	public interface NegBinomialDistribution
 			extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
@@ -196,8 +208,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableNormalDistribution.class)
 	@JsonDeserialize(as = ImmutableNormalDistribution.class)
-	public static interface NormalDistribution
-			extends SimpleDistribution, FromMoments {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("normal")
+	public interface NormalDistribution extends SimpleDistribution, FromMoments {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.NONE; }
@@ -221,7 +234,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutablePointDistribution.class)
 	@JsonDeserialize(as = ImmutablePointDistribution.class)
-	public static interface PointDistribution extends SimpleDistribution {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("point")
+	public interface PointDistribution extends SimpleDistribution {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.NONE; }
@@ -245,7 +260,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutablePoissonDistribution.class)
 	@JsonDeserialize(as = ImmutablePoissonDistribution.class)
-	public static interface PoissonDistribution extends SimpleDistribution {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("poisson")
+	public interface PoissonDistribution extends SimpleDistribution {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.LOG; }
@@ -269,7 +286,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableUniformDistribution.class)
 	@JsonDeserialize(as = ImmutableUniformDistribution.class)
-	public static interface UniformDistribution extends SimpleDistribution {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("uniform")
+	public interface UniformDistribution extends SimpleDistribution {
 
 		@Override @Value.Default @JsonIgnore
 		default LinkFunction getLink() { return LinkFunction.NONE; }
@@ -320,7 +339,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	@Value.Immutable
 	@JsonSerialize(as = ImmutableUnimodalBetaDistribution.class)
 	@JsonDeserialize(as = ImmutableUnimodalBetaDistribution.class)
-	public static interface UnimodalBetaDistribution extends SimpleDistribution {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+	@JsonTypeName("unimodal-beta")
+	public interface UnimodalBetaDistribution extends SimpleDistribution {
 
 		/**
 		 * The dispersion parameter of the distribution, which controls how
@@ -358,9 +379,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a BetaDistribution instance with the specified mean and standard
 	 *         deviation
 	 */
-	public static BetaDistribution beta(Double mean, Double sd) {
-		return ImmutableBetaDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static BetaDistribution beta(Double mean, Double sd) {
+		return ImmutableBetaDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -371,9 +394,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a BinomialDistribution instance with the specified mean and
 	 *         standard deviation
 	 */
-	public static BinomialDistribution binom(double mean, double sd) {
-		return ImmutableBinomialDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static BinomialDistribution binom(double mean, double sd) {
+		return ImmutableBinomialDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -383,9 +408,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @param p the probability of success on each trial
 	 * @return a BinomialDistribution instance with the specified parameters
 	 */
-	public static BinomialDistribution binom(int n, double p) {
-		return ImmutableBinomialDistribution.builder().setMean(n * p)
-				.setSd(n * p * (1 - p)).build();
+	static BinomialDistribution binom(int n, double p) {
+		return ImmutableBinomialDistribution.builder()
+			.setMean(n * p)
+			.setSd(n * p * (1 - p))
+			.build();
 	}
 
 	/**
@@ -396,9 +423,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a GammaDistribution instance with the specified mean and standard
 	 *         deviation
 	 */
-	public static GammaDistribution gamma(Double mean, Double sd) {
-		return ImmutableGammaDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static GammaDistribution gamma(Double mean, Double sd) {
+		return ImmutableGammaDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -409,9 +438,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a LogNormalDistribution instance with the specified mean and
 	 *         standard deviation
 	 */
-	public static LogNormalDistribution logNorm(Double mean, Double sd) {
-		return ImmutableLogNormalDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static LogNormalDistribution logNorm(Double mean, Double sd) {
+		return ImmutableLogNormalDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -422,9 +453,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a NegBinomialDistribution instance with the specified mean and
 	 *         standard deviation
 	 */
-	public static NegBinomialDistribution negBinom(double mean, double sd) {
-		return ImmutableNegBinomialDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static NegBinomialDistribution negBinom(double mean, double sd) {
+		return ImmutableNegBinomialDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -435,9 +468,11 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a NormalDistribution instance with the specified mean and standard
 	 *         deviation
 	 */
-	public static NormalDistribution norm(Double mean, Double sd) {
-		return ImmutableNormalDistribution.builder().setMean(mean).setSd(sd)
-				.build();
+	static NormalDistribution norm(Double mean, Double sd) {
+		return ImmutableNormalDistribution.builder()
+			.setMean(mean)
+			.setSd(sd)
+			.build();
 	}
 
 	/**
@@ -446,8 +481,10 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @param mean the value of the distribution
 	 * @return a PointDistribution instance with the specified value
 	 */
-	public static PointDistribution point(Double mean) {
-		return ImmutablePointDistribution.builder().setMean(mean).build();
+	static PointDistribution point(Double mean) {
+		return ImmutablePointDistribution.builder()
+			.setMean(mean)
+			.build();
 	}
 
 	/**
@@ -457,8 +494,10 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 *             the variance
 	 * @return a PoissonDistribution instance with the specified mean
 	 */
-	public static PoissonDistribution pois(double rate) {
-		return ImmutablePoissonDistribution.builder().setMean(rate).build();
+	static PoissonDistribution pois(double rate) {
+		return ImmutablePoissonDistribution.builder()
+			.setMean(rate)
+			.build();
 	}
 
 	/**
@@ -467,8 +506,9 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a UniformDistribution instance with the default parameters (min=0,
 	 *         max=1)
 	 */
-	public static UniformDistribution uniform() {
-		return ImmutableUniformDistribution.builder().build();
+	static UniformDistribution uniform() {
+		return ImmutableUniformDistribution.builder()
+			.build();
 	}
 
 	/**
@@ -477,8 +517,10 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @param upper the maximum value of the distribution (min is fixed at 0)
 	 * @return a UniformDistribution instance with the specified upper bound
 	 */
-	public static UniformDistribution uniform0(Double upper) {
-		return ImmutableUniformDistribution.builder().setMax(upper).build();
+	static UniformDistribution uniform0(Double upper) {
+		return ImmutableUniformDistribution.builder()
+			.setMax(upper)
+			.build();
 	}
 
 	/**
@@ -494,17 +536,21 @@ public interface SimpleDistribution extends Distribution, Serializable {
 	 * @return a UnimodalBetaDistribution instance with the specified mean and
 	 *         dispersion
 	 */
-	public static UnimodalBetaDistribution unimodalBeta(
+	static UnimodalBetaDistribution unimodalBeta(
 			Double mean, Double dispersion
 	) {
-		return ImmutableUnimodalBetaDistribution.builder().setMean(mean)
-				.setDispersion(dispersion).build();
+		return ImmutableUnimodalBetaDistribution.builder()
+			.setMean(mean)
+			.setDispersion(dispersion)
+			.build();
 	}
 
 	@Override @Value.Default @JsonIgnore
-	default double getMaxSupport() { return this.getLink().getMaxSupport(); }
+	default double getMaxSupport() { return this.getLink()
+		.getMaxSupport(); }
 
 	@Override @Value.Default @JsonIgnore
-	default double getMinSupport() { return this.getLink().getMinSupport(); }
+	default double getMinSupport() { return this.getLink()
+		.getMinSupport(); }
 
 }

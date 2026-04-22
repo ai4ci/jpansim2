@@ -8,6 +8,8 @@ import org.apache.commons.math3.analysis.integration.RombergIntegrator;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -36,6 +38,8 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 @JsonSerialize(as = ImmutableEmpiricalDistribution.class)
 @JsonDeserialize(as = ImmutableEmpiricalDistribution.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("empirical")
 public interface EmpiricalDistribution extends Distribution, Serializable {
 
 	/**
@@ -46,7 +50,7 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 * is without downsampling.
 	 *
 	 */
-	static int KNOTS = 50;
+	int KNOTS = 50;
 
 	/**
 	 * Convenience factory that builds an empirical distribution from raw sample
@@ -55,7 +59,7 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 * @param data samples used to estimate the distribution
 	 * @return an immutable empirical distribution fitted to the samples
 	 */
-	public static ImmutableEmpiricalDistribution fromData(double... data) {
+	static ImmutableEmpiricalDistribution fromData(double... data) {
 		return fromData(LinkFunction.NONE, data);
 	}
 
@@ -68,17 +72,22 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 * @param data the raw samples used to build the empirical distribution
 	 * @return an immutable empirical distribution fitted to the samples
 	 */
-	public static ImmutableEmpiricalDistribution fromData(
+	static ImmutableEmpiricalDistribution fromData(
 			LinkFunction link, double... data
 	) {
 
 		Arrays.sort(data);
-		var out = ImmutableEmpiricalDistribution
-				.builder();
+		var out = ImmutableEmpiricalDistribution.builder();
 
-		var meanH = Arrays.stream(data).map(link::fn).average().getAsDouble();
-		var varH = Arrays.stream(data).map(link::fn)
-				.map(d -> Math.pow(d - meanH, 2)).average().getAsDouble();
+		var meanH = Arrays.stream(data)
+			.map(link::fn)
+			.average()
+			.getAsDouble();
+		var varH = Arrays.stream(data)
+			.map(link::fn)
+			.map(d -> Math.pow(d - meanH, 2))
+			.average()
+			.getAsDouble();
 
 		var min = link.invFn(meanH - 5 * Math.sqrt(varH));
 		var max = link.invFn(meanH + 5 * Math.sqrt(varH));
@@ -95,11 +104,10 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 				double ix = i * step;
 				var i0 = (int) Math.floor(ix);
 				var i1 = (int) Math.ceil(ix);
-				if (i0 == i1) {
+				if (i0 == i1)
 					x[i - 1] = data[i0];
-				} else {
+				else
 					x[i - 1] = data[i0] * (i1 - ix) + data[i1] * (ix - i0);
-				}
 				y[i - 1] = ((double) i) / (KNOTS);
 			}
 			out.setX(x);
@@ -107,9 +115,8 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 		} else {
 			// use the data as is
 			var y = new double[data.length];
-			for (var i = 0; i < data.length; i++) {
+			for (var i = 0; i < data.length; i++)
 				y[i] = (i + 1.0) / (data.length + 1.0);
-			}
 			out.setX(data);
 			out.setCumulativeProbability(y);
 		}
@@ -133,16 +140,23 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 				RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT
 		);
 		var total = tmp.integrate(
-				100000, x -> odds.value(x) * this.getDensity(x), this.getMinimum(),
-				this.getMaximum()
+			100000,
+			x -> odds.value(x) * this.getDensity(x),
+			this.getMinimum(),
+			this.getMaximum()
 //          Math.max(this.getMinimum(), odds.getMinimum()),
 //          Math.min(this.getMaximum(), odds.getMaximum())
 		);
 
-		return ImmutableEmpiricalFunction.builder().setLink(this.getLink())
-				.setX(odds.getX())
-				.setY(Arrays.stream(odds.getY()).map(y -> y / total).toArray())
-				.build();
+		return ImmutableEmpiricalFunction.builder()
+			.setLink(this.getLink())
+			.setX(odds.getX())
+			.setY(
+				Arrays.stream(odds.getY())
+					.map(y -> y / total)
+					.toArray()
+			)
+			.build();
 	}
 
 	/**
@@ -153,8 +167,13 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 */
 	@JsonIgnore
 	default double getCumulative(double x) {
-		return Conversions
-				.expit(this.getLogitLinkCDF().interpolate(this.getLink().fn(x)));
+		return Conversions.expit(
+			this.getLogitLinkCDF()
+				.interpolate(
+					this.getLink()
+						.fn(x)
+				)
+		);
 	}
 
 	/**
@@ -175,9 +194,9 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	default double getDensity(double x) {
 
 		if ((this.getMinimum() >= x) || (this.getMaximum() <= x)
-				|| !this.getLink().inSupport(x)) {
+				|| !this.getLink()
+					.inSupport(x))
 			return 0;
-		}
 
 		// density is differential of the function:
 		// expit(spline(link(x)))
@@ -186,12 +205,22 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 		return
 		// expit'(spline(link(x))
 		LinkFunction.LOGIT.derivInvFn(
-				this.getLogitLinkCDF().interpolate(this.getLink().fn(x))
+			this.getLogitLinkCDF()
+				.interpolate(
+					this.getLink()
+						.fn(x)
+				)
 		) *
 		// spline'(link(x))
-				this.getLogitLinkCDF().differential(this.getLink().fn(x)) *
+				this.getLogitLinkCDF()
+					.differential(
+						this.getLink()
+							.fn(x)
+					)
+				*
 				// link'(x)
-				this.getLink().derivFn(x);
+				this.getLink()
+					.derivFn(x);
 	}
 
 	/**
@@ -212,7 +241,8 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 */
 	@JsonIgnore @Value.Lazy
 	default SplineInterpolator getLinkLogitQuantile() {
-		return this.getLogitLinkCDF().generateInverse();
+		return this.getLogitLinkCDF()
+			.generateInverse();
 	}
 
 	/**
@@ -227,13 +257,18 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 */
 	@JsonIgnore @Value.Derived
 	default SplineInterpolator getLogitLinkCDF() {
-		Coordinates tmp = ImmutableCoordinates.builder().setX(this.getX())
-				.setY(this.getCumulativeProbability()).setXLink(this.getLink())
-				.setYLink(LinkFunction.LOGIT).setIncreasing(true)
-				.setResolveDuplicates(DuplicateResolution.MAX)
-				.setXMin(this.getMinimum()).setXMax(this.getMaximum()).build();
+		Coordinates tmp = ImmutableCoordinates.builder()
+			.setX(this.getX())
+			.setY(this.getCumulativeProbability())
+			.setXLink(this.getLink())
+			.setYLink(LinkFunction.LOGIT)
+			.setIncreasing(true)
+			.setResolveDuplicates(DuplicateResolution.MAX)
+			.setXMin(this.getMinimum())
+			.setXMax(this.getMaximum())
+			.build();
 		return SplineInterpolator
-				.createMonotoneCubicSpline(tmp.getHx(), tmp.getHy());
+			.createMonotoneCubicSpline(tmp.getHx(), tmp.getHy());
 	}
 
 	/**
@@ -265,8 +300,10 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 				RombergIntegrator.ROMBERG_MAX_ITERATIONS_COUNT
 		);
 		return tmp.integrate(
-				100000, x -> x * this.getDensity(x), this.getMinimum(),
-				this.getMaximum()
+			100000,
+			x -> x * this.getDensity(x),
+			this.getMinimum(),
+			this.getMaximum()
 		);
 	}
 
@@ -302,9 +339,11 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 */
 	@JsonIgnore
 	default double getQuantile(double p) {
-		return this.getLink().invFn(
-				this.getLinkLogitQuantile().interpolate(LinkFunction.LOGIT.fn(p))
-		);
+		return this.getLink()
+			.invFn(
+				this.getLinkLogitQuantile()
+					.interpolate(LinkFunction.LOGIT.fn(p))
+			);
 	}
 
 	/**
@@ -321,7 +360,7 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 * @return a random draw from the distribution
 	 */
 	@Override @JsonIgnore
-	public default double sample() {
+	default double sample() {
 		var rng = Sampler.getSampler();
 		return this.sample(rng);
 	}
@@ -334,9 +373,10 @@ public interface EmpiricalDistribution extends Distribution, Serializable {
 	 */
 	@Override @JsonIgnore
 	default double sample(Sampler rng) {
-		return this.getLink().invFn(
+		return this.getLink()
+			.invFn(
 				this.getLinkLogitQuantile()
-						.interpolate(LinkFunction.LOGIT.fn(rng.nextDouble()))
-		);
+					.interpolate(LinkFunction.LOGIT.fn(rng.nextDouble()))
+			);
 	}
 }

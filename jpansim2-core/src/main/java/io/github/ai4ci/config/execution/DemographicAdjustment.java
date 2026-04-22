@@ -34,6 +34,7 @@ import io.github.ai4ci.functions.SimpleFunction;
  *
  * @author Rob Challen
  */
+@SuppressWarnings("immutable")
 public interface DemographicAdjustment {
 
 	/**
@@ -47,6 +48,7 @@ public interface DemographicAdjustment {
 	@Partial
 	@JsonSerialize(as = PartialDemographicAdjustment.class)
 	@JsonDeserialize(as = PartialDemographicAdjustment.class)
+	@SuppressWarnings("immutable")
 	public interface _PartialDemographicAdjustment extends
 			DemographicAdjustment.Execution<SimpleFunction, SimpleFunction>,
 			DemographicAdjustment.Phenomenological<SimpleFunction, SimpleFunction>,
@@ -77,7 +79,8 @@ public interface DemographicAdjustment {
 	 *                  example a simple scalar or a function that produces a
 	 *                  numeric value)
 	 */
-	public static interface Execution<DIST, NUMERIC> {
+	@SuppressWarnings("immutable")
+	public interface Execution<DIST, NUMERIC> {
 		/**
 		 * A function returning an age dependent odds ratio adjusting baseline app
 		 * use probability (digital contact tracing uptake).
@@ -162,7 +165,8 @@ public interface DemographicAdjustment {
 	 *                  example a simple scalar or a function that produces a
 	 *                  numeric value)
 	 */
-	public static interface Markov<DIST, NUMERIC> {
+	@SuppressWarnings("immutable")
+	public interface Markov<DIST, NUMERIC> {
 		/**
 		 * A function returning an age dependent multiplicative factor applied to
 		 * immune waning half-life.
@@ -218,7 +222,8 @@ public interface DemographicAdjustment {
 	 *                  example a simple scalar or a function that produces a
 	 *                  numeric value)
 	 */
-	public static interface Phenomenological<DIST, NUMERIC> {
+	@SuppressWarnings("immutable")
+	public interface Phenomenological<DIST, NUMERIC> {
 		/**
 		 * A function returning an age dependent multiplicative factor applied to
 		 * immune waning half-life.
@@ -256,8 +261,7 @@ public interface DemographicAdjustment {
 	 * <p>
 	 * Used as a default when no age-dependent adjustments are required.
 	 */
-	public static PartialDemographicAdjustment EMPTY = PartialDemographicAdjustment
-		.builder()
+	PartialDemographicAdjustment EMPTY = PartialDemographicAdjustment.builder()
 		.build();
 
 	/**
@@ -269,7 +273,7 @@ public interface DemographicAdjustment {
 	 * severity and immune waning that are suitable for demonstrations and unit
 	 * tests.
 	 */
-	public static PartialDemographicAdjustment AGE_DEFAULT = PartialDemographicAdjustment
+	PartialDemographicAdjustment AGE_DEFAULT = PartialDemographicAdjustment
 		.builder()
 		.setContactProbability(
 			ImmutableEmpiricalFunction.builder()

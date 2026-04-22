@@ -2,6 +2,8 @@ package io.github.ai4ci.config.inhost;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -34,6 +36,8 @@ import io.github.ai4ci.functions.SimpleDistribution;
 @Value.Immutable
 @JsonSerialize(as = ImmutableMarkovStateModel.class)
 @JsonDeserialize(as = ImmutableMarkovStateModel.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("markov")
 public interface MarkovStateModel extends InHostConfiguration,
 		DemographicAdjustment.Markov<Distribution, Double> {
 
@@ -47,16 +51,16 @@ public interface MarkovStateModel extends InHostConfiguration,
 	 *
 	 * @see io.github.ai4ci.flow.builders.DefaultInHostMarkovStateInitialiser
 	 */
-	public static ImmutableMarkovStateModel DEFAULT = ImmutableMarkovStateModel
-			.builder()
-			.setDescription(
-				"A SEIR like in host model with incubation period ~ 5 days, infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
-				"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
-			)
-			.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
-			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
-			.setInfectiousDuration(SimpleDistribution.logNorm(8D, 3D))
-			.setSymptomDuration(SimpleDistribution.logNorm(5D, 3D)).build();
+	ImmutableMarkovStateModel DEFAULT = ImmutableMarkovStateModel.builder()
+		.setDescription(
+			"A SEIR like in host model with incubation period ~ 5 days, infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
+			"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
+		)
+		.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
+		.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
+		.setInfectiousDuration(SimpleDistribution.logNorm(8D, 3D))
+		.setSymptomDuration(SimpleDistribution.logNorm(5D, 3D))
+		.build();
 
 	/**
 	 * Distribution for the half life of waning immunity.

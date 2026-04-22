@@ -160,4 +160,7 @@ public interface OutbreakTemporalState
 	 * @return the time it takes for the outbreak to reach its peak incidence.
 	 */
 	long getTimeToMaximumIncidence();
+
+	@Override
+	Outbreak getEntity();
 }

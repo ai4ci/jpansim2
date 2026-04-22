@@ -27,14 +27,9 @@ import io.github.ai4ci.util.ProbabilityScaler;
 		requireTypeIdForSubtypes = OptBoolean.TRUE
 )
 @JsonSubTypes(
-	{ @Type(
-			value = ImmutableEmpiricalKernel.class,
-			name = "empirical"
-	), @Type(value = ImmutableDiscreteFunction.class,
-			name = "function"
-	), @Type(value = ImmutableGaussianKernel.class,
-			name = "gaussian"
-	), }
+	{ @Type(value = ImmutableEmpiricalKernel.class),
+			@Type(value = ImmutableDiscreteFunction.class),
+			@Type(value = ImmutableGaussianKernel.class) }
 )
 public interface KernelFunction {
 
@@ -86,10 +81,11 @@ public interface KernelFunction {
 	 */
 	@JsonIgnore @Value.Derived
 	default double[] values() {
-		int min = this.getMinimum();
-		int max = this.getMaximum();
-		double[] raw = IntStream.rangeClosed(min, max).mapToDouble(this::rawValue)
-				.toArray();
+		var min = this.getMinimum();
+		var max = this.getMaximum();
+		var raw = IntStream.rangeClosed(min, max)
+			.mapToDouble(this::rawValue)
+			.toArray();
 		return ProbabilityScaler.scaleToTargetSum(raw, this.getSum());
 	}
 

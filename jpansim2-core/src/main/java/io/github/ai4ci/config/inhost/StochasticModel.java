@@ -2,6 +2,8 @@ package io.github.ai4ci.config.inhost;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -36,6 +38,8 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 @JsonSerialize(as = ImmutableStochasticModel.class)
 @JsonDeserialize(as = ImmutableStochasticModel.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("stochastic")
 public interface StochasticModel extends InHostConfiguration {
 
 	/**
@@ -47,21 +51,21 @@ public interface StochasticModel extends InHostConfiguration {
 	 * the distributional entries from this object when creating a fresh
 	 * {@link InHostStochasticState}.
 	 */
-	public static ImmutableStochasticModel DEFAULT = ImmutableStochasticModel
-			.builder()
-			.setDescription(
-				"A complex in host model with a target cell model with immunity, and virion components"
-			)
-			.setTargetCellCount(10000)
-			.setImmuneTargetRatio(SimpleDistribution.logNorm(1D, 0.1))
-			.setImmuneActivationRate(SimpleDistribution.logNorm(1D, 0.1))
-			.setImmuneWaningRate(SimpleDistribution.logNorm(1D / 150, 0.01))
-			.setInfectionCarrierProbability(SimpleDistribution.point(0D))
-			.setTargetRecoveryRate(SimpleDistribution.logNorm(1D / 7, 0.1))
-			.setBaselineViralInfectionRate(1D).setBaselineViralReplicationRate(4D)
-			.setVirionsDiseaseCutoff(1000)
-			// .setTargetSymptomsCutoff( 0.2 )
-			.build();
+	ImmutableStochasticModel DEFAULT = ImmutableStochasticModel.builder()
+		.setDescription(
+			"A complex in host model with a target cell model with immunity, and virion components"
+		)
+		.setTargetCellCount(10000)
+		.setImmuneTargetRatio(SimpleDistribution.logNorm(1D, 0.1))
+		.setImmuneActivationRate(SimpleDistribution.logNorm(1D, 0.1))
+		.setImmuneWaningRate(SimpleDistribution.logNorm(1D / 150, 0.01))
+		.setInfectionCarrierProbability(SimpleDistribution.point(0D))
+		.setTargetRecoveryRate(SimpleDistribution.logNorm(1D / 7, 0.1))
+		.setBaselineViralInfectionRate(1D)
+		.setBaselineViralReplicationRate(4D)
+		.setVirionsDiseaseCutoff(1000)
+		// .setTargetSymptomsCutoff( 0.2 )
+		.build();
 
 	/**
 	 * Baseline per‑virion infection rate used to calibrate the infection

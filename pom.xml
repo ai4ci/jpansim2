@@ -14,8 +14,10 @@
 	<url>https://ai4ci.github.io/jpansim2</url>
 	
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.targetEncoding>UTF-8</project.build.targetEncoding>
 		<org.apache.logging.log4j.version>2.25.3</org.apache.logging.log4j.version>
-		<parent.version>0.3.0</parent.version>
+		<parent.version>0.3.3</parent.version>
 		<site.root.dir>${session.executionRootDirectory}</site.root.dir>
 	</properties>
 	
@@ -27,7 +29,7 @@
 	</distributionManagement>
 	
 	<modules>
-		<module>plugin</module>
+		<module>jpansim2-codegen</module>
 		<module>jpansim2-core</module>
 	</modules>
 	

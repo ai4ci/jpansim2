@@ -7,8 +7,32 @@ staging the site and publishing releases for jpansim2. The CI workflows
 automate most steps, but you will still tag commits to create versioned
 releases.
 
-Overview
---------
+## TODO: 
+instructions for analysis project (`devtools::document`)
+refactor these instructions for multimodule project
+describe process of running simulation in `scratch` directory
+
+## CI and release notes
+
+- Release workflow: `.github/workflows/release.yml` (or similar) — builds
+  the module, copies artefacts to the repo-root `staging/` and creates a
+  GitHub Release.
+
+## Maven build
+
+
+- Uses UML plugin to generate UML diagrams 
+- Uses plantuml plugin to generate addtional
+diagrams from `.puml` files in the source code hierarchy, which will generate
+`.png` files in the javadoc code hierarchy. 
+- Link to generated '.png' diagram files using relative paths from javadoc. 
+- Runs main class files in the `io.github.ai4ci.examples` package 
+during build to generate examples
+- Uses Immutables and MapStruct to generate multi-threading safe code
+
+
+## Overview
+
 
 - Build artefacts are produced by the module `jpansim2-core`.
 - The parent `pom.xml` config uses `${session.executionRootDirectory}` so a
@@ -16,8 +40,7 @@ Overview
   directory for the full reactor.
 - GitHub Actions handle packaging, staging and release steps.
 
-Local build and site staging
-----------------------------
+# Local build and site staging
 
 For the site: from the repo root:
 
@@ -35,15 +58,19 @@ To build artefacts locally from `jpansim2-core` directory
 mvn -B -DskipTests clean package
 ```
 
-Packaging and renaming the distributable jar
--------------------------------------------
+# Packaging and renaming the distributable jar
+
 
 CI builds produce a `-jar-with-dependencies.jar` for `jpansim2-core`.
 We copy and rename that file into a repo-root `staging/` directory so the
 release/upload steps find a consistent filename, e.g. `jpansim2-1.2.3.jar`.
 
-GitHub Actions pages deployment
--------------------------------
+# GitHub Actions pages deployment
+
+- CI workflow: `.github/workflows/publish-javadoc.yaml`
+- Actually performs a full maven build and `site:staging` in a branch.
+- Site staging path: default is `${session.executionRootDirectory}/target/staging`.
+
 
 - Checks out repository
 - Sets up Java and caches Maven dependencies.
@@ -53,8 +80,8 @@ directory `target/staging`
 - JavaDoc generation is not aggregated but run in individual root packages. Have to
 make sure reportSets do not execute `test-javadoc` as this fails
 
-GitHub Actions release workflow (high level)
--------------------------------------------
+# GitHub Actions release workflow (high level)
+
 
 The GitHub Actions workflow triggers on tags matching `v*.*.*` and will
 build, stage and upload the jar before creating a GitHub Release.

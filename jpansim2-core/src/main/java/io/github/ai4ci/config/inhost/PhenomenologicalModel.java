@@ -2,6 +2,8 @@ package io.github.ai4ci.config.inhost;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -46,6 +48,8 @@ import io.github.ai4ci.functions.SimpleDistribution;
 //})
 @JsonSerialize(as = ImmutablePhenomenologicalModel.class)
 @JsonDeserialize(as = ImmutablePhenomenologicalModel.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("phenomenological")
 public interface PhenomenologicalModel extends InHostConfiguration,
 		DemographicAdjustment.Phenomenological<Distribution, Double> {
 
@@ -59,26 +63,26 @@ public interface PhenomenologicalModel extends InHostConfiguration,
 	 *
 	 * @see io.github.ai4ci.flow.builders.DefaultInHostPhenomenologicalStateInitialiser
 	 */
-	public static ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel
-			.builder()
-			.setDescription(
-				"A phenomenological in host model with incubation period ~ 5 days, peak infectivity 2 days later and infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
-				"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
-			)
+	ImmutablePhenomenologicalModel DEFAULT = ImmutablePhenomenologicalModel
+		.builder()
+		.setDescription(
+			"A phenomenological in host model with incubation period ~ 5 days, peak infectivity 2 days later and infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.",
+			"The viral load is derived from the severity which is calibrated from the overall outbreak parameters"
+		)
 
-			// .setSymptomCutoff(0.5)
-			.setInfectiousnessCutoff(0.2)
+		// .setSymptomCutoff(0.5)
+		.setInfectiousnessCutoff(0.2)
 
-			.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
-			.setApproxPeakViralLoad(SimpleDistribution.unimodalBeta(0.5, 0.1))
-			.setIncubationToPeakViralLoadDelay(SimpleDistribution.logNorm(2D, 1D))
-			.setPeakToRecoveryDelay(SimpleDistribution.logNorm(6D, 3D))
+		.setIncubationPeriod(SimpleDistribution.logNorm(5D, 2D))
+		.setApproxPeakViralLoad(SimpleDistribution.unimodalBeta(0.5, 0.1))
+		.setIncubationToPeakViralLoadDelay(SimpleDistribution.logNorm(2D, 1D))
+		.setPeakToRecoveryDelay(SimpleDistribution.logNorm(6D, 3D))
 
-			.setApproxPeakImmuneResponse(SimpleDistribution.unimodalBeta(0.5, 0.1))
-			.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
-			.setPeakImmuneResponseDelay(SimpleDistribution.logNorm(20D, 4D))
+		.setApproxPeakImmuneResponse(SimpleDistribution.unimodalBeta(0.5, 0.1))
+		.setImmuneWaningHalfLife(SimpleDistribution.logNorm(300D, 10D))
+		.setPeakImmuneResponseDelay(SimpleDistribution.logNorm(20D, 4D))
 
-			.build();
+		.build();
 
 	/**
 	 * Approximate distribution for peak immune response.

@@ -5,6 +5,8 @@ import org.jgrapht.generate.WattsStrogatzGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -35,15 +37,19 @@ import io.github.ai4ci.abm.Person;
 @Value.Immutable
 @JsonSerialize(as = ImmutableWattsStrogatzConfiguration.class)
 @JsonDeserialize(as = ImmutableWattsStrogatzConfiguration.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("watts-strogatz")
 public interface WattsStrogatzConfiguration extends NetworkConfiguration {
 
 	ImmutableWattsStrogatzConfiguration DEFAULT = ImmutableWattsStrogatzConfiguration
-			.builder()
-			.setDescription(
-				"A 128x128 Watts-Strogatz network with 100 contacts per node where 15% of the nodes are reassigned."
-			)
-			.setNetworkSize(128 * 128).setNetworkDegree(100)
-			.setNetworkRandomness(0.15).build();
+		.builder()
+		.setDescription(
+			"A 128x128 Watts-Strogatz network with 100 contacts per node where 15% of the nodes are reassigned."
+		)
+		.setNetworkSize(128 * 128)
+		.setNetworkDegree(100)
+		.setNetworkRandomness(0.15)
+		.build();
 
 	/**
 	 * Populate the supplied social network graph using the stored parameters.
@@ -53,7 +59,7 @@ public interface WattsStrogatzConfiguration extends NetworkConfiguration {
 	 */
 	@Override
 	default void generateGraph(SimpleGraph<Person, DefaultEdge> socialNetwork) {
-		WattsStrogatzGraphGenerator<Person, DefaultEdge> gen = new WattsStrogatzGraphGenerator<>(
+		var gen = new WattsStrogatzGraphGenerator<Person, DefaultEdge>(
 				this.getNetworkSize(),
 				Math.min(this.getNetworkDegree(), this.getNetworkSize()) / 2 * 2,
 				this.getNetworkRandomness()

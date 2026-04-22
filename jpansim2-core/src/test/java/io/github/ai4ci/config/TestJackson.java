@@ -3,7 +3,6 @@ package io.github.ai4ci.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,20 +27,19 @@ class TestJackson {
 
 	@Test
 	void testJson() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		var om = new ObjectMapper();
 		om.enable(SerializationFeature.INDENT_OUTPUT);
 		om.registerModules(new GuavaModule());
-		om.setSerializationInclusion(Include.NON_NULL);
-		om.setSerializationInclusion(Include.NON_EMPTY);
-		
+		om.setDefaultPropertyInclusion(Include.NON_NULL);
+		om.setDefaultPropertyInclusion(Include.NON_EMPTY);
+
 		ExperimentConfiguration tmp0 = ExperimentConfiguration.DEFAULT;
-		
-		String json0 = om.writeValueAsString(tmp0);
+
+		var json0 = om.writeValueAsString(tmp0);
 		System.out.println(json0);
 		System.out.print("\n\n");
-		
-		ExperimentConfiguration tmp = 
-			ExperimentConfiguration.DEFAULT
+
+		ExperimentConfiguration tmp = ExperimentConfiguration.DEFAULT
 			.withSetupConfig(
 				SetupConfiguration.DEFAULT
 					.withDemographics(AgeStratifiedDemography.DEFAULT)
@@ -51,7 +49,9 @@ class TestJackson {
 				PartialExecutionConfiguration.builder()
 					.setName("smart-agent")
 					.setDefaultPolicyModelName(NoControl.class.getSimpleName())
-					.setDefaultBehaviourModelName(SmartAgentTesting.class.getSimpleName())
+					.setDefaultBehaviourModelName(
+						SmartAgentTesting.class.getSimpleName()
+					)
 					.build()
 			)
 			.withFacet(
@@ -59,32 +59,33 @@ class TestJackson {
 				PartialExecutionConfiguration.builder()
 					.setName("longer-incubation")
 					.setInHostConfiguration(
-							PartialPhenomenologicalModel.builder()
-								.setIncubationPeriod(
-										SimpleDistribution.logNorm(10D, 4D)
-								)
-								.build()
-					).build()
-				);
-		
-		String json = om.writeValueAsString(tmp);
+						PartialPhenomenologicalModel.builder()
+							.setIncubationPeriod(SimpleDistribution.logNorm(10D, 4D))
+							.build()
+					)
+					.build()
+			);
+
+		var json = om.writeValueAsString(tmp);
 		System.out.println(json);
-		
-		ExperimentConfiguration rt = om.readerFor(ExperimentConfiguration.class).readValue(json);
-		String json2 = om.writeValueAsString(rt);
+
+		var rt = (ExperimentConfiguration) om
+			.readerFor(ExperimentConfiguration.class)
+			.readValue(json);
+		var json2 = om.writeValueAsString(rt);
 		assertEquals(json, json2);
-		
-		List<ExecutionConfiguration> ecfg = rt.getExecution(); 
-		ecfg.stream().map(e -> e.toString()).forEach(System.out::println);
+
+		var ecfg = rt.getExecution();
+		ecfg.stream()
+			.map(ExecutionConfiguration::toString)
+			.forEach(System.out::println);
 	}
 
 	@Test
 	void testJacksonCSV() throws IOException {
-		
-		ImmutableLineListDuckDB tmp = CSVMapper.INSTANCE.toCSV(
-			TestUtils.mockPersonState()	
-		);
-		
+
+		var tmp = CSVMapper.INSTANCE.toCSV(TestUtils.mockPersonState());
+
 //		CsvMapper cm = CsvMapper.builder()
 //				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 //				.build();
@@ -97,13 +98,13 @@ class TestJackson {
 //			  seqW.write(tmp);
 //			  System.out.println(strW.toString());
 //		}
-		
-		CSVUtil<ImmutableLineListDuckDB> conv = new CSVUtil<ImmutableLineListDuckDB>(ImmutableLineListDuckDB.class);
-		
+
+		var conv = new CSVUtil<>(
+				ImmutableLineListDuckDB.class
+		);
+
 		System.out.println(conv.headers());
 		System.out.println(conv.row(tmp));
 	}
-	
 
 }
-

@@ -2,6 +2,8 @@ package io.github.ai4ci.config.setup;
 
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -37,16 +39,21 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 @JsonSerialize(as = ImmutableLocationAwareDemography.class)
 @JsonDeserialize(as = ImmutableLocationAwareDemography.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("location-aware")
 public interface LocationAwareDemography extends DemographicConfiguration {
 
 	/**
 	 * Sensible default configuration for location aware demography used in
 	 * examples and tests.
 	 */
-	public static ImmutableLocationAwareDemography DEFAULT = ImmutableLocationAwareDemography
-			.builder()
-			.setDescription("An increased association between contact strength and proximity (OR=2).")
-			.setContactProximityBias(2.0).build();
+	ImmutableLocationAwareDemography DEFAULT = ImmutableLocationAwareDemography
+		.builder()
+		.setDescription(
+			"An increased association between contact strength and proximity (OR=2)."
+		)
+		.setContactProximityBias(2.0)
+		.build();
 
 	/**
 	 * Create a minimal person stub attached to the supplied outbreak.
@@ -61,7 +68,7 @@ public interface LocationAwareDemography extends DemographicConfiguration {
 	 */
 	@Override
 	default ModifiablePerson createPersonStub(Outbreak outbreak) {
-		ModifiablePerson tmp = Person.createPersonStub(outbreak);
+		var tmp = Person.createPersonStub(outbreak);
 		return tmp;
 	}
 
@@ -89,12 +96,12 @@ public interface LocationAwareDemography extends DemographicConfiguration {
 	 * @return a relationship strength used as an odds modifier
 	 */
 	@Override
-	default public double getRelationshipStrength(
+	default double getRelationshipStrength(
 			Person source, Person target, Sampler sampler
 	) {
 		return Conversions.scaleProbabilityByOR(
-				this.getProximity(source, target),
-				1 / this.getContactProximityBias()
+			this.getProximity(source, target),
+			1 / this.getContactProximityBias()
 		);
 	}
 

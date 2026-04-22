@@ -109,8 +109,8 @@ public class SimulationExporter implements Closeable {
 			var om = new ObjectMapper();
 			om.enable(SerializationFeature.INDENT_OUTPUT);
 			om.registerModules(new GuavaModule());
-			om.setSerializationInclusion(Include.NON_NULL);
-			om.setSerializationInclusion(Include.NON_EMPTY);
+			om.setDefaultPropertyInclusion(Include.NON_NULL);
+			om.setDefaultPropertyInclusion(Include.NON_EMPTY);
 			om.writeValue(
 				this.directory.resolve("result-settings.json")
 					.toFile(),
@@ -150,17 +150,15 @@ public class SimulationExporter implements Closeable {
 			)
 			.forEach(sel -> {
 				var sel2 = (ExportSelector<X>) sel;
-				if (sel2.getWriter() != null) {
-					sel2.getWriter()
-						.export(
-							(Stream<X>) sel2.selector(outbreak)
-								.parallel()
-					// this should execute export in the forkjoinpool
-					// which is useful because it include the
-					// mapping from the X (csv export object) to the
-					// binary representation (e.g. String for CSV)
-						);
-				}
+				if (sel2.getWriter() != null) sel2.getWriter()
+					.export(
+						(Stream<X>) sel2.selector(outbreak)
+							.parallel()
+				// this should execute export in the forkjoinpool
+				// which is useful because it include the
+				// mapping from the X (csv export object) to the
+				// binary representation (e.g. String for CSV)
+					);
 			});
 		return outbreak;
 	}
@@ -187,13 +185,10 @@ public class SimulationExporter implements Closeable {
 	public <X extends CSVWriter.Writeable> Outbreak export(Outbreak outbreak) {
 		if (outbreak.getExperimentReplica() == 0
 				&& outbreak.getModelReplica() == 0 && outbreak.getCurrentState()
-					.getTime() == 0) {
+					.getTime() == 0)
 			this.export(Export.Stage.BASELINE, outbreak);
-		}
 		if (outbreak.getCurrentState()
-			.getTime() == 0) {
-			this.export(Export.Stage.START, outbreak);
-		}
+			.getTime() == 0) this.export(Export.Stage.START, outbreak);
 		this.export(Export.Stage.UPDATE, outbreak);
 		return outbreak;
 	}
@@ -246,10 +241,8 @@ public class SimulationExporter implements Closeable {
 	 *                              for the export writer threads to complete
 	 */
 	public void joinAll() throws InterruptedException {
-		for (ExportSelector<?> sw : this.stepWriters) {
-			sw.getWriter()
-				.join();
-		}
+		for (ExportSelector<?> sw : this.stepWriters) sw.getWriter()
+			.join();
 	}
 
 	/**

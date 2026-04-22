@@ -3,7 +3,6 @@ package io.github.ai4ci.config.execution;
 import static io.github.ai4ci.functions.SimpleDistribution.unimodalBeta;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
 
 import org.immutables.value.Value;
 
@@ -62,7 +61,8 @@ import io.github.ai4ci.util.ShallowList;
  *
  * <pre>{@code
  * ExecutionConfiguration config = ExecutionConfiguration.DEFAULT
- * 		.withReplicate(1).withName("scenario1");
+ * 	.withReplicate(1)
+ * 	.withName("scenario1");
  * }</pre>
  *
  * @author Rob Challen
@@ -74,8 +74,8 @@ import io.github.ai4ci.util.ShallowList;
 @JsonSerialize(as = ImmutableExecutionConfiguration.class)
 @JsonDeserialize(as = ImmutableExecutionConfiguration.class)
 public interface ExecutionConfiguration
-		extends Abstraction.Named, Abstraction.Described, Abstraction.Replica, Serializable,
-		DemographicAdjustment.Execution<Distribution, Double> {
+		extends Abstraction.Named, Abstraction.Described, Abstraction.Replica,
+		Serializable, DemographicAdjustment.Execution<Distribution, Double> {
 
 	/**
 	 * Default immutable configuration instance with baseline epidemiological
@@ -108,28 +108,31 @@ public interface ExecutionConfiguration
 	 * <li>Defines compliance rates (99% baseline)</li>
 	 * </ul>
 	 */
-	public static ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration
-			.builder()
-			.setName("execution").setR0(1.75)
-			.setAsymptomaticFraction(0.5).setCaseHospitalisationRate(0.05)
-			.setCaseFatalityRate(0.01)
+	ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration
+		.builder()
+		.setName("execution")
+		.setR0(1.75)
+		.setAsymptomaticFraction(0.5)
+		.setCaseHospitalisationRate(0.05)
+		.setCaseFatalityRate(0.01)
 
-			.setContactProbability(unimodalBeta(0.5, 0.25))
-			// .setContactProbability(uniform())
-			.setAppUseProbability(unimodalBeta(0.97, 0.1))
-			.setContactDetectedProbability(0.9)
+		.setContactProbability(unimodalBeta(0.5, 0.25))
+		// .setContactProbability(uniform())
+		.setAppUseProbability(unimodalBeta(0.97, 0.1))
+		.setContactDetectedProbability(0.9)
 
-			.setComplianceProbability(unimodalBeta(0.99, 0.1))
+		.setComplianceProbability(unimodalBeta(0.99, 0.1))
 
 //			.setRiskTrigger( Distribution.point(0.05) )
 //			.setRiskTriggerRatio(1.1)
 //			.setHighRiskMobilityModifier(0.95)
 //			.setHighRiskTransmissibilityModifier(0.95)
 
-			.setInHostConfiguration(PhenomenologicalModel.DEFAULT)
+		.setInHostConfiguration(PhenomenologicalModel.DEFAULT)
 
-			.setLockdownStartTrigger(0.05).setLockdownReleaseTrigger(0.01)
-			.setLockdownTriggerValue(Trigger.Value.SCREENING_TEST_POSITIVITY)
+		.setLockdownStartTrigger(0.05)
+		.setLockdownReleaseTrigger(0.01)
+		.setLockdownTriggerValue(Trigger.Value.SCREENING_TEST_POSITIVITY)
 
 //			.setLockdownMinDuration(14)
 //			.setLockdownMobility(0.5)
@@ -137,39 +140,39 @@ public interface ExecutionConfiguration
 
 //			.setScreeningPeriod( Distribution.gamma(7.0,1D) )
 //			.setProbabilityScreened(0.01)
-			.setInitialScreeningProbability(0.01)
+		.setInitialScreeningProbability(0.01)
 
-			.setDefaultBehaviourModelName(
-					ReactiveTestAndIsolate.class.getSimpleName()
-			).setDefaultPolicyModelName(ReactiveLockdown.class.getSimpleName())
+		.setDefaultBehaviourModelName(
+			ReactiveTestAndIsolate.class.getSimpleName()
+		)
+		.setDefaultPolicyModelName(ReactiveLockdown.class.getSimpleName())
 
-			.setSymptomSensitivity(unimodalBeta(0.5, 0.1))
-			.setSymptomSpecificity(unimodalBeta(0.95, 0.1))
+		.setSymptomSensitivity(unimodalBeta(0.5, 0.1))
+		.setSymptomSpecificity(unimodalBeta(0.95, 0.1))
 
-			.setInitialEstimateSymptomSensitivity(0.5)
-			.setInitialEstimateSymptomSpecificity(0.95)
+		.setInitialEstimateSymptomSensitivity(0.5)
+		.setInitialEstimateSymptomSpecificity(0.95)
 
-			.setInitialEstimateIncubationPeriod(4.0)
-			.setInitialEstimateInfectionDuration(10.0)
+		.setInitialEstimateIncubationPeriod(4.0)
+		.setInitialEstimateInfectionDuration(10.0)
 
-			.setRiskModelSymptomKernel(
-					Kernels.DEFAULT_SYMPTOM_ONSET_KERNEL.kernel()
-			).setRiskModelContactsKernel(Kernels.DEFAULT_CONTACT_KERNEL.kernel())
-			.setRiskModelTestKernel(Kernels.DEFAULT_TEST_SAMPLE_KERNEL.kernel())
+		.setRiskModelSymptomKernel(Kernels.DEFAULT_SYMPTOM_ONSET_KERNEL.kernel())
+		.setRiskModelContactsKernel(Kernels.DEFAULT_CONTACT_KERNEL.kernel())
+		.setRiskModelTestKernel(Kernels.DEFAULT_TEST_SAMPLE_KERNEL.kernel())
 
-			.setMaximumSocialContactReduction(unimodalBeta(0.25, 0.1))
-			.setAvailableTests(TestResult.defaultTypes())
+		.setMaximumSocialContactReduction(unimodalBeta(0.25, 0.1))
+		.setAvailableTests(TestResult.defaultTypes())
 
-			.setImportationProbability(0D)
-			.setDemographicAdjustment(DemographicAdjustment.EMPTY)
+		.setImportationProbability(0D)
+		.setDemographicAdjustment(DemographicAdjustment.EMPTY)
 
-			.setComplianceDeteriorationRate(0.02)
-			.setComplianceImprovementRate(0.01)
-			.setOrganicRateOfMobilityChange(1.0 / 4)
+		.setComplianceDeteriorationRate(0.02)
+		.setComplianceImprovementRate(0.01)
+		.setOrganicRateOfMobilityChange(1.0 / 4)
 
-			.setSmartAppRiskTrigger(0.05)
+		.setSmartAppRiskTrigger(0.05)
 
-			.build();
+		.build();
 
 	/**
 	 * How likely was it that a person uses a contact tracing app?
@@ -348,13 +351,12 @@ public interface ExecutionConfiguration
 	@JsonIgnore @Value.Lazy
 	default BehaviourModel getDefaultBehaviourModel() {
 		try {
-			String name = this.getDefaultBehaviourModelName();
-			if (!name.startsWith(BehaviourModel.class.getPackageName())) {
+			var name = this.getDefaultBehaviourModelName();
+			if (!name.startsWith(BehaviourModel.class.getPackageName()))
 				name = BehaviourModel.class.getPackageName() + "." + name;
-			}
 			Class<?> clz = Class.forName(name);
-			Method m = clz.getDeclaredMethod("values");
-			BehaviourModel[] x = (BehaviourModel[]) m.invoke(null);
+			var m = clz.getDeclaredMethod("values");
+			var x = (BehaviourModel[]) m.invoke(null);
 			return x[0];
 		} catch (Exception e) {
 			throw new RuntimeException(
@@ -394,13 +396,12 @@ public interface ExecutionConfiguration
 	@JsonIgnore @Value.Lazy
 	default PolicyModel getDefaultPolicyModel() {
 		try {
-			String name = this.getDefaultPolicyModelName();
-			if (!name.startsWith(PolicyModel.class.getPackageName())) {
+			var name = this.getDefaultPolicyModelName();
+			if (!name.startsWith(PolicyModel.class.getPackageName()))
 				name = PolicyModel.class.getPackageName() + "." + name;
-			}
 			Class<?> clz = Class.forName(name);
-			Method m = clz.getDeclaredMethod("values");
-			PolicyModel[] x = (PolicyModel[]) m.invoke(null);
+			var m = clz.getDeclaredMethod("values");
+			var x = (PolicyModel[]) m.invoke(null);
 			return x[0];
 		} catch (Exception e) {
 			throw new RuntimeException(

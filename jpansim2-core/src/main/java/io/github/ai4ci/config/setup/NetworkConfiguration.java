@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.OptBoolean;
 
 import io.github.ai4ci.abm.Abstraction;
 import io.github.ai4ci.abm.Person;
@@ -33,18 +34,17 @@ import io.github.ai4ci.abm.Person;
  *
  * @author Rob Challen
  */
-@JsonTypeInfo(use = Id.SIMPLE_NAME)
-@JsonSubTypes(
-	{ @Type(
-			value = ImmutableWattsStrogatzConfiguration.class,
-			name = "watts-strogatz"
-	), @Type(value = ImmutableErdosReyniConfiguration.class,
-			name = "erdos-reyni"
-	), @Type(value = ImmutableBarabasiAlbertConfiguration.class,
-			name = "barabasi-albert"
-	) }
+@JsonTypeInfo(
+		use = Id.NAME,
+		requireTypeIdForSubtypes = OptBoolean.TRUE
 )
-public interface NetworkConfiguration extends Serializable, Abstraction.Described {
+@JsonSubTypes(
+	{ @Type(value = ImmutableWattsStrogatzConfiguration.class),
+			@Type(value = ImmutableErdosReyniConfiguration.class),
+			@Type(value = ImmutableBarabasiAlbertConfiguration.class) }
+)
+public interface NetworkConfiguration
+		extends Serializable, Abstraction.Described {
 
 	/**
 	 * Generate a social network graph according to the concrete configuration

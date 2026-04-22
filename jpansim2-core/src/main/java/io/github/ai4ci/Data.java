@@ -8,6 +8,8 @@ import java.lang.annotation.Target;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ValidationMethod;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 // import com.j256.simplecsv.common.CsvColumn;
@@ -49,7 +51,6 @@ import io.github.ai4ci.flow.output.Export;
  * @see JsonSerialize
  * @see JsonDeserialize
  */
-@SuppressWarnings("immutables")
 public @interface Data {
 
 	/**
@@ -77,7 +78,7 @@ public @interface Data {
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
-	@SuppressWarnings("immutables")
+	@SuppressWarnings("immutable")
 	@Value.Style(
 			get = { "is*", "get*" },
 			init = "set*",
@@ -92,7 +93,8 @@ public @interface Data {
 			underrideToString = "print",
 			isSet = "initialised*",
 			depluralize = true,
-			depluralizeDictionary = { "person:people" }
+			depluralizeDictionary = { "person:people" },
+			jdk9Collections = true
 	)
 	public static @interface Mutable {}
 
@@ -130,12 +132,15 @@ public @interface Data {
 	@Target({ ElementType.PACKAGE, ElementType.TYPE })
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 	@JsonDeserialize
+	@SuppressWarnings("immutable")
 	@Value.Style(
 			get = { "is*", "get*" },
 			init = "set*",
 			deepImmutablesDetection = false,
-			passAnnotations = { Scale.class },
+			passAnnotations = { Scale.class, Export.class, Import.class,
+					JsonTypeName.class, JsonTypeInfo.class },
 			typeAbstract = "_Partial*",
 			typeImmutable = "Partial*",
 			strictModifiable = false,
@@ -144,9 +149,9 @@ public @interface Data {
 			underrideEquals = "equality",
 			underrideToString = "print",
 			depluralizeDictionary = { "person:people" },
-			validationMethod = ValidationMethod.NONE
+			validationMethod = ValidationMethod.NONE,
+			jdk9Collections = true
 	)
-	@SuppressWarnings("immutables")
 	public static @interface Partial {}
 
 	/**
@@ -177,6 +182,7 @@ public @interface Data {
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
 	@JsonDeserialize
+	@SuppressWarnings("immutable")
 	@Value.Style(
 			get = { "is*", "get*" },
 			init = "set*",
@@ -191,9 +197,9 @@ public @interface Data {
 			passAnnotations = { Export.class, Import.class },
 			isSet = "initialised*",
 			depluralize = true,
-			depluralizeDictionary = { "person:people" }
+			depluralizeDictionary = { "person:people" },
+			jdk9Collections = true
 	)
-	@SuppressWarnings("immutables")
 	public static @interface Repository {}
 
 	/**
@@ -223,8 +229,9 @@ public @interface Data {
 	@Target({ ElementType.PACKAGE, ElementType.TYPE })
 	@Retention(RetentionPolicy.CLASS)
 	@JsonSerialize(typing = Typing.DYNAMIC)
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 	@JsonDeserialize
-	@SuppressWarnings("immutables")
+	@SuppressWarnings("immutable")
 	@Value.Style(
 			// Detect 'get' and 'is' prefixes in accessor methods
 			get = { "is*", "get*" },
@@ -238,10 +245,12 @@ public @interface Data {
 			underrideEquals = "equality",
 			underrideToString = "print",
 			strictModifiable = false,
-			passAnnotations = { Export.class, Import.class },
+			passAnnotations = { Export.class, Import.class, JsonTypeName.class,
+					JsonTypeInfo.class },
 			isSet = "initialised*",
 			depluralize = true,
-			depluralizeDictionary = { "person:people" }
+			depluralizeDictionary = { "person:people" },
+			jdk9Collections = true
 	)
 	public static @interface Style {}
 

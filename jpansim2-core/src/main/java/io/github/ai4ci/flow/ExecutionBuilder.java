@@ -61,7 +61,7 @@ public class ExecutionBuilder {
 			String urnBase
 	) {
 
-		ExecutionBuilder experiment = new ExecutionBuilder(setupConfig);
+		var experiment = new ExecutionBuilder(setupConfig);
 		experiment.setupOutbreak(urnBase);
 		experiment.baselineModel(execConfig);
 		experiment.initialiseStatus(execConfig);
@@ -78,8 +78,8 @@ public class ExecutionBuilder {
 	 * @return the estimated free memory in gigabytes
 	 */
 	public static double freeMem() {
-		Runtime runtime = Runtime.getRuntime();
-		long allocatedMemory = runtime.totalMemory() - runtime.freeMemory();
+		var runtime = Runtime.getRuntime();
+		var allocatedMemory = runtime.totalMemory() - runtime.freeMemory();
 		// allocatedMemory = allocatedMemory > maxMem ? maxMem : allocatedMemory;
 		return ((double) runtime.maxMemory() - allocatedMemory)
 				/ (1024 * 1024 * 1024);
@@ -117,38 +117,41 @@ public class ExecutionBuilder {
 
 	void baselineModel(ExecutionConfiguration execConfig) {
 		this.outbreak.setUrn(
-				this.outbreak.getUrn() + ":" + execConfig.getName() + ":"
-						+ execConfig.getReplicate()
+			this.outbreak.getUrn() + ":" + execConfig.getName() + ":"
+					+ execConfig.getReplicate()
 		);
-		Sampler sampler = Sampler.getSampler(this.outbreak.getUrn());
+		var sampler = Sampler.getSampler(this.outbreak.getUrn());
 		this.outbreak.setExecutionConfiguration(execConfig);
 
-		this.outbreak.getPeople().parallelStream().forEach(p -> {
-			Sampler sampler2 = Sampler.getSampler(this.outbreak.getUrn());
-			if (p instanceof ModifiablePerson) {
-				ModifiablePerson m = (ModifiablePerson) p;
+		this.outbreak.getPeople()
+			.parallelStream()
+			.forEach(p -> {
+				var sampler2 = Sampler.getSampler(this.outbreak.getUrn());
+				if (p instanceof ModifiablePerson) {
+					var m = (ModifiablePerson) p;
 
-				ImmutablePersonBaseline.Builder builder = m.initialisedBaseline()
-						? ImmutablePersonBaseline.builder().from(m.getBaseline())
+					var builder = m.initialisedBaseline()
+						? ImmutablePersonBaseline.builder()
+							.from(m.getBaseline())
 						: ImmutablePersonBaseline.builder();
 
-				// NOTE: baselining delegates to the current modelBuilder. If we
-				// want to support alternative per-person baselining behaviour
-				// via compositional builders then ensure the selected
-				// AbstractModelBuilder provides the desired baselining
-				// implementation (eg via mixing different DefaultPersonBaseliner
-				// interfaces). Subclass selection or factory wiring is required.
-				this.modelBuilder.doBaselinePerson(builder, p, sampler2);
-				m.setBaseline(builder.build());
-			}
-		});
+					// NOTE: baselining delegates to the current modelBuilder. If we
+					// want to support alternative per-person baselining behaviour
+					// via compositional builders then ensure the selected
+					// AbstractModelBuilder provides the desired baselining
+					// implementation (eg via mixing different DefaultPersonBaseliner
+					// interfaces). Subclass selection or factory wiring is required.
+					this.modelBuilder.doBaselinePerson(builder, p, sampler2);
+					m.setBaseline(builder.build());
+				}
+			});
 
 		// Calibrate R0 to a baseline transmission probability
-		ImmutableOutbreakBaseline.Builder builder = this.outbreak
-				.initialisedBaseline()
-						? ImmutableOutbreakBaseline.builder()
-								.from(this.outbreak.getBaseline())
-						: ImmutableOutbreakBaseline.builder();
+		var builder = this.outbreak
+			.initialisedBaseline()
+				? ImmutableOutbreakBaseline.builder()
+					.from(this.outbreak.getBaseline())
+				: ImmutableOutbreakBaseline.builder();
 
 		this.modelBuilder.doBaselineOutbreak(builder, this.outbreak, sampler);
 		this.outbreak.setBaseline(builder.build());
@@ -197,24 +200,23 @@ public class ExecutionBuilder {
 	 *         and a copy of the outbreak
 	 */
 	public ExecutionBuilder copy(long estSize) {
-		ExecutionBuilder tmp = new ExecutionBuilder(this.setupConfig);
-		if (estSize < 0) {
+		var tmp = new ExecutionBuilder(this.setupConfig);
+		if (estSize < 0)
 			tmp.outbreak = Cloner.copy(this.outbreak);
-		} else {
+		else
 			tmp.outbreak = Cloner.copy(this.outbreak, estSize);
-		}
 		return tmp;
 	}
 
 	void initialiseStatus(ExecutionConfiguration execConfig) {
-		Sampler sampler = Sampler.getSampler(this.outbreak.getUrn());
+		var sampler = Sampler.getSampler(this.outbreak.getUrn());
 
-		ImmutableOutbreakState.Builder builder = ImmutableOutbreakState.builder();
-		if (this.outbreak.initialisedCurrentState()) {
+		var builder = ImmutableOutbreakState.builder();
+		if (this.outbreak.initialisedCurrentState())
 			builder.from(this.outbreak.getCurrentState());
-		}
 
-		builder.setEntity(this.outbreak).setTime(0);
+		builder.setEntity(this.outbreak)
+			.setTime(0);
 
 		// NOTE: ensure the selected modelBuilder has been initialised/selected
 		// prior to invoking initialise; the current code assumes a single
@@ -225,47 +227,49 @@ public class ExecutionBuilder {
 		this.modelBuilder.doInitialiseOutbreak(builder, this.outbreak, sampler);
 		this.outbreak.setCurrentState(builder.build());
 
-		this.outbreak.getPeople().parallelStream().forEach(p -> {
-			if (p instanceof ModifiablePerson) {
-				ModifiablePerson m = (ModifiablePerson) p;
+		this.outbreak.getPeople()
+			.parallelStream()
+			.forEach(p -> {
+				if (p instanceof ModifiablePerson) {
+					var m = (ModifiablePerson) p;
 
-				Sampler sampler2 = Sampler.getSampler(this.outbreak.getUrn());
+					var sampler2 = Sampler.getSampler(this.outbreak.getUrn());
 
-				ImmutablePersonState.Builder builder2 = ImmutablePersonState
+					var builder2 = ImmutablePersonState
 						.builder();
-				if (m.initialisedCurrentState()) {
-					builder2.from(m.getCurrentState());
-				}
+					if (m.initialisedCurrentState())
+						builder2.from(m.getCurrentState());
 
-				builder2.setEntity(p).setTime(0);
+					builder2.setEntity(p)
+						.setTime(0);
 
-				// Delegate person initialisation to the selected builder. When
-				// enabling compositional selection ensure the chosen builder
-				// implements the combination of DefaultInHost*Initialiser
-				// interfaces you require (or provide alternatives via
-				// subclassing the DefaultModelBuilder).
-				m.setCurrentState(
+					// Delegate person initialisation to the selected builder. When
+					// enabling compositional selection ensure the chosen builder
+					// implements the combination of DefaultInHost*Initialiser
+					// interfaces you require (or provide alternatives via
+					// subclassing the DefaultModelBuilder).
+					m.setCurrentState(
 						this.modelBuilder.doInitialisePerson(builder2, p, sampler2)
-				);
+					);
 
-			} else
-				throw new RuntimeException("Not modifiable person");
-		});
+				} else
+					throw new RuntimeException("Not modifiable person");
+			});
 
 	}
 
 	void setupOutbreak(String urnBase) {
 		this.outbreak.setUrn(
-				(urnBase != null ? urnBase + ":" : "") + this.setupConfig.getName()
-						+ ":" + this.setupConfig.getReplicate()
+			(urnBase != null ? urnBase + ":" : "") + this.setupConfig.getName()
+					+ ":" + this.setupConfig.getReplicate()
 		);
-		Sampler sampler = Sampler.getSampler(this.outbreak.getUrn());
+		var sampler = Sampler.getSampler(this.outbreak.getUrn());
 		// TODO: when builder selection is compositional ensure selection
 		// happens before any builder method is invoked (eg here). For example
 		// if using a factory the factory must be consulted during construction
 		// and `this.modelBuilder` must be the chosen implementation.
 		this.modelBuilder
-				.doSetupOutbreak(this.outbreak, this.setupConfig, sampler);
+			.doSetupOutbreak(this.outbreak, this.setupConfig, sampler);
 	}
 
 }

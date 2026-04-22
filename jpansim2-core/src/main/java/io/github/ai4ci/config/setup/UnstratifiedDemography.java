@@ -3,6 +3,8 @@ package io.github.ai4ci.config.setup;
 import org.immutables.value.Value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -36,15 +38,19 @@ import io.github.ai4ci.util.Sampler;
 @Value.Immutable
 @JsonSerialize(as = ImmutableUnstratifiedDemography.class)
 @JsonDeserialize(as = ImmutableUnstratifiedDemography.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("unstratified")
 public interface UnstratifiedDemography extends DemographicConfiguration {
 
 	/**
 	 * A sensible default instance for tests and examples.
 	 */
 	ImmutableUnstratifiedDemography DEFAULT = ImmutableUnstratifiedDemography
-			.builder()
-			.setDescription("This has a uniform distribution for the relationship strength between 2 people")
-			.build();
+		.builder()
+		.setDescription(
+			"This has a uniform distribution for the relationship strength between 2 people"
+		)
+		.build();
 
 	/**
 	 * Create a minimal person stub attached to the supplied outbreak.
@@ -69,7 +75,8 @@ public interface UnstratifiedDemography extends DemographicConfiguration {
 	default double getRelationshipStrength(
 			Person source, Person target, Sampler sampler
 	) {
-		return this.getRelationshipStrengthDistribution().sample(sampler);
+		return this.getRelationshipStrengthDistribution()
+			.sample(sampler);
 	}
 
 	/**

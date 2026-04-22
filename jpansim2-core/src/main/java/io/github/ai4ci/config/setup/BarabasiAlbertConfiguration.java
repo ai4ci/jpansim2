@@ -5,6 +5,8 @@ import org.jgrapht.generate.BarabasiAlbertGraphGenerator;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -27,6 +29,8 @@ import io.github.ai4ci.abm.Person;
 @Value.Immutable
 @JsonSerialize(as = ImmutableBarabasiAlbertConfiguration.class)
 @JsonDeserialize(as = ImmutableBarabasiAlbertConfiguration.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("barabasi-albert")
 public interface BarabasiAlbertConfiguration extends NetworkConfiguration {
 
 	/**
@@ -40,11 +44,13 @@ public interface BarabasiAlbertConfiguration extends NetworkConfiguration {
 	 * @see io.github.ai4ci.config.setup.SetupConfiguration#DEFAULT
 	 */
 	ImmutableBarabasiAlbertConfiguration DEFAULT = ImmutableBarabasiAlbertConfiguration
-			.builder()
-			.setDescription(
-				"A 128x128 Barbasi Albert network with on average 100 contacts per node."
-			)
-			.setNetworkSize(128 * 128).setNetworkDegree(100).build();
+		.builder()
+		.setDescription(
+			"A 128x128 Barbasi Albert network with on average 100 contacts per node."
+		)
+		.setNetworkSize(128 * 128)
+		.setNetworkDegree(100)
+		.build();
 
 	// Integer getMinimumDegree();
 	// Integer getMParameter();
@@ -67,8 +73,8 @@ public interface BarabasiAlbertConfiguration extends NetworkConfiguration {
 	@Override
 	default void generateGraph(SimpleGraph<Person, DefaultEdge> socialNetwork) {
 		int n = this.getNetworkSize();
-		int m = this.getNetworkDegree() / 2;
-		BarabasiAlbertGraphGenerator<Person, DefaultEdge> gen = new BarabasiAlbertGraphGenerator<>(
+		var m = this.getNetworkDegree() / 2;
+		var gen = new BarabasiAlbertGraphGenerator<Person, DefaultEdge>(
 				m, m, n
 		);
 		gen.generateGraph(socialNetwork);

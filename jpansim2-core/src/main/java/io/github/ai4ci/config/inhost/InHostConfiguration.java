@@ -49,25 +49,18 @@ import io.github.ai4ci.util.Sampler;
 		requireTypeIdForSubtypes = OptBoolean.TRUE
 )
 @JsonSubTypes(
-	{ @Type(
-			value = ImmutableStochasticModel.class,
-			name = "stochastic"
-	), @Type(value = ImmutablePhenomenologicalModel.class,
-			name = "phenomenological"
-	), @Type(value = ImmutableMarkovStateModel.class,
-			name = "markov"
-	), @Type(value = PartialStochasticModel.class,
-			name = "stochastic.modifier"
-	), @Type(value = PartialPhenomenologicalModel.class,
-			name = "phenomenological.modifier"
-	), @Type(value = PartialMarkovStateModel.class,
-			name = "markov.modifier"
-	) }
+	{ @Type(value = ImmutableStochasticModel.class),
+			@Type(value = ImmutablePhenomenologicalModel.class),
+			@Type(value = ImmutableMarkovStateModel.class),
+			@Type(value = PartialStochasticModel.class),
+			@Type(value = PartialPhenomenologicalModel.class),
+			@Type(value = PartialMarkovStateModel.class) }
 )
-public interface InHostConfiguration extends Serializable, Abstraction.Described {
+public interface InHostConfiguration
+		extends Serializable, Abstraction.Described {
 
 	/** logger for this class */
-	static Logger log = LoggerFactory.getLogger(InHostConfiguration.class);
+	Logger log = LoggerFactory.getLogger(InHostConfiguration.class);
 
 	/**
 	 * The limit is the point at which the tail of the distribution is cut off.
@@ -79,7 +72,7 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 * critical as long as it is high enough to capture the full profile, but not
 	 * too high to be inefficient.
 	 */
-	static final double LIMIT = 0.999;
+	double LIMIT = 0.999;
 
 	/**
 	 * Calculate the infectivity profile from a viral load profile and a
@@ -102,28 +95,24 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 * @return the infectivity profile calculated from the viral load profile and
 	 *         the transmission parameter.
 	 */
-	public static DelayDistribution getInfectivityProfile(
+	static DelayDistribution getInfectivityProfile(
 			double[][] viralLoad, double transmissionParameter
 	) {
 
-		int samples = viralLoad.length;
-		int duration = viralLoad[0].length;
+		var samples = viralLoad.length;
+		var duration = viralLoad[0].length;
 
-		double[][] trans = transmissionFromLoad(viralLoad, transmissionParameter);
+		var trans = transmissionFromLoad(viralLoad, transmissionParameter);
 		// Sample (1st dimension: samples wise ) average to get transmission
 		// probability array
-		double[] meanTrans = new double[duration];
-		for (int i = 0; i < duration; i++) {
-			for (int n = 0; n < samples; n++) {
-				meanTrans[i] += trans[n][i] / samples;
-			}
-		}
-		DelayDistribution tmp = DelayDistribution.unnormalised(
-				DelayDistribution.trimTail(meanTrans, 1 - LIMIT, false)
-		);
+		var meanTrans = new double[duration];
+		for (var i = 0; i < duration; i++) for (var n = 0; n < samples; n++)
+			meanTrans[i] += trans[n][i] / samples;
+		DelayDistribution tmp = DelayDistribution
+			.unnormalised(DelayDistribution.trimTail(meanTrans, 1 - LIMIT, false));
 		log.debug(
-				"Serial interval " + LIMIT + " limit: " + tmp.size()
-						+ "; mean duration: " + tmp.expected()
+			"Serial interval " + LIMIT + " limit: " + tmp.size()
+					+ "; mean duration: " + tmp.expected()
 		);
 		return tmp;
 	}
@@ -184,13 +173,13 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 *         critical as long as it is long enough.
 	 *
 	 */
-	public static DelayDistribution getInfectivityProfile(
+	static DelayDistribution getInfectivityProfile(
 			ExecutionConfiguration execConfig, double transmissionParameter,
 			int samples, int duration
 	) {
 		return getInfectivityProfile(
-				getViralLoadProfile(execConfig, samples, duration),
-				transmissionParameter
+			getViralLoadProfile(execConfig, samples, duration),
+			transmissionParameter
 		);
 	}
 
@@ -219,22 +208,21 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 *
 	 * @return an empirical distribution
 	 */
-	public static EmpiricalDistribution getPeakSeverity(
+	static EmpiricalDistribution getPeakSeverity(
 			InHostConfiguration config, ExecutionConfiguration execConfig,
 			int samples, int duration
 	) {
-		Sampler rng = Sampler.getSampler();
-		double[] x = new double[samples];
-		for (int i = 0; i < samples; i++) {
+		var rng = Sampler.getSampler();
+		var x = new double[samples];
+		for (var i = 0; i < samples; i++) {
 
 			InHostModelState<?> state = InHostModelState
-					.test(config, execConfig, rng);
-			double max = 0;
+				.test(config, execConfig, rng);
+			var max = 0D;
 			state = state.update(rng, 1D, 0);
-			for (int j = 0; j < duration; j++) {
-				if (state.getNormalisedSeverity() > max) {
+			for (var j = 0; j < duration; j++) {
+				if (state.getNormalisedSeverity() > max)
 					max = state.getNormalisedSeverity();
-				}
 				state = state.update(rng, 0, 0);
 			}
 			x[i] = max;
@@ -275,32 +263,32 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 *         the point where 99.9% of severity has occurred, so this is not
 	 *         critical as long as it is long enough.
 	 */
-	public static DelayDistribution getSeverityProfile(
+	static DelayDistribution getSeverityProfile(
 			ExecutionConfiguration execConfig, int samples, int duration
 	) {
-		InHostConfiguration config = execConfig.getInHostConfiguration();
-		Sampler rng = Sampler.getSampler();
-		double[] symptom = new double[duration];
-		for (int n = 0; n <= samples; n++) {
+		var config = execConfig.getInHostConfiguration();
+		var rng = Sampler.getSampler();
+		var symptom = new double[duration];
+		for (var n = 0; n <= samples; n++) {
 
 			InHostModelState<?> state = InHostModelState
-					.test(config, execConfig, rng);
+				.test(config, execConfig, rng);
 			state = state.update(rng, 1D, 0D);
-			for (int i = 0; i < duration; i++) {
+			for (var i = 0; i < duration; i++) {
 				symptom[i] = symptom[i] + state.getNormalisedSeverity();
 				state = state.update(rng, 0D, 0);
 			}
 		}
-		double[] cumulative = new double[duration];
+		var cumulative = new double[duration];
 
-		for (int i = 0; i < duration; i++) {
+		for (var i = 0; i < duration; i++) {
 			symptom[i] = symptom[i] / samples;
 			cumulative[i] = symptom[i] + (i == 0 ? 0 : cumulative[i - 1]);
 
 		}
-		int cutoff = 0;
-		double average = 0;
-		for (int i = 0; i < duration; i++) {
+		var cutoff = 0;
+		var average = 0D;
+		for (var i = 0; i < duration; i++) {
 			if (cumulative[i] / cumulative[duration - 1] > LIMIT) {
 				cutoff = i;
 
@@ -310,11 +298,11 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 		}
 		average = average / cutoff;
 		log.debug(
-				"Symptom distribution " + LIMIT + " limit: " + cutoff
-						+ "; mean duration: " + average
+			"Symptom distribution " + LIMIT + " limit: " + cutoff
+					+ "; mean duration: " + average
 		);
 		return DelayDistribution
-				.unnormalised(Arrays.copyOfRange(symptom, 0, cutoff));
+			.unnormalised(Arrays.copyOfRange(symptom, 0, cutoff));
 	}
 
 	/**
@@ -342,7 +330,7 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	 *         second dimension is the average viral load across all the agents
 	 *         at that time post exposure
 	 */
-	public static double[][] getViralLoadProfile(
+	static double[][] getViralLoadProfile(
 			ExecutionConfiguration execConfig, int samples, int duration
 	) {
 		// TODO: need to switch this to Stream<double[]> and calculate
@@ -351,17 +339,17 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 		// to under represent when cut off of 1 is applied later. Interestingly
 		// this probably is why it used to work as the cutoff was before
 		// averaging.
-		InHostConfiguration config = execConfig.getInHostConfiguration();
+		var config = execConfig.getInHostConfiguration();
 
-		Sampler rng = Sampler.getSampler();
-		double[][] load = new double[samples][duration];
-		for (int n = 0; n < samples; n++) {
+		var rng = Sampler.getSampler();
+		var load = new double[samples][duration];
+		for (var n = 0; n < samples; n++) {
 			InHostModelState<?> state = InHostModelState
-					.test(config, execConfig, rng);
+				.test(config, execConfig, rng);
 			// viral exposure at t=0.
 			// This is a standard unit dose.
 			state = state.update(rng, 1D, 0);
-			for (int i = 0; i < duration; i++) {
+			for (var i = 0; i < duration; i++) {
 				load[n][i] = state.getNormalisedViralLoad();
 				state = state.update(rng, 0, 0);
 			}
@@ -372,16 +360,14 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	private static double[][] transmissionFromLoad(
 			double[][] viralLoad, double transmissionParameter
 	) {
-		int samples = viralLoad.length;
-		int duration = viralLoad[0].length;
-		double[][] trans = new double[samples][duration];
-		for (int n = 0; n < samples; n++) {
-			for (int i = 0; i < duration; i++) {
-				trans[n][i] = OutbreakBaseline.transmissibilityFromViralLoad(
-						viralLoad[n][i], transmissionParameter
-				);
-			}
-		}
+		var samples = viralLoad.length;
+		var duration = viralLoad[0].length;
+		var trans = new double[samples][duration];
+		for (var n = 0; n < samples; n++) for (var i = 0; i < duration; i++)
+			trans[n][i] = OutbreakBaseline.transmissibilityFromViralLoad(
+				viralLoad[n][i],
+				transmissionParameter
+			);
 		return trans;
 	}
 
@@ -404,7 +390,8 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 			Outbreak outbreak, ExecutionConfiguration configuration
 	) {
 		return Calibration.inferSeverityCutoff(
-				outbreak, configuration.getInfectionFatalityRate()
+			outbreak,
+			configuration.getInfectionFatalityRate()
 		);
 	}
 
@@ -430,7 +417,8 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 			Outbreak outbreak, ExecutionConfiguration configuration
 	) {
 		return Calibration.inferSeverityCutoff(
-				outbreak, configuration.getInfectionHospitalisationRate()
+			outbreak,
+			configuration.getInfectionHospitalisationRate()
 		);
 	}
 
@@ -454,9 +442,8 @@ public interface InHostConfiguration extends Serializable, Abstraction.Described
 	default double getSeveritySymptomsCutoff(
 			Outbreak outbreak, ExecutionConfiguration configuration
 	) {
-		return Calibration.inferSeverityCutoff(
-				outbreak, configuration.getInfectionCaseRate()
-		);
+		return Calibration
+			.inferSeverityCutoff(outbreak, configuration.getInfectionCaseRate());
 	}
 
 }
