@@ -1,134 +1,408 @@
-# Developer Notes — Build, Staging and Release
+# Developer Notes — Build, Testing and Release
 
-Last updated: 2026-02-13
+Audience: developers, AI agents, and HPC users.  
+Last updated: 2026-04-22
 
-These notes capture the supported local and CI workflows for building,
-staging the site and publishing releases for jpansim2. The CI workflows
-automate most steps, but you will still tag commits to create versioned
-releases.
+---
 
-## TODO: 
-instructions for analysis project (`devtools::document`)
-refactor these instructions for multimodule project
-describe process of running simulation in `scratch` directory
+## Quick Reference
 
-## CI and release notes
+| Task | Command | Working directory |
+|---|---|---|
+| Full build (skip tests) | `mvn -B -DskipTests clean package` | repo root |
+| Full build with tests | `mvn -B clean package` | repo root |
+| Core module only (fast) | `mvn -B -DskipTests clean package` | `jpansim2-core/` |
+| Run tests | `mvn test` | repo root or `jpansim2-core/` |
+| Run single test class | `mvn test -Dtest=TestCalibration` | `jpansim2-core/` |
+| Build + stage site | `mvn -B -DskipTests clean process-classes site:site site:stage` | repo root |
+| Tag a release | `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push origin vX.Y.Z` | repo root |
+| R package: load | `devtools::load_all()` | `analysis/` |
+| R package: test | `devtools::test()` | `analysis/` |
+| R package: document | `roxygen2::roxygenise()` | `analysis/` |
+| R package: build | `devtools::build()` | `analysis/` |
+| R package: check | `devtools::check()` | `analysis/` |
+| R package: pkgdown site | `pkgdown::build_site()` | `analysis/` |
 
-- Release workflow: `.github/workflows/release.yml` (or similar) — builds
-  the module, copies artefacts to the repo-root `staging/` and creates a
-  GitHub Release.
+---
 
-## Maven build
+## Maven Project Structure
 
+JPanSim2 is a **Maven multi-module** project. Always invoke `mvn` from the
+**repo root** (reactor root) for aggregate operations. Building from a child
+directory only affects that module.
 
-- Uses UML plugin to generate UML diagrams 
-- Uses plantuml plugin to generate addtional
-diagrams from `.puml` files in the source code hierarchy, which will generate
-`.png` files in the javadoc code hierarchy. 
-- Link to generated '.png' diagram files using relative paths from javadoc. 
-- Runs main class files in the `io.github.ai4ci.examples` package 
-during build to generate examples
-- Uses Immutables and MapStruct to generate multi-threading safe code
-
-
-## Overview
-
-
-- Build artefacts are produced by the module `jpansim2-core`.
-- The parent `pom.xml` config uses `${session.executionRootDirectory}` so a
-  top-level Maven invocation produces a single shared `target/staging`
-  directory for the full reactor.
-- GitHub Actions handle packaging, staging and release steps.
-
-# Local build and site staging
-
-For the site: from the repo root:
-
-```bash
-# clean, build and stage site to repo-root/target/staging
-mvn -B -DskipTests clean package site site:stage
-# inspect staged site
-ls -la target/staging
+```
+jpansim2/           ← reactor root — run mvn here for aggregate tasks
+├── pom.xml         ← parent POM, groupId io.github.ai4ci, version 0.3.3
+├── jpansim2-core/  ← main module: all code and tests
+│   └── pom.xml
+└── jpansim2-codegen/  ← WIP placeholder
+    └── pom.xml
 ```
 
-To build artefacts locally from `jpansim2-core` directory
+**Java versions:**
+- Compile target: Java 11 (`maven.compiler.release=11`)
+- CI runtime: Java 17 Temurin
+
+---
+
+## Build Phases and What Happens at Each Stage
+
+The build runs annotation processors and code generators. Understanding the
+phase order prevents confusion when something seems missing.
+
+| Phase | What happens |
+|---|---|
+| `generate-resources` | PlantUML plugin renders `.puml` files under `src/main/java/` into `.png` diagrams in `target/generated-diagrams/` |
+| `compile` | `maven-compiler-plugin` runs Immutables and MapStruct annotation processors; generated sources appear in `target/generated-sources/annotations/` |
+| `process-classes` | `exec-maven-plugin` runs `InterfaceSchemaGenerator` → `target/analysis/schemas.R`; then `WriteExampleConfig` → `target/generated-config/`; then resource copies move these to `target/site/` |
+| `package` | `maven-assembly-plugin` produces fat jar: `jpansim2-core/target/jpansim2-core-<VERSION>-jar-with-dependencies.jar` |
+| `site` | Javadoc with UML doclet; site Markdown pages compiled; aggregated site staged to `<repo-root>/target/staging` |
+
+**Annotation processors (compile-time only — do not add to runtime classpath):**
+- `org.immutables:value` — generates `ImmutableFoo` classes from `@Value.Immutable` interfaces
+- `org.mapstruct:mapstruct-processor` — generates mapper implementations (e.g. `HistoryMapper`)
+
+---
+
+## Local Build Recipes
+
+### Standard development build
 
 ```bash
-# run inside jpansim2/jpansim2-core
+# From repo root — builds all modules, runs tests
+mvn clean package
+
+# Skip tests for faster iteration
 mvn -B -DskipTests clean package
 ```
 
-# Packaging and renaming the distributable jar
-
-
-CI builds produce a `-jar-with-dependencies.jar` for `jpansim2-core`.
-We copy and rename that file into a repo-root `staging/` directory so the
-release/upload steps find a consistent filename, e.g. `jpansim2-1.2.3.jar`.
-
-# GitHub Actions pages deployment
-
-- CI workflow: `.github/workflows/publish-javadoc.yaml`
-- Actually performs a full maven build and `site:staging` in a branch.
-- Site staging path: default is `${session.executionRootDirectory}/target/staging`.
-
-
-- Checks out repository
-- Sets up Java and caches Maven dependencies.
-- Calls `mvn -B -DskipTests clean package site site:stage` from parent root with target
-directory `target/staging`
-- Copies `target/staging`
-- JavaDoc generation is not aggregated but run in individual root packages. Have to
-make sure reportSets do not execute `test-javadoc` as this fails
-
-# GitHub Actions release workflow (high level)
-
-
-The GitHub Actions workflow triggers on tags matching `v*.*.*` and will
-build, stage and upload the jar before creating a GitHub Release.
+### Build the core module in isolation
 
 ```bash
-# create annotated tag and push can be done after successful pages deployment
-git tag -a v1.2.3 -m "Release jpansim2 v1.2.3"
-git push origin v1.2.3
+# Faster if you are only changing core code
+mvn -B -DskipTests clean package -pl jpansim2-core
 ```
 
-Key points the workflow does:
+### Run all tests
 
-- Checks out the repository.
-- Sets up Java and caches Maven dependencies.
-- Runs Maven in the `jpansim2-core` module (use `working-directory:` or
-  `-f`/`-pl`) to produce the jar-with-dependencies.
-- Copies produced jar(s) to a repo-root `staging` directory and renames
-  them to `jpansim2-${version}.jar`.
-- Uses `actions/upload-artifact` and `softprops/action-gh-release` to
-  attach the file(s) to the GitHub release and/or upload them as workflow
-  artifacts.
+```bash
+mvn test
+```
 
-- Each `run:` step runs in a fresh shell. Use `working-directory:` on a
-  step to run commands from a non-root directory persistently for that
-  step. Do not rely on `cd` in one `run:` step to affect following steps.
-- `actions/upload-artifact` and `softprops/action-gh-release` operate on
-  paths relative to the workspace (the repo root) unless you change the
-  step `working-directory`.
+### Run a single test class
 
-Troubleshooting
----------------
+```bash
+mvn test -Dtest=TestCalibration -pl jpansim2-core
+```
 
-- Problem: `upload-artifact` cannot find the jar.
-  - Cause: the jar was not copied to repo-root `staging` (or the step used
-    a different `working-directory`).
-  - Fix: Ensure the `cp` copies to the repo-root staging path and add a
-    debug listing step.
+### Build and stage the Maven site (Javadoc + docs)
 
-- Problem: Site staging wrote to a child module `target/staging`.
-  - Cause: Maven was invoked in the child directory so
-    `${session.executionRootDirectory}` equals the child project.
-  - Fix: Run Maven from repo root or pass `-Dsite.staging.dir=...`.
+```bash
+# From repo root — generates site and stages to target/staging
+mvn -B -DskipTests clean process-classes site:site site:stage
+ls target/staging   # inspect output
+```
 
-- Problem: Javadoc or aggregated site files missing from staged site.
-  - Cause: plugin configuration or lifecycle ordering. Ensure the modules
-    are built and `site` runs at the top level so aggregation happens.
-    Run `mvn -DskipTests clean package site site:stage` from the root and
-    inspect `target/staging` to confirm the expected files.
+The site stages to `<repo-root>/target/staging` because the parent POM
+sets `<url>file://${session.executionRootDirectory}/target/staging</url>`.
+If you invoke Maven from a child directory, `${session.executionRootDirectory}`
+will resolve to that child, and the site stages to the wrong location.
+**Always run site:stage from the repo root.**
 
+### Generated artefacts (not committed to git)
 
+| Path | Contents |
+|---|---|
+| `target/generated-config/` | Example JSON config files (generated by `WriteExampleConfig`) |
+| `target/analysis/schemas.R` | R schema file (generated by `InterfaceSchemaGenerator`) |
+| `target/generated-diagrams/` | `.png` UML diagrams from PlantUML |
+| `target/staging/` | Staged Maven site |
+| `jpansim2-core/target/jpansim2-core-<VERSION>-jar-with-dependencies.jar` | Fat jar (main deliverable) |
+
+---
+
+## Running a Simulation Locally
+
+The simulation is invoked via the fat jar built by `mvn package`.
+
+```bash
+# Basic run (single simulation)
+java -jar jpansim2-core/target/jpansim2-core-*-jar-with-dependencies.jar \
+  -c path/to/config.json \
+  -o path/to/output/directory
+
+# Using a pre-renamed release jar
+java -jar jpansim2-<VERSION>.jar -c config.json -o output/
+```
+
+**Options:**
+- `-c <file>` — path to the JSON configuration file (required)
+- `-o <directory>` — output directory for CSV/DuckDB results (required)
+
+**Output structure** (single run):
+```
+output/
+├── outbreak.csv          ← daily outbreak-level summary
+├── outbreak-history.csv  ← full outbreak history
+├── line-list.duckdb      ← per-person data (DuckDB format)
+├── contacts.duckdb       ← contact events
+└── ...                   ← other CSV/DuckDB outputs
+```
+
+### Using the `scratch/` directory for local end-to-end testing
+
+The `scratch/` directory is fully git-ignored (contains `*` in `.gitignore`)
+and is the designated place for running local simulations and inspecting output.
+
+```bash
+mkdir -p scratch/my-test
+cp path/to/config.json scratch/my-test/
+java -jar jpansim2-core/target/jpansim2-core-*-jar-with-dependencies.jar \
+  -c scratch/my-test/config.json \
+  -o scratch/my-test/output
+```
+
+### Getting example configs
+
+Example configs are generated at build time and not committed. After running
+`mvn process-classes` or `mvn package`, retrieve them from:
+
+```bash
+ls jpansim2-core/target/generated-config/
+# e.g. default/config.json, age-stratification/config.json, ...
+cp jpansim2-core/target/generated-config/default/config.json scratch/
+```
+
+Available examples (see `src/site/markdown/examples/index.md` for details):
+- `default/` — Erdos-Rényi network, standard params, R₀ ≈ 1.75
+- `age-stratification/` — age-stratified demographics
+- `behaviour-comparison/` — compares behaviour models via facets
+- `in-host-test/` — compares in-host model variants
+- `lockdown-compliance/` — reactive lockdown policy
+- `network-type/` — compares Erdos-Rényi, Watts-Strogatz, Barabási-Albert
+- `test-R0/` — R facet varying R₀ across 1.0, 2.0, 3.0
+
+---
+
+## HPC Deployment and SLURM
+
+### Deploying to an HPC cluster
+
+1. **Build the fat jar locally or download from a GitHub Release:**
+   ```bash
+   # After tagging and CI completing, download from GitHub Releases:
+   # jpansim2-<VERSION>.jar is attached to the release
+   ```
+
+2. **Copy to the cluster:**
+   ```bash
+   scp jpansim2-<VERSION>.jar user@cluster:/path/to/project/
+   scp config.json user@cluster:/path/to/project/
+   ```
+
+3. **Verify Java version on the cluster (≥ 11 required):**
+   ```bash
+   java -version
+   ```
+
+### SLURM batch execution
+
+JPanSim2 supports SLURM job arrays. Each array task handles a numbered subset
+of the simulation work. Array indices **must be continuous and start at 1**.
+
+The SLURM script is **not version-controlled** (user-provided). A minimal
+template:
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=jpansim2
+#SBATCH --array=1-32          # one task per environment/setup
+#SBATCH --cpus-per-task=4     # simulations are multi-threaded
+#SBATCH --mem=8G              # adjust to population size
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/%A_%a.out
+
+java -jar /path/to/jpansim2-<VERSION>.jar \
+  -c /path/to/config.json \
+  -o /path/to/output/$SLURM_ARRAY_TASK_ID
+```
+
+**Key points:**
+- `$SLURM_ARRAY_TASK_ID` is passed implicitly; the simulation uses this index
+  to select its environment/setup from the batch configuration
+- Each array task writes results to a **numbered subdirectory** under the
+  output directory (e.g. `output/1/`, `output/2/`, …)
+- Simulations are memory-bound; use multi-threading within each task rather
+  than many small tasks
+- `SimulationMonitor` monitors available memory (via OSHI) and throttles
+  spawning of new simulation threads accordingly
+
+**Submit the job:**
+```bash
+sbatch --array=1-32 slurm.sh
+# Monitor:
+squeue -u $USER
+```
+
+### Checking simulation output on the cluster
+
+```bash
+ls output/1/        # results for task 1
+# Use DuckDB CLI or copy results back for R analysis
+duckdb output/1/line-list.duckdb "SELECT * FROM person_demographics LIMIT 5;"
+```
+
+---
+
+## R Analysis Package (`analysis/`)
+
+The R package `jpansim2analysis` provides post-processing and visualisation
+of simulation output (CSV + DuckDB files). It is developed independently of
+the Maven build but uses a generated schema file (`schemas.R`) produced by
+Maven at `process-classes`.
+
+### Prerequisites
+
+```r
+# Install devtools and required packages if not already present
+install.packages("devtools")
+devtools::install_deps(dependencies = TRUE)   # run from analysis/ directory
+```
+
+The build-time dependency `terminological/pkgtools` (used for Roxygen roclets)
+is from GitHub, not CRAN:
+
+```r
+remotes::install_github("terminological/pkgtools")
+```
+
+### Standard R developer workflow
+
+All commands below are run from the `analysis/` directory (or with
+`setwd("analysis")` / via RStudio with the `analysis/` project open).
+
+```r
+# Load package into session for interactive development
+devtools::load_all()
+
+# Regenerate documentation (man/ pages, NAMESPACE)
+roxygen2::roxygenise()
+# or equivalently:
+devtools::document()
+
+# Run tests
+devtools::test()
+
+# Full R CMD CHECK
+devtools::check()
+
+# Build source tarball
+devtools::build()
+
+# Build pkgdown documentation site
+pkgdown::build_site()
+# Site is written to analysis/src/site/resources/ (integrates with Maven site)
+```
+
+### Setting the results directory at runtime
+
+Before calling any analysis functions, point the package at a simulation output
+directory:
+
+```r
+library(jpansim2analysis)
+
+# Interactive directory chooser (requires a GUI/desktop session)
+set_results_directory()
+
+# Programmatic (for scripts/HPC post-processing)
+set_results_directory("/path/to/simulation/output")
+```
+
+### Updating the R schema after Java config changes
+
+When Java configuration interfaces change, regenerate the R schema:
+
+```bash
+# From repo root (Java side)
+mvn process-classes -pl jpansim2-core
+cp jpansim2-core/target/analysis/schemas.R analysis/R/schemas.R
+```
+
+Then re-document and test the R package.
+
+---
+
+## CI and Release Workflows
+
+CI is GitHub Actions. Workflow files live in `.github/workflows/`.
+
+### Workflows
+
+| File | Trigger | Purpose |
+|---|---|---|
+| `publish-javadoc.yml` | Push to `master`/`main` | Build site and publish Javadoc to `javadoc` branch (GitHub Pages) |
+| `release.yml` | Push of tag `v*.*.*` | Build fat jar, rename, attach to GitHub Release |
+| `todo-issues.yml` | Every push | Convert `TODO` comments in source to GitHub Issues |
+
+### Site / Javadoc deployment
+
+- Site is built with: `mvn -DskipTests clean process-classes site:site site:stage`
+- Output staged to `target/staging`, then pushed to the `javadoc` branch
+- Published at: `https://ai4ci.github.io/jpansim2/` (GitHub Pages)
+- The pkgdown R site publishes to `https://ai4ci.github.io/jpansim2/analysis`
+- **Note:** A `.nojekyll` file must exist at the site root to prevent GitHub
+  Pages from filtering files with leading underscores (`_static/` etc.)
+
+### Creating a release
+
+1. Ensure CI is green on `master`/`main`
+2. Create an annotated tag and push it:
+   ```bash
+   git tag -a vX.Y.Z -m "Release jpansim2 vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+3. The `release.yml` workflow fires automatically:
+   - Builds `jpansim2-core` with `mvn -B clean package -DskipTests`
+   - Renames `jpansim2-core-<VERSION>-jar-with-dependencies.jar` → `jpansim2-<VERSION>.jar`
+   - Creates a GitHub Release with the jar attached
+
+**Fat jar naming:**
+- Produced at: `jpansim2-core/target/jpansim2-core-<VERSION>-jar-with-dependencies.jar`
+- Published as: `staging/jpansim2-<VERSION>.jar`
+
+---
+
+## Troubleshooting
+
+### Site staged to wrong location
+
+**Symptom:** `target/staging` is inside a child module directory, not the repo root.  
+**Cause:** Maven was invoked from a child directory; `${session.executionRootDirectory}` resolves to that child.  
+**Fix:** Always run `site:stage` from the repo root.
+
+### `upload-artifact` cannot find the jar
+
+**Cause:** The rename/copy step used a different `working-directory`.  
+**Fix:** Ensure the `cp` copies to `<repo-root>/staging/` and add a debug listing step.
+
+### Javadoc missing from staged site
+
+**Cause:** Plugin lifecycle ordering or module not built before `site`.  
+**Fix:** Run `mvn -DskipTests clean package site site:stage` from root (not just `site:site`).
+
+### `test-javadoc` phase fails in CI
+
+**Cause:** `reportSets` configuration may include `test-javadoc`.  
+**Fix:** Ensure `reportSets` in `jpansim2-core/pom.xml` only runs the `javadoc` report set, not `test-javadoc`.
+
+### Annotation-processor-generated classes not found at compile time
+
+**Cause:** IDE not configured to use the annotation processor path.  
+**Fix:** In IntelliJ: Enable annotation processing in Settings → Build → Compiler → Annotation Processors. In VS Code: use the Maven wrapper to compile rather than the built-in Java compiler.
+
+### `InterfaceSchemaGenerator` or `WriteExampleConfig` fails
+
+These run at `process-classes` and require the compiled classes to be present.  
+**Fix:** Ensure you run at least `mvn compile` before `mvn process-classes` if running phases individually.

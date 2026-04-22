@@ -1,62 +1,272 @@
-# Background and purpose
+# JPanSim2 — Project Overview
 
-- `jpansim2-core/src/site/markdown/index.md` user facing documentation
-- `README.md` high level user facing documentation
+## Background and Purpose
 
+JPanSim2 is an agent-based model (ABM) for simulating pandemic dynamics, including
+contact networks, in-host viral dynamics, behavioural responses, and policy
+interventions. It supports combinatorial experiment grids and SLURM batch execution.
 
-# Significant files and locations
+- `jpansim2-core/src/site/markdown/index.md` — user-facing Maven site documentation
+- `README.md` — high-level user-facing documentation (CLI usage, config structure)
+- `publications/` — background material on purpose and scope
 
-## design artefacts
-- `design/overview.md`: this document
-- `design/build.md`: build instructions
-- `design/conventions.md`: code conventions
+---
 
-## Top level Maven project
-- Useful places to open first: `pom.xml`, `jpansim2-core/pom.xml`
-- Top-level repository root: this is the Maven reactor root and the usual place to invoke `mvn` for aggregate tasks. 
-- Some project documentation lives in this parent project
+## Quick Mental Model
 
-## core module
-- Core module: `jpansim2-core/` — main sources, tests and the module that produces the distributable `-jar-with-dependencies.jar`.
-- Most user facing documentation will live in this module in the javadocs and `src/site/` directory
+```
+CLI: JPanSim2 → SimulationMonitor (memory-aware scheduling via OSHI)
+                    ↓
+              SimulationFactory (pre-builds simulation instances)
+                    ↓
+              ExecutionBuilder (5-stage build pipeline)
+                    ↓  uses →  DefaultModelBuilder
+                               1. Setup (social network from JGraphT)
+                               2. Baseline outbreak (R₀ calibration)
+                               3. Baseline persons (demographics, mobility)
+                               4. Initialise outbreak (OutbreakState)
+                               5. Initialise persons (PersonState, in-host model)
+                    ↓
+              SimulationExecutor (runs daily step loop)
+                    ↓  drives →  Updater
+                                   ↓ contacts (JGraphT social network traversal)
+                                   ↓ exposures (SocialRelationship.contactProbability)
+                                   ↓ in-host update (InHost*State)
+                                   ↓ behaviour state machine (BehaviourState)
+                                   ↓ policy state machine (PolicyState)
+                    ↓
+              SimulationExporter → CSVWriter / DuckDBWriter
+                    ↓
+              R package jpansim2analysis (post-hoc analysis and visualisation)
+```
 
-### Packages
-- `io.github.ai4ci.config`: Specification of JSON configuration files for 
-input using Jackson annotations. `Partial` versions of configuration interfaces used to override or modify default
-settings of `Immutable` versions. N.B. some low level structural configuration is also in 
-`io.github.ai4ci.functions` package
-- `io.github.ai4ci.abm`: main structural classes of the agent based model.
-- `io.github.ai4ci.output`: specification of output views of model for CSV
-and DuckDB serialisation.
-- `io.github.ai4ci.flow`: simulation construction (`builders` subpackage), 
-execution (`mechanics` subpackage) and output (`output` subpackage)
-- `io.github.ai4ci.flow`:
-- Consult `package-info.java` javadocs to understand more detail on the 
-structure of the project.
+---
 
-### Key classes
-- `io.github.ai4ci.flow.SimulationMonitor` entry point to an end to end 
-simulation run.
-- `io.github.ai4ci.flow.builders.AbstractModelBuilder` main entry 
-to things relating to building a simulation
-- `io.github.ai4ci.flow.mechanics.Updater` main per simulation step
-execution engine
-- `io.github.ai4ci.flow.output.SimulationExporter` responsible for 
-writing output
-- `io.github.ai4ci.abm.Outbreak` mutable main simulation data class.
+## Directory Structure
 
-## codegen module
-- (Work in progress)
-- Codegen module: `jpansim2-codegen/` — this is a placeholder. In the future
-we will look to use a annotation processing framework to build specific part of the
-`jpansim2-code` codebase
+```
+jpansim2/                        ← Maven reactor root; invoke `mvn` here
+├── pom.xml                      ← Parent POM (aggregator, groupId io.github.ai4ci, v0.3.3)
+├── jpansim2-core/               ← Main module: all production code and tests
+├── jpansim2-codegen/            ← Placeholder annotation-processor module (WIP)
+├── analysis/                    ← R package `jpansim2analysis`
+├── design/                      ← Architecture docs
+├── publications/                ← Background on purpose and scope
+├── scratch/                     ← .gitignore'd; used for end-to-end test runs
+├── README.md                    ← High-level user-facing documentation
+├── AGENTS.md                    ← AI agent operating instructions
+└── .github/                     ← CI workflows (publish-javadoc, release)
+```
 
-## analysis directory
-- (Work in progress)
-- An R package that provides analysis tools to process the simulation output.
+---
 
-## publications directory
-- Currently limited but contains some background to the purpose and scope
+## Design Artefacts
 
-## scratch directory
-`.gitignore`d contents and can be used for running end to end testing
+- `design/overview.md` — this document; essential project context
+- `design/build.md` — build, release, SLURM packaging, troubleshooting
+- `design/conventions.md` — Java and R coding conventions, Javadoc rules
+
+---
+
+## Maven Module Structure
+
+| Module | Artifact ID | Purpose |
+|---|---|---|
+| Parent POM | `jpansim2-parent` | Reactor root; shared deps; site plugin |
+| `jpansim2-core/` | `jpansim2-core` | All production and test code; produces fat jar |
+| `jpansim2-codegen/` | `jpansim2-codegen` | WIP annotation-processor placeholder |
+
+**Key dependencies (jpansim2-core):**
+- `org.immutables` — compile-time immutable value classes with Jackson integration
+- `org.mapstruct` — compile-time mapper generation (e.g. `HistoryMapper`)
+- Jackson 2.x — JSON/CSV serialisation, JSON Schema generation
+- JGraphT 1.5.2 — social network graph
+- Apache Commons Math3 / Statistics — distributions and stats
+- mXparser — formula evaluation in config
+- DuckDB JDBC — columnar output database
+- OSHI — JVM/system memory monitoring for throttling
+- JUnit Jupiter 5 + AssertJ — tests
+
+**Build notes:**
+- Main class: `io.github.ai4ci.JPanSim2`
+- `exec-maven-plugin` runs `WriteExampleConfig` and `InterfaceSchemaGenerator` at `process-classes` phase
+- PlantUML diagrams generated from `.puml` files at build time
+- Fat jar produced by `maven-assembly-plugin`
+
+---
+
+## Core Module — Java Package Guide
+
+All sources in `jpansim2-core/src/main/java/io/github/ai4ci/`.
+
+Consult `package-info.java` files for detailed architectural notes within each package.
+
+### `io.github.ai4ci` — Entry Point
+
+- `JPanSim2` — CLI entry point; parses `-o` (output dir) and `-c` (config file) options
+- `SlurmAwareLogger` — SLURM-compatible logging
+
+### `io.github.ai4ci.abm` — Agent-Based Model Data Structures
+
+Central mutable simulation container and all agent data.
+
+| Class/Interface | Role |
+|---|---|
+| `Outbreak` | **Central mutable simulation container**: population list, social network, config, state, history, policy state machine |
+| `Person` | Individual agent |
+| `PersonDemographic` | Static per-person demographics |
+| `PersonBaseline` | Immutable per-person baseline (mobility, compliance, behaviour model) |
+| `PersonState` | Mutable per-time-step person state |
+| `PersonHistory` | Daily contact, exposure, test record |
+| `PersonTemporalState` | Interface exposing timestamped observables: viral load, severity, `isInfectious()`, `isSymptomatic()` |
+| `SocialRelationship` | Weighted edge between two agents; computes `contactProbability(mobilityA, mobilityB)` |
+| `Contact` | Materialised contact event between two agents |
+| `Exposure` | Viral dose event linking exposer to exposee |
+| `TestResult` | Test observation: viral load truth, noisy sample, result vs. LoD, log-likelihood ratio |
+| `OutbreakBaseline` | Immutable R₀-calibrated transmission parameters |
+| `OutbreakState` | Mutable outbreak-level state (screening settings, policy state) |
+| `OutbreakHistory` | Outbreak-level daily history |
+| `Calibration` | Calibrates transmission parameter to match configured R₀ |
+| `ModelNav` | Helper accessors for reading config/baseline during build and runtime |
+| `ModelUpdate` | Pre-canned update configurations for the `Updater` |
+
+**Sub-packages:**
+
+- `abm.inhost` — Three in-host viral dynamics models:
+  - `InHostPhenomenologicalState` — curve-fitted observed infection patterns
+  - `InHostStochasticState` — stochastic difference equations (binomial/Poisson) for virions, TEIR cells, immune cells
+  - `InHostMarkovState` — Markov chain discrete state transitions
+
+- `abm.behaviour` — Individual behaviour state machines (enum-based, implement `State.BehaviourState`)
+
+- `abm.policy` — System-level policy state machines:
+  - `NoControl` — baseline no-intervention
+  - `ReactiveLockdown` — threshold-triggered lockdown (MONITOR → LOCKDOWN → TRANSITION)
+  - `PolicyModel` and `Trigger` interfaces
+
+- `abm.riskmodel` — Bayesian temporal risk estimation:
+  - `RiskModel` — accumulates symptom, test, and contact evidence via convolution filters and log-odds Bayesian update
+  - `ConvolutionFilter` — temporal weighting kernels for retrospective evidence
+
+### `io.github.ai4ci.config` — Configuration (JSON/Jackson)
+
+All configuration is immutable (`@Value.Immutable`) with Jackson polymorphism for runtime selection.
+
+| Sub-package | Contents |
+|---|---|
+| `config` | `ExperimentConfiguration`, `TestParameters`, `BatchConfiguration`, `ExecutionFacet` |
+| `config.setup` | `SetupConfiguration`, `NetworkConfiguration` + implementations (`ErdosReyni`, `WattsStrogatz`, `BarabasiAlbert`); `DemographicConfiguration` + implementations |
+| `config.execution` | `ExecutionConfiguration` — R₀, behaviour model, policy model, available tests, in-host config |
+| `config.inhost` | `InHostConfiguration` + polymorphic implementations for each in-host model |
+| `config.refdata` | WIP — CSV-based reference demographic data loading (e.g. `UKCensus`); not yet wired in |
+
+### `io.github.ai4ci.flow` — Simulation Execution Pipeline
+
+| Component | Role |
+|---|---|
+| `SimulationMonitor` | **Top-level entry**: monitors JVM + system memory (OSHI); throttles and spawns `SimulationExecutor` threads |
+| `SimulationFactory` | Pre-configures and caches simulation instances for batch execution |
+| `SimulationExecutor` | Runs a single simulation to completion |
+| `ExecutionBuilder` | Orchestrates the 5-stage build pipeline |
+
+**`flow.builders` — Model Construction (5 stages):**
+
+1. `DefaultNetworkSetup` — generates social network graph from `NetworkConfiguration`
+2. `DefaultOutbreakBaseliner` — calibrates R₀, sets policy/behaviour defaults
+3. `DefaultPersonBaseliner` — assigns demographics, mobility, compliance, app-use probability
+4. `DefaultOutbreakInitialiser` — sets initial `OutbreakState`
+5. `DefaultPersonInitialiser` — sets initial `PersonState`, initialises in-host model
+
+`AbstractModelBuilder` → `DefaultModelBuilder` composes these 5 focused interfaces.
+
+**`flow.mechanics` — Per-Step Engine:**
+
+| Component | Role |
+|---|---|
+| `Updater` | **Daily step engine**: contacts → exposures → state/history updates for all agents and outbreak |
+| `StateMachine` | Orchestrates `updateHistory` then `nextState` for behaviour and policy models |
+| `StateMachineContext` | Shared policy signals available to all state machines |
+| `State` | Base interface; sub-types: `BehaviourState` (per-person enum), `PolicyState` (per-outbreak enum) |
+
+**`flow.output` — Export Pipeline:**
+
+Exports happen at defined lifecycle stages (START, BASELINE, UPDATE, FINISH) before state mutation.
+
+| Component | Role |
+|---|---|
+| `SimulationExporter` | Coordinates pre-mutation snapshot exports |
+| `CSVWriter` | Writes records to CSV files |
+| `DuckDBWriter` | Writes records to DuckDB database files |
+| `QueueWriter` | Buffered async writer |
+
+### `io.github.ai4ci.output` — Output Record Specifications
+
+Defines CSV/DuckDB serialisation views:
+- `OutbreakCSV`, `OutbreakHistoryCSV`, `OutbreakFinalStateCSV`, `OutbreakBehaviourCountCSV`, `OutbreakContactCountCSV`
+- `LineListDuckDB`, `ContactDuckDB`, `PersonDemographicsDuckDB`, `PersonTestsDuckDB`
+- `InfectivityProfileCSV`, `DebugParametersCSV`, `OutbreakConfigurationJson`
+
+### `io.github.ai4ci.functions` — Mathematical Functions
+
+Distribution utilities, empirical function fitting, delay distributions — used for sampling and in-host parameter derivation.
+
+### `io.github.ai4ci.util` — Utilities
+
+`Sampler`, `Conversions` (log-odds, probability transforms), `Repository` (CSV loading with FK joins), `Ephemeral` (lazy init), `ThreadSafeArray`, `AtomicDouble`, `PauseableThread`, `DuckDBUtil`, `CSVUtil`, `ReflectionUtils`, etc.
+
+### `io.github.ai4ci.example` — Examples and Schema Generation
+
+- `WriteExampleConfig` — run at `process-classes` phase; produces example JSON configs in `target/generated-config/`
+- `InterfaceSchemaGenerator` — run at `process-classes` phase; produces R schema file `target/analysis/schemas.R`
+
+---
+
+## Test Structure
+
+All tests in `jpansim2-core/src/test/java/io/github/ai4ci/`.
+Framework: JUnit Jupiter 5 + AssertJ. No integration/unit test separation yet.
+
+| Test area | What it tests |
+|---|---|
+| `abm/` | Calibration, age stratification, ABM utilities, behaviour state machine |
+| `flow/mechanics/` | Phenomenological model, risk model, viral load model |
+| `config/` | Jackson serialisation round-trips, convolution kernels, test parameters, CSV repository loading |
+| `functions/` | Distribution, empirical function, delay distribution utilities |
+| `util/` | Thread safety, reflection, fast I/O, eigenvalue decomposition |
+| `deprecated/` | Archived concurrency experiments (retained for reference) |
+
+Test resources: example config JSON files and a JSON schema in `src/test/resources/`.
+
+---
+
+## R Analysis Package (`analysis/`)
+
+**Package name**: `jpansim2analysis`  
+**Style**: tidyverse idioms, all namespace-qualified with `::`  
+**Documentation**: Roxygen2 with markdown
+
+Key R files:
+- `experiment-details.R` — reading/summarising experiment metadata
+- `plot-experiments.R` — ggplot2-based simulation output visualisation
+- `state.R` — state-related analysis utilities
+- `write-repository.R` — writing analysis output repositories
+
+Key imports: `dplyr`, `ggplot2`, `readr`, `duckdb`, `purrr`, `tidyr`, `jsonlite`, `rmarkdown`, `knitr`
+
+The Maven build generates `schemas.R` from Java config classes at `process-classes` phase.
+
+---
+
+## Key Entry Points for Common Tasks
+
+| Task | Where to start |
+|---|---|
+| Running a simulation | `JPanSim2` (CLI), then `SimulationMonitor` |
+| Changing simulation logic (daily step) | `Updater` in `flow.mechanics` |
+| Adding a new in-host model | `abm.inhost`, `config.inhost`, `DefaultPersonInitialiser` |
+| Adding a new policy | `abm.policy`, wire into `ExecutionConfiguration` |
+| Adding a new behaviour | `abm.behaviour`, wire into `ExecutionConfiguration` |
+| Adding new CSV/DuckDB output | `io.github.ai4ci.output`, `SimulationExporter` |
+| Changing configuration structure | `io.github.ai4ci.config` (Immutables + Jackson) |
+| Analysing output | R package `jpansim2analysis` in `analysis/` |
+| End-to-end testing | `scratch/` directory |
