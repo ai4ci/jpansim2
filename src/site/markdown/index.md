@@ -8,4 +8,5 @@ for testing behavioural effects in the context of a disease outbreak.
 - [The core simulation engine](jpansim2-core/index.html)
 - [Simulation engine JavaDocs](jpansim2-core/apidocs/index.html)
 - [Configuration examples](jpansim2-core/examples/index.html)
+- [Using SLURM](slurm.html)
 - Other project sub-sites to come...

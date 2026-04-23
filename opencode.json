@@ -9,8 +9,8 @@
         "apiKey": "EMPTY"
       },
       "models": {
-        "google/gemma-4-31B-it": {
-          "name": "google/gemma-4-31B-it (Isambard)",
+        "Qwen/Qwen3.5-397B-A17B-FP8": {
+          "name": "Qwen/Qwen3.5-397B-A17B-FP8 (Isambard)",
           "limit": {
             "context": 262144,
             "output": 262144
@@ -22,10 +22,14 @@
     }
   },
   "mcp": {
-      "r-btw": {
-		"type": "local",
-        "command": ["Rscript", "-e", "btw::btw_mcp_server(tools=btw::btw_tools('docs','env','pkg','run'))"],
-		"enabled": true
-      }
+    "r-btw": {
+      "type": "local",
+      "command": [
+        "Rscript",
+        "-e",
+        "btw::btw_mcp_server(tools=btw::btw_tools('docs','env','pkg','run'))"
+      ],
+      "enabled": true
     }
+  }
 }

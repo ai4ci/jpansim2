@@ -40,7 +40,7 @@ where to find key files.
     essential formulae. Use simple LaTeX surrounders: inline `\( ... \)`
     or block `\[ ... \]`. Prefer block equations, avoid aligned
     environments. Keep expressions minimal and suitable for MathJax.
-- Include short notes in Javadoc linking to downstream uses where
+- Include short notes in Javadoc linking to upstream callers and downstream uses where
   relevant (for example, which other modules or site pages depend on the
   class). Use plain URLs or relative references where helpful.
 
@@ -49,3 +49,6 @@ where to find key files.
 - prefer `tidyverse` idioms
 - qualify all namespaces with `::` operators.
 - comprehensively document with `Roxygen` all exported function.
+- `terminological/pkgtools` provides a `@unit` tag for putting tests in Roxygen 
+documentation. Use this for tests for internal functions. Use `@examples` for
+end to end examples of workflow in exported functions.
