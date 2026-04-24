@@ -10,7 +10,8 @@
 * A longer term goal is to migrate the project towards test driven development with fully documented design.
 * Design artefacts will be in the `design` folder, with a meaningful snake-case filename.
 * Keep a record of when you last looked at individual design artefacts, and look for recent modifications to the files. Expect them to change unpredictably without a clean git commit record.
-* If you are in a git worktree or branch starting `scoder` you are in a sandbox and you may want to check for changes from main.
+* If you are in a git worktree or branch starting `scoder` you are in a sandbox and you may want to check for changes from upstream.
+* If you are in a git worktree or branch starting `scoder` commit a set of changes (if any) after every round of conversation.
 * Design artefact templates are in the `design/templates` folder - use these when populating design documents.
 * The `design/overview.md` provides a background to the code structure and is a good entry point for orientation.
 * The `design/priorities.md` is collaboratively authored with user and provides a list of current priorities, outstanding issues and technical debt. Value effort trade off is used for deciding on the next priority to implement.
@@ -32,5 +33,3 @@
   3. `discuss priorities` -> `explore design and do research` -> `agree scope with user` -> (repeat) `update prioritised tests` -> (until) `test coverage satisfactory` -> (optional) `add emerging issues to priorities`
 * The file `design/conventions.md` records stylistic conventions to adhere to when creating code or documentation.
 * You should use paths relative to your home directory in case it changes.
-* If you are in a `/home/scoder` subdirectory you are in a fairly permissive sandbox looking at a git worktree mapped to the same place as the host filesystem. 
-  * Changes may be being made in parallel in main. It will be complex to create new worktrees or branches.
