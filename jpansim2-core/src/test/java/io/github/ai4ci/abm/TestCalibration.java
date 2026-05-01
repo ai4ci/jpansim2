@@ -11,6 +11,7 @@ import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
 import io.github.ai4ci.functions.ImmutableDelayDistribution;
+import io.github.ai4ci.functions.SimpleDistribution;
 import io.github.ai4ci.util.Conversions;
 
 class TestCalibration {
@@ -26,7 +27,7 @@ class TestCalibration {
 					BarabasiAlbertConfiguration.DEFAULT.withNetworkSize(500)
 						.withNetworkDegree(100)
 				),
-				exec -> exec.setR0(3.0)
+				exec -> exec.setR0(SimpleDistribution.point(3.0))
 					.setDefaultPolicyModelName(NoControl.class.getSimpleName())
 					.setDefaultBehaviourModelName(NonCompliant.class.getSimpleName())
 			)

@@ -3,6 +3,7 @@ package io.github.ai4ci.config;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -90,7 +91,6 @@ import io.github.ai4ci.util.ReflectionUtils;
  * @see ExecutionConfiguration
  */
 @Value.Immutable
-@Value.Modifiable
 @JsonSerialize(as = ImmutableExperimentConfiguration.class)
 @JsonDeserialize(as = ImmutableExperimentConfiguration.class)
 public interface ExperimentConfiguration extends Abstraction.Described {
@@ -155,7 +155,7 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 	default void checkConfigVersion() {
 		var ref = getFileVersion();
 		if (!this.getVersion()
-			.equalsIgnoreCase(ref)) {
+			.equalsIgnoreCase(ref))
 			throw new RuntimeException(
 					String.format(
 						"Mismatch between configuration version %s and api version %s",
@@ -163,7 +163,6 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 						ref
 					)
 			);
-		}
 	}
 
 	/**
@@ -176,14 +175,14 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 	 * @see #getBatchDirectoryPath(Path)
 	 */
 	@JsonIgnore
-	default SimulationExporter exporter(Path baseDirectory) {
+	default SimulationExporter exporter(Path workingDirectory) {
 		return SimulationExporter.of(
-			this.getBatchDirectoryPath(baseDirectory),
+			workingDirectory,
 			Arrays.stream(
 				this.getBatchConfig()
 					.getExporters()
 			)
-				.map(e -> e.getSelector())
+				.map(Exporters::getSelector)
 				.collect(Collectors.toList())
 		);
 	}
@@ -207,11 +206,33 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 	@JsonIgnore
 	default Path getBatchDirectoryPath(Path baseDirectory) {
 		if (this.getBatchConfig()
-			.getBatchTotal() <= 1) { return baseDirectory; }
+			.getBatchTotal() <= 1) return baseDirectory;
 		return baseDirectory.resolve(
 			"" + this.getBatchConfig()
 				.getBatchNumber()
 		);
+	}
+
+	/**
+	 * Gets the batch-specific working directory path. In SLURM jobs this returns
+	 * a $LOCALDIR if it exists, this is typically a high performance filesystem.
+	 *
+	 * @param baseDirectory Root directory for output files
+	 * @return Batch-specific output directory path
+	 */
+	@JsonIgnore
+	default Path getWorkingBaseDirectory(Path baseDirectory) {
+		if (!this.getBatchConfig()
+			.getLocalDir()
+			.equals(BatchConfiguration.NOT_SLURM))
+			return Paths.get(
+				this.getBatchConfig()
+					.getLocalDir(),
+				this.getBatchConfig()
+					.getSlurmId()
+			);
+		else
+			return baseDirectory;
 	}
 
 	/**
@@ -227,13 +248,11 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 	default List<SetupConfiguration> getBatchSetupList() {
 
 		if (this.getBatchConfig()
-			.getBatchTotal() <= 1) {
-			return this.getSetup();
-		}
+			.getBatchTotal() <= 1) return this.getSetup();
 
 		var size = this.getSetup()
 			.size();
-		if (size == 1) { return this.getSetup(); }
+		if (size == 1) return this.getSetup();
 
 		// Handle SLURM parallelisation. Split list into N chunks based on number
 		// of batches
@@ -252,7 +271,7 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 				.getBatchNumber() * chunkSize,
 			size
 		);
-		if (start >= size) { return Collections.emptyList(); }
+		if (start >= size) return Collections.emptyList();
 		return this.getSetup()
 			.subList(start, end);
 
@@ -288,11 +307,10 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 				if (mod instanceof PartialExecutionConfiguration) {
 
 					if (mod.self()
-						.getName() == null) {
+						.getName() == null)
 						throw new RuntimeException(
 								"Modifications must have a value for name"
 						);
-					}
 
 					out.forEach(b -> {
 						var modified = (ImmutableExecutionConfiguration) ReflectionUtils
@@ -378,11 +396,10 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 					.getModifications()) {
 
 					if (mod.self()
-						.getName() == null) {
+						.getName() == null)
 						throw new RuntimeException(
 								"Modifications must have a value for name"
 						);
-					}
 
 					SetupConfiguration modified = // ConfigMerger.INSTANCE
 //					.mergeConfiguration(

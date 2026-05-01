@@ -57,7 +57,7 @@ test_that(".find_chrome unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(131, 1, 131+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(88, 1, 88+1, 1))
   )
 })
 
@@ -105,7 +105,7 @@ test_that(".print_svg_with_chrome unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(195, 1, 195+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(152, 1, 152+1, 1))
   )
 })
 
@@ -145,7 +145,7 @@ test_that(".print_html_with_chrome unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(294, 1, 294+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(251, 1, 251+1, 1))
   )
 })
 
@@ -183,7 +183,7 @@ test_that(".convert_pdf_to_pngs unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(386, 1, 386+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(343, 1, 343+1, 1))
   )
 })
 
@@ -237,7 +237,7 @@ test_that(".gg_save_as unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(542, 1, 542+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(499, 1, 499+1, 1))
   )
 })
 
@@ -274,7 +274,7 @@ test_that(".hux_save_as unit test", {
   # source of the unit test:
   testthat::expect(rlang::caller_env(n = 2)$ok,
     failure_message = "Source link for failing @unit test.",
-    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(863, 1, 863+1, 1))
+    srcref = srcref(srcfile("../../R/import-standalone-file-output-utils.R"), c(820, 1, 820+1, 1))
   )
 })
 

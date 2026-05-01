@@ -2,10 +2,9 @@
 % Please edit documentation in R/plot-experiments.R
 \name{plot_summary}
 \alias{plot_summary}
-\title{Plots summary level information as a timeseries}
+\title{Plots summary level information as a time series}
 \usage{
 plot_summary(
-  tables,
   feature,
   ...,
   mapping = .gg_check_for_aes(...),
@@ -16,10 +15,8 @@ plot_summary(
 )
 }
 \arguments{
-\item{tables}{the output of the \code{load_duckdb()} function}
-
 \item{feature}{The summary feature to plot. This is a column name of the \code{tables$summary}
-dataframe, it can include things like \code{incidence}, \code{cumulativeDeaths}}
+data frame, it can include things like \code{incidence}, \code{cumulativeDeaths}}
 
 \item{...}{ggplot format options which can be used to control the plot and
 faceting}
@@ -31,24 +28,23 @@ if you are not happy with the defaults set this to \code{FALSE} and add your own
 \code{facet_wrap()} command}
 
 \item{policy}{Should we include a background layer showing the policy state
-at any given point in time (see \code{plot_policy()})}
+at any given point in time (see \code{plot_policy()})?}
 
 \item{spaghetti}{Should we display multiple time-series as a spaghetti plot
-(each simulation plotted individually or as a ribbon (mean
+(each simulation plotted individually as a line) or as a ribbon (mean
 value and 0.95 quantiles for all replicas of a given model and experiment)}
 
-\item{points}{If not using a spaghetti plot should we plot the raw data
-points as well as the ribbons.}
+\item{points}{Should we plot the data points as well as the ribbons / lines.}
 }
 \value{
 a ggplot
 }
 \description{
-Plots summary level information as a timeseries
+Plots summary level information as a time series
 }
 \examples{
-tables = load_duckdb("/home/vp22681/Data/ai4ci/0.3.2/behaviour-comparison")
-tables$summary \%>\% dplyr::glimpse()
+set_results_dir(here("../scratch/examples/lockdown-compliance"))
+get_table("summary") \%>\% dplyr::glimpse()
 tables \%>\% plot_summary(averageMobility, spaghetti=FALSE)
 tables \%>\% plot_summary(averageViralLoad, spaghetti=FALSE)
 tables \%>\% plot_summary(cumulativeDeaths, spaghetti=FALSE)

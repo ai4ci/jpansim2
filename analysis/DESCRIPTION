@@ -54,4 +54,6 @@ Imports:
     tidyr,
     utils,
     duckdb,
-    ggnewscale
+    ggnewscale,
+    patchwork,
+    rayshader

@@ -65,50 +65,7 @@ std_size = list(
 # .outputter, .here, .locate_project
 # are all in standalone-directory-utils.R
 
-#' Get the file path of the current script
-#'
-#' Gives you the file input path regardless of whether you are running the
-#' script in rstudio, knitr or on the console.
-#'
-#' @return the file path of the currently executed script or an error if the
-#' command is executed outside of a script.
-#' @keywords internal
-#' @concept output
-#' @unit
-#' .this_script()
-.this_script = function() {
-  if (.is_knitting()) {
-    return(knitr::current_input(dir = TRUE))
-  }
-  if (.is_running_in_chunk()) {
-    return(fs::path_abs(rstudioapi::getSourceEditorContext()$pat))
-  }
-  # in a .R script in R studio
-  tmp = try(rstudioapi::getActiveDocumentContext()$path)
-  if (tmp != "") {
-    return(fs::path_abs(tmp))
-  }
-  # command line with a file parameter
-  cmdArgs <- commandArgs(trailingOnly = FALSE)
-  needle <- "--file="
-  match <- grep(needle, cmdArgs)
-  if (length(match) > 0) {
-    # Rscript
-    return(fs::path_abs(sub(needle, "", cmdArgs[match])))
-  } else {
-    # 'source'd via R console
-    tryCatch(
-      {
-        if (sys.frames()[[1]]$ofile != "") {
-          return(fs::path_abs(sys.frames()[[1]]$ofile))
-        }
-      },
-      error = function(e) return(fs::path_abs(getwd()))
-    )
-  }
-  warning("not running in a script.", call. = FALSE)
-  return(fs::path_abs(getwd()))
-}
+
 
 # PDF conversion using chrome ----
 

@@ -351,7 +351,7 @@ public class Calibration {
 	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 
 		var social = outbreak.getSocialNetwork();
-		var totalContactProbability = social.parallelStream()
+		var totalContactProbability = social.stream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -385,7 +385,7 @@ public class Calibration {
 	) {
 
 		return outbreak.getSocialNetwork()
-			.parallelStream()
+			.stream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -597,7 +597,7 @@ public class Calibration {
 			Outbreak outbreak, double[][] viralLoadProfile, double R0
 	) {
 		var contactProbability = outbreak.getSocialNetwork()
-			.parallelStream()
+			.stream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -677,7 +677,7 @@ public class Calibration {
 		var degrees = new AtomicDoubleArray(o.getPopulationSize());
 
 		o.getSocialNetwork()
-			.parallelStream()
+			.stream()
 			.forEach(r -> {
 				var person1 = r.getSource(o);
 				var person2 = r.getTarget(o);
@@ -757,7 +757,7 @@ public class Calibration {
 		var variances = new AtomicDoubleArray(o.getPopulationSize());
 
 		o.getSocialNetwork()
-			.parallelStream()
+			.stream()
 			.forEach(r -> {
 				var person1 = r.getSource(o);
 				var person2 = r.getTarget(o);
@@ -827,7 +827,7 @@ public class Calibration {
 		// This will be used as the uniform contact probability for the ER
 		// reference
 		var avgContactProb = outbreak.getSocialNetwork()
-			.parallelStream()
+			.stream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);

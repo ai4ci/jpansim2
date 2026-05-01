@@ -2,7 +2,9 @@ package io.github.ai4ci.flow;
 
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +89,10 @@ public class SimulationMonitor implements Runnable {
 	int duration;
 	Object trigger = new Object();
 	volatile private boolean halt = false;
+//	private ExperimentConfiguration config;
+//	private Path baseDirectory;
+	private Path outputDirectory;
+	private Path workingDirectory;
 
 	/**
 	 * Create a new SimulationMonitor with the given configuration and base
@@ -104,7 +110,16 @@ public class SimulationMonitor implements Runnable {
 	public SimulationMonitor(ExperimentConfiguration config, Path baseDirectory)
 			throws IOException {
 
-		this.exporter = config.exporter(baseDirectory);
+//		this.config = config;
+//		this.baseDirectory = baseDirectory;
+		this.outputDirectory = config.getBatchDirectoryPath(baseDirectory);
+		this.workingDirectory = config
+			.getBatchDirectoryPath(config.getWorkingBaseDirectory(baseDirectory));
+		Files.createDirectories(this.outputDirectory);
+		Files.createDirectories(this.workingDirectory);
+
+		this.exporter = config.exporter(this.workingDirectory);
+
 		this.exporter.writeInputConfiguration(config);
 		var setups = config.getBatchSetupList();
 		var executions = config.getExecution();
@@ -293,7 +308,44 @@ public class SimulationMonitor implements Runnable {
 				log.info("Waiting for output to complete...");
 				Thread.sleep(1000);
 			}
-			log.info("Completed.");
+
+			if (!this.outputDirectory.equals(this.workingDirectory)) {
+				try {
+					var success = Files.walk(this.workingDirectory)
+						.parallel()
+						.filter(Files::isRegularFile)
+						.mapToInt(in -> {
+							var rel = this.workingDirectory.relativize(in);
+							var target = this.outputDirectory.resolve(rel);
+							try {
+								log.info("Copying simulation working file: " + in);
+								Files.createDirectories(target.getParent());
+								Files.copy(
+									in,
+									target,
+									StandardCopyOption.REPLACE_EXISTING
+								);
+								log.info("Copy complete: " + in + "->" + target);
+							} catch (IOException e) {
+								log.error(
+									"Failed to copy working file: " + in + "->" + target
+											+ ": " + e.getCause()
+												.getMessage()
+								);
+								return 0;
+							}
+							return 1;
+						})
+						.allMatch(i -> i == 1);
+					if (!success)
+						throw new IOException("Copy failed one or more files.");
+				} catch (IOException e) {
+					log.error("Failed to copy working files: " + e.getMessage());
+				}
+
+			}
+
+			SimulationMonitor.log.info("Completed.");
 
 		} catch (InterruptedException e) {
 			e.printStackTrace();

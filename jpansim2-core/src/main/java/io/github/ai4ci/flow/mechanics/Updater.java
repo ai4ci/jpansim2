@@ -151,32 +151,35 @@ public class Updater {
 
 		var sampler = Sampler.getSampler();
 
-		if (!infector.isInfectious()) { return Optional.empty(); }
+		if (!infector.isInfectious()) return Optional.empty();
 
 		// This is where transmission rate / susceptability plays a role.
 		var trans = Conversions.scaleProbabilityByOR(
-				infector.getAdjustedTransmissibility(),
-				infectee.getSusceptibilityModifier()
+			infector.getAdjustedTransmissibility(),
+			infectee.getSusceptibilityModifier()
 		);
 
 		var transmitted = sampler.bern(trans);
-		if (!transmitted) { return Optional.empty(); }
+		if (!transmitted) return Optional.empty();
 
 		return Optional.of(
-				ImmutableExposure.builder()
-						.setExposerId(infector.getEntity().getId())
-						// Should the amount of exposure be dependent on the
-						// probability of transmission or is this a stochastic
-						// event? My belief is the latter. If it happens, the
-						// dose of virus is independent of how likely it was
-						// to happen. Probability of transmission depends on
-						// whether contact coughs, dose depends on how much
-						// virus they cough over you.
-						// See PersonState#getContactExposure for where this is
-						// picked up and fed into the in host model.
-						.setExposure(infector.getNormalisedViralLoad())
-						// .setTransmissionProbability(trans)
-						.build()
+			ImmutableExposure.builder()
+				.setExposerId(
+					infector.getEntity()
+						.getId()
+				)
+				// Should the amount of exposure be dependent on the
+				// probability of transmission or is this a stochastic
+				// event? My belief is the latter. If it happens, the
+				// dose of virus is independent of how likely it was
+				// to happen. Probability of transmission depends on
+				// whether contact coughs, dose depends on how much
+				// virus they cough over you.
+				// See PersonState#getContactExposure for where this is
+				// picked up and fed into the in host model.
+				.setExposure(infector.getNormalisedViralLoad())
+				// .setTransmissionProbability(trans)
+				.build()
 		);
 	}
 
@@ -192,56 +195,73 @@ public class Updater {
 		// person updateState
 		var network = outbreak.getSocialNetwork();
 		var out = new PersonStateContacts(
-				outbreak.getPeople().size(),
-				network.size() / outbreak.getPeople().size() * 4
+				outbreak.getPeople()
+					.size(),
+				network.size() / outbreak.getPeople()
+					.size() * 4
 		);
 
-		network.parallelStream().forEach(r -> {
-			var sampler = Sampler.getSampler();
-			var one = r.getSource(outbreak).getCurrentState();
-			var two = r.getTarget(outbreak).getCurrentState();
+		network.parallelStream()
+			.forEach(r -> {
+				var sampler = Sampler.getSampler();
+				var one = r.getSource(outbreak)
+					.getCurrentState();
+				var two = r.getTarget(outbreak)
+					.getCurrentState();
 
-			// TODO: contacts stratified by venue such as work or school
-			// connectedness quantile is a proxy for the context of a contact
-			// If we wanted to control this a different set of features of the
-			// relationship could be used. At the moment this overloads mobility
-			// with type of contact, but in reality WORK contacts may be less
-			// Significant that home contacts. This is where we would implement
-			// something along these lines.
+				// TODO: contacts stratified by venue such as work or school
+				// connectedness quantile is a proxy for the context of a contact
+				// If we wanted to control this a different set of features of the
+				// relationship could be used. At the moment this overloads mobility
+				// with type of contact, but in reality WORK contacts may be less
+				// Significant that home contacts. This is where we would implement
+				// something along these lines.
 
-			var contactProbability = r.contactProbability(
-					one.getAdjustedMobility(), two.getAdjustedMobility()
-			);
+				var contactProbability = r.contactProbability(
+					one.getAdjustedMobility(),
+					two.getAdjustedMobility()
+				);
 
-			if (sampler.bern(contactProbability)) {
-				// This is a contact.
-				// Contact transmission probability depends on lowest
-				// transmissibility
+				if (sampler.bern(contactProbability)) {
+					// This is a contact.
+					// Contact transmission probability depends on lowest
+					// transmissibility
 
-				var oneref = one.getEntity().getId();
-				var tworef = two.getEntity().getId();
+					var oneref = one.getEntity()
+						.getId();
+					var tworef = two.getEntity()
+						.getId();
 
-				var jointDetect = one.getAdjustedAppUseProbability()
-						* two.getAdjustedAppUseProbability()
-						* outbreak.getCurrentState().getContactDetectedProbability();
+					var jointDetect = one.getAdjustedAppUseProbability()
+							* two.getAdjustedAppUseProbability()
+							* outbreak.getCurrentState()
+								.getContactDetectedProbability();
 
-				var detected = sampler.bern(jointDetect);
+					var detected = sampler.bern(jointDetect);
 
-				Contact contact = ImmutableContact.builder().setDetected(detected)
-						.setParticipant1Id(oneref).setParticipant2Id(tworef)
+					Contact contact = ImmutableContact.builder()
+						.setDetected(detected)
+						.setParticipant1Id(oneref)
+						.setParticipant2Id(tworef)
 						// TODO: Proximity and duration of a contact aren't handled
 						// .setProximityDuration(contactProbability)
 						.build();
 
-				out.write(oneref).put(tworef, contact);
-				out.write(tworef).put(oneref, contact);
+					out.write(oneref)
+						.put(tworef, contact);
+					out.write(tworef)
+						.put(oneref, contact);
 
-				asExposure(contact, one, two)
-						.ifPresent(e -> out.writeExp(oneref).put(tworef, e));
-				asExposure(contact, two, one)
-						.ifPresent(e -> out.writeExp(tworef).put(oneref, e));
-			}
-		});
+					asExposure(contact, one, two).ifPresent(
+						e -> out.writeExp(oneref)
+							.put(tworef, e)
+					);
+					asExposure(contact, two, one).ifPresent(
+						e -> out.writeExp(tworef)
+							.put(oneref, e)
+					);
+				}
+			});
 
 		return out;
 
@@ -254,12 +274,12 @@ public class Updater {
 	public Updater() {
 		this.outbreakProcessors = new ArrayList<>();
 		for (ModelUpdate.OutbreakUpdaterFn value : ModelUpdate.OutbreakUpdaterFn
-				.values()) {
+			.values()) {
 			this.outbreakProcessors.add(value.fn());
 		}
 		this.personProcessors = new ArrayList<>();
 		for (ModelUpdate.PersonUpdaterFn value : ModelUpdate.PersonUpdaterFn
-				.values()) {
+			.values()) {
 			this.personProcessors.add(value.fn());
 		}
 
@@ -277,45 +297,57 @@ public class Updater {
 			var m = (ModifiableOutbreak) outbreak;
 
 			m.setNextState(
-					Ephemeral.of(
-							ImmutableOutbreakState.builder().from(m.getCurrentState())
-									.setTime(m.getCurrentState().getTime() + 1)
-					)
+				Ephemeral.of(
+					ImmutableOutbreakState.builder()
+						.from(m.getCurrentState())
+						.setTime(
+							m.getCurrentState()
+								.getTime() + 1
+						)
+				)
 			);
 
 			m.setNextHistory(
-					Ephemeral.of(
-							ImmutableOutbreakHistory.builder()
-									.from(MAPPER.createHistory(m.getCurrentState()))
-					)
+				Ephemeral.of(
+					ImmutableOutbreakHistory.builder()
+						.from(MAPPER.createHistory(m.getCurrentState()))
+				)
 			);
 
-			m.getStateMachine().prepareUpdate();
+			m.getStateMachine()
+				.prepareUpdate();
 		}
 
-		outbreak.getPeople().parallelStream().forEach(person -> {
-			if (person instanceof ModifiablePerson) {
-				var p = (ModifiablePerson) person;
+		outbreak.getPeople()
+			.parallelStream()
+			.forEach(person -> {
+				if (person instanceof ModifiablePerson) {
+					var p = (ModifiablePerson) person;
 
-				p.setNextState(
+					p.setNextState(
 						Ephemeral.of(
-								ImmutablePersonState.builder().from(p.getCurrentState())
-										.setTime(p.getCurrentState().getTime() + 1)
-										.setImmunisationDose(0D)
-										.setImportationExposure(0D)
+							ImmutablePersonState.builder()
+								.from(p.getCurrentState())
+								.setTime(
+									p.getCurrentState()
+										.getTime() + 1
+								)
+								.setImmunisationDose(0D)
+								.setImportationExposure(0D)
 						)
-				);
+					);
 
-				p.setNextHistory(
+					p.setNextHistory(
 						Ephemeral.of(
-								ImmutablePersonHistory.builder()
-										.from(MAPPER.createHistory(p.getCurrentState()))
+							ImmutablePersonHistory.builder()
+								.from(MAPPER.createHistory(p.getCurrentState()))
 						)
-				);
+					);
 
-				p.getStateMachine().prepareUpdate();
-			}
-		});
+					p.getStateMachine()
+						.prepareUpdate();
+				}
+			});
 
 	}
 
@@ -331,28 +363,48 @@ public class Updater {
 	 */
 	private void switchHistory(Outbreak outbreak) {
 		var limit = Math.max(
-				outbreak.getBaseline().getSymptomDuration(),
-				outbreak.getBaseline().getInfectiveDuration()
+			outbreak.getBaseline()
+				.getSymptomDuration(),
+			outbreak.getBaseline()
+				.getInfectiveDuration()
 		) * 2;
 		if (outbreak instanceof ModifiableOutbreak) {
 			var m = (ModifiableOutbreak) outbreak;
-			m.getPeople().parallelStream().forEach(person -> {
-				if (person instanceof ModifiablePerson) {
-					var p = (ModifiablePerson) person;
-					synchronized (p) {
-						var tmp = p.getHistory();
-						tmp.add(0, p.getNextHistory().toOptional().get().build());
-						while (tmp.size() > limit) {
-							tmp.remove(limit);
+			m.getPeople()
+				.parallelStream()
+				.forEach(person -> {
+					if (person instanceof ModifiablePerson) {
+						var p = (ModifiablePerson) person;
+						synchronized (p) {
+							var tmp = p.getHistory();
+							tmp.add(
+								0,
+								p.getNextHistory()
+									.get()
+									.build()
+							);
+							while (tmp.size() > limit) {
+								tmp.remove(limit);
+							}
+							p.setNextHistory(
+								p.getNextHistory()
+									.clear()
+							);
 						}
-						p.setNextHistory(p.getNextHistory().clear());
 					}
-				}
-			});
+				});
 			synchronized (m) {
 				m.getHistory()
-						.add(0, m.getNextHistory().toOptional().get().build());
-				m.setNextHistory(m.getNextHistory().clear());
+					.add(
+						0,
+						m.getNextHistory()
+							.get()
+							.build()
+					);
+				m.setNextHistory(
+					m.getNextHistory()
+						.clear()
+				);
 			}
 		}
 	}
@@ -369,26 +421,40 @@ public class Updater {
 	private void switchState(Outbreak outbreak) {
 		if (outbreak instanceof ModifiableOutbreak) {
 			var m = (ModifiableOutbreak) outbreak;
-			m.getPeople().parallelStream().forEach(person -> {
-				if (person instanceof ModifiablePerson) {
-					var p = (ModifiablePerson) person;
-					synchronized (p) {
-						// TODO: Update spatio-temporal state network if explicit.
-						// This is where the new and old state co-exist
-						// it is one place where we could make a record in a
-						// spatio-temporal network. Possibly the only place.
-						// It would have to be thread safe and non blocking.
-						// alternatively we can just use the PersonHistory for this
-						p.setCurrentState(
-								p.getNextState().toOptional().get().build()
-						);
-						p.setNextState(p.getNextState().clear());
+			m.getPeople()
+				.parallelStream()
+				.forEach(person -> {
+					if (person instanceof ModifiablePerson) {
+						var p = (ModifiablePerson) person;
+						synchronized (p) {
+							// TODO: Update spatio-temporal state network if explicit.
+							// This is where the new and old state co-exist
+							// it is one place where we could make a record in a
+							// spatio-temporal network. Possibly the only place.
+							// It would have to be thread safe and non blocking.
+							// alternatively we can just use the PersonHistory for this
+							p.setCurrentState(
+								p.getNextState()
+									.get()
+									.build()
+							);
+							p.setNextState(
+								p.getNextState()
+									.clear()
+							);
+						}
 					}
-				}
-			});
+				});
 			synchronized (m) {
-				m.setCurrentState(m.getNextState().toOptional().get().build());
-				m.setNextState(m.getNextState().clear());
+				m.setCurrentState(
+					m.getNextState()
+						.get()
+						.build()
+				);
+				m.setNextState(
+					m.getNextState()
+						.clear()
+				);
 
 			}
 		}
@@ -401,6 +467,8 @@ public class Updater {
 	 * @return the same outbreak with new states and histories
 	 */
 	public Outbreak update(Outbreak outbreak) {
+		// TODO: This is maybe Amdahl’s Law with a vengeance on 72 cores.
+		// each of these is a gate at which all
 		this.prepareUpdate(outbreak);
 		// at this point the "current history" is the same as the previous state
 		this.updateHistory(outbreak);
@@ -410,8 +478,8 @@ public class Updater {
 		this.switchState(outbreak);
 		// at this point the "current history" is the same as the previous state
 		log.debug(
-				"Update: " + outbreak.getUrn() + "; Step:"
-						+ outbreak.getCurrentState().getTime()
+			"Update: " + outbreak.getUrn() + "; Step:" + outbreak.getCurrentState()
+				.getTime()
 		);
 		return outbreak;
 	}
@@ -433,31 +501,41 @@ public class Updater {
 
 			// Update the next history entry with anything from the current
 			var sampler1 = Sampler.getSampler();
-			var nextOutbreakHistory = outbreak.getNextHistory().toOptional().get();
-			m.getStateMachine().performHistoryUpdate(
-					nextOutbreakHistory, outbreak.getCurrentState(), sampler1
-			);
+			var nextOutbreakHistory = outbreak.getNextHistory()
+				.get();
+			m.getStateMachine()
+				.performHistoryUpdate(
+					nextOutbreakHistory,
+					outbreak.getCurrentState(),
+					sampler1
+				);
 
-			m.getPeople().parallelStream().forEach(person -> {
+			m.getPeople()
+				.parallelStream()
+				.forEach(person -> {
 
-				var sampler = Sampler.getSampler();
-				var nextPersonHistory = person.getNextHistory().toOptional().get();
+					var sampler = Sampler.getSampler();
+					var nextPersonHistory = person.getNextHistory()
+						.get();
 
-				if (person instanceof ModifiablePerson) {
-					var p = (ModifiablePerson) person;
+					if (person instanceof ModifiablePerson) {
+						var p = (ModifiablePerson) person;
 
-					var ref = p.getId();
-					nextPersonHistory
+						var ref = p.getId();
+						nextPersonHistory
 							.setTodaysContacts(contactNetwork.getContactsForId(ref))
 							.setTodaysExposures(contactNetwork.getExposuresForId(ref));
 
-					p.getStateMachine().performHistoryUpdate(
-							nextPersonHistory, person.getCurrentState(), sampler
-					);
+						p.getStateMachine()
+							.performHistoryUpdate(
+								nextPersonHistory,
+								person.getCurrentState(),
+								sampler
+							);
 
-				}
+					}
 
-			});
+				});
 		}
 	}
 
@@ -486,22 +564,27 @@ public class Updater {
 		// 8)
 
 		var sampler = Sampler.getSampler();
-		var nextState = outbreak.getNextState().toOptional().get();
+		var nextState = outbreak.getNextState()
+			.get();
 		if (outbreak instanceof ModifiableOutbreak) {
 			var m = (ModifiableOutbreak) outbreak;
 			// Update the state machine (for the outbreak).
 			m.getStateMachine()
-					.performStateUpdate(nextState, m.getCurrentState(), sampler);
+				.performStateUpdate(nextState, m.getCurrentState(), sampler);
 
 			// update nextState... pre-agent processing
 			this.outbreakProcessors.forEach(p -> {
-				if (p.getSelector().test(m)) {
-					p.getConsumer().accept(nextState, m, sampler);
+				if (p.getSelector()
+					.test(m)) {
+					p.getConsumer()
+						.accept(nextState, m, sampler);
 				}
 			});
 
 			// agent processing
-			m.getPeople().parallelStream().forEach(p -> this.updateState(p));
+			m.getPeople()
+				.parallelStream()
+				.forEach(this::updateState);
 
 		}
 	}
@@ -517,14 +600,14 @@ public class Updater {
 		// This is a thread local instance of sampler. so there should be one
 		// per thread. We shouldn't reset the seed though.
 		var sampler = Sampler.getSampler();
-		var nextState = person.getNextState().toOptional().get();
+		var nextState = person.getNextState()
+			.get();
 		if (person instanceof ModifiablePerson) {
 			var m = (ModifiablePerson) person;
 
 			// Update the state machine (for the behaviour).
-			m.getStateMachine().performStateUpdate(
-					nextState, person.getCurrentState(), sampler
-			);
+			m.getStateMachine()
+				.performStateUpdate(nextState, person.getCurrentState(), sampler);
 
 			// What is the correct order here?
 			// It feels like this should be done before the state update above for
@@ -533,17 +616,25 @@ public class Updater {
 			// changed is the individual's behaviour e.g. m.getStateMachine().
 
 			nextState
-					// Update the viral load model and the risk models.
-					// These requires an up to date history for the exposures.
-					.setInHostModel(
-							m.getCurrentState().getInHostModel()
-									.update(person, sampler)
-					).setRiskModel(m.getCurrentState().getRiskModel().update());
+				// Update the viral load model and the risk models.
+				// These requires an up to date history for the exposures.
+				.setInHostModel(
+					m.getCurrentState()
+						.getInHostModel()
+						.update(person, sampler)
+				)
+				.setRiskModel(
+					m.getCurrentState()
+						.getRiskModel()
+						.update()
+				);
 
 			// update nextState...
 			this.personProcessors.forEach(p -> {
-				if (p.getSelector().test(m)) {
-					p.getConsumer().accept(nextState, m, sampler);
+				if (p.getSelector()
+					.test(m)) {
+					p.getConsumer()
+						.accept(nextState, m, sampler);
 				}
 			});
 
@@ -571,7 +662,7 @@ public class Updater {
 			TriConsumer<ImmutableOutbreakState.Builder, Outbreak, Sampler> updater
 	) {
 		this.outbreakProcessors
-				.add(ModelOperation.updateOutbreakState(test, updater));
+			.add(ModelOperation.updateOutbreakState(test, updater));
 		return this;
 	}
 
@@ -611,7 +702,7 @@ public class Updater {
 			TriConsumer<ImmutablePersonState.Builder, Person, Sampler> updater
 	) {
 		this.personProcessors
-				.add(ModelOperation.updatePersonState(test, updater));
+			.add(ModelOperation.updatePersonState(test, updater));
 		return this;
 	}
 

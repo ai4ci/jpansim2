@@ -48,27 +48,27 @@ import io.github.ai4ci.util.Sampler;
 public class StateUtils {
 
 	/**
-	 * Interface for behavior states that require no testing or history updates.
+	 * Interface for behaviour states that require no testing or history updates.
 	 *
 	 * <p>
-	 * Used for baseline behaviors or states where testing is not applicable
-	 * (e.g., deceased agents, non-reactive behaviors). Provides empty
+	 * Used for baseline behaviours or states where testing is not applicable
+	 * (e.g., deceased agents, non-reactive behaviours). Provides empty
 	 * implementation to satisfy interface requirements without adding testing
 	 * overhead.
 	 */
-	public static interface DefaultNoTesting extends State.BehaviourState {
+	public interface DefaultNoTesting extends State.BehaviourState {
 		/**
 		 * Empty history update - no testing or state modifications occur.
 		 */
 		@Override
-		default public void updateHistory(
+		default void updateHistory(
 				ImmutablePersonHistory.Builder builder, PersonState person,
 				StateMachineContext context, Sampler rng
 		) {}
 	}
 
 	/**
-	 * Interface for behavior states that perform PCR testing when symptomatic.
+	 * Interface for behaviour states that perform PCR testing when symptomatic.
 	 *
 	 * <p>
 	 * This default implementation automatically triggers PCR testing when: -
@@ -80,7 +80,7 @@ public class StateUtils {
 	 * The timing threshold (2 days) prevents premature testing while ensuring
 	 * timely intervention after symptom onset.
 	 */
-	public static interface DoesPCRIfSymptomatic extends State.BehaviourState {
+	public interface DoesPCRIfSymptomatic extends State.BehaviourState {
 		/**
 		 * Default history update that automatically seeks PCR testing when
 		 * symptomatic.
@@ -91,7 +91,7 @@ public class StateUtils {
 		 * @param rng     random number generator
 		 */
 		@Override
-		default public void updateHistory(
+		default void updateHistory(
 				ImmutablePersonHistory.Builder builder, PersonState person,
 				StateMachineContext context, Sampler rng
 		) {
@@ -133,14 +133,20 @@ public class StateUtils {
 			OutbreakState current, State.BehaviourState behaviour,
 			Predicate<Person> filter
 	) {
-		ModelNav.people(current).filter(filter)
-				.filter(p -> !p.getCurrentState().isDead()).forEach(ps -> {
-					ps.getStateMachine().forceTo(behaviour);
-				});
+		ModelNav.people(current)
+			.filter(filter)
+			.filter(
+				p -> !p.getCurrentState()
+					.isDead()
+			)
+			.forEach(ps -> {
+				ps.getStateMachine()
+					.forceTo(behaviour);
+			});
 	}
 
 	/**
-	 * Branches single person to specified behavior state.
+	 * Branches single person to specified behaviour state.
 	 *
 	 * <p>
 	 * Preserves current state in branch stack and returns the target behavior
@@ -153,7 +159,9 @@ public class StateUtils {
 	public static State.BehaviourState branchTo(
 			PersonState current, State.BehaviourState behaviour
 	) {
-		current.getEntity().getStateMachine().rememberCurrentState(behaviour);
+		current.getEntity()
+			.getStateMachine()
+			.rememberCurrentState(behaviour);
 		return behaviour;
 	}
 
@@ -162,7 +170,7 @@ public class StateUtils {
 	 *
 	 * <p>
 	 * Reduces compliance modifier linearly toward zero using configuration
-	 * deterioration rate. Models behavioral fatigue in sustained restrictions.
+	 * deterioration rate. Models behavioural fatigue in sustained restrictions.
 	 *
 	 * @param builder builder for person state modifications
 	 * @param person  current person state to evaluate
@@ -172,11 +180,11 @@ public class StateUtils {
 	) {
 		if (person.isCompliant()) {
 			builder.setComplianceModifier(
-					linearToZero(
-							person.getComplianceModifier(),
-							ModelNav.modelParam(person)
-									.getComplianceDeteriorationRate()
-					)
+				linearToZero(
+					person.getComplianceModifier(),
+					ModelNav.modelParam(person)
+						.getComplianceDeteriorationRate()
+				)
 			);
 		}
 	}
@@ -195,14 +203,13 @@ public class StateUtils {
 			ImmutablePersonState.Builder builder, PersonState person
 	) {
 		if (person.isCompliant()) {
-			builder
-					.setComplianceModifier(
-							linearToOne(
-									person.getComplianceModifier(),
-									ModelNav.modelParam(person)
-											.getComplianceImprovementRate()
-							)
-					);
+			builder.setComplianceModifier(
+				linearToOne(
+					person.getComplianceModifier(),
+					ModelNav.modelParam(person)
+						.getComplianceImprovementRate()
+				)
+			);
 		}
 	}
 
@@ -233,8 +240,8 @@ public class StateUtils {
 					PersonState current, StateMachineContext context, Sampler rng
 			) {
 				var out = state.nextState(builder, current, context, rng);
-				if (out != state) { return out; }
-				if (i <= 1) { return context.pullBehaviour(); }
+				if (out != state) return out;
+				if (i <= 1) return context.pullBehaviour();
 				return countdown(i - 1, out);
 			}
 
@@ -327,12 +334,13 @@ public class StateUtils {
 	) {
 		if (person.isSymptomatic()) {
 			builder.setMobilityModifier(
-					decayTo(
-							person.getMobilityModifier(),
-							ModelNav.baseline(person).getSelfIsolationDepth(),
-							ModelNav.modelParam(person)
-									.getOrganicRateOfMobilityChange()
-					)
+				decayTo(
+					person.getMobilityModifier(),
+					ModelNav.baseline(person)
+						.getSelfIsolationDepth(),
+					ModelNav.modelParam(person)
+						.getOrganicRateOfMobilityChange()
+				)
 			);
 		}
 	}
@@ -370,7 +378,8 @@ public class StateUtils {
 			ImmutablePersonHistory.Builder builder, PersonState person,
 			StateMachineContext context
 	) {
-		var test = TestResult.screeningResultFrom(person, Type.LFT).get();
+		var test = TestResult.screeningResultFrom(person, Type.LFT)
+			.get();
 		builder.addTodaysTests(test);
 		context.setReactivelyTestedToday(true);
 		return test;
@@ -392,7 +401,8 @@ public class StateUtils {
 			ImmutablePersonHistory.Builder builder, PersonState person,
 			StateMachineContext context
 	) {
-		var test = TestResult.resultFrom(person, Type.PCR).get();
+		var test = TestResult.resultFrom(person, Type.PCR)
+			.get();
 		builder.addTodaysTests(test);
 		context.setReactivelyTestedToday(true);
 		return test;
@@ -431,13 +441,13 @@ public class StateUtils {
 					PersonState current, StateMachineContext context, Sampler rng
 			) {
 				var out = state.nextState(builder, current, context, rng);
-				if (i < 1) { return out; }
+				if (i < 1) return out;
 				if (!current.isSymptomatic()) {
 					builder.setMobilityModifier(
-							this.frac(i, current.getMobilityModifier())
+						this.frac(i, current.getMobilityModifier())
 					);
 					builder.setTransmissibilityModifier(
-							this.frac(i, current.getTransmissibilityModifier())
+						this.frac(i, current.getTransmissibilityModifier())
 					);
 				}
 				return graduallyRestoreBehaviour(i - 1, out);
@@ -520,10 +530,16 @@ public class StateUtils {
 	 * @return true if positive test result exists for today
 	 */
 	public static boolean isPositiveTestToday(PersonState person) {
-		return ModelNav.history(person).stream()
-				.flatMap(h -> h.getTodaysTests().stream()).anyMatch(
-						tr -> tr.resultOnDay(person.getTime()).equals(Result.POSITIVE)
-				);
+		return ModelNav.history(person)
+			.stream()
+			.flatMap(
+				h -> h.getTodaysTests()
+					.stream()
+			)
+			.anyMatch(
+				tr -> tr.resultOnDay(person.getTime())
+					.equals(Result.POSITIVE)
+			);
 	}
 
 	/**
@@ -545,8 +561,8 @@ public class StateUtils {
 	}
 
 	private static double linearTo(double p, double target, double delta) {
-		if (p - delta > target) { return p - delta; }
-		if (p + delta < target) { return p + delta; }
+		if (p - delta > target) return p - delta;
+		if (p + delta < target) return p + delta;
 		return target;
 	}
 
@@ -585,18 +601,25 @@ public class StateUtils {
 	 * @param rng     random number generator for probability checks
 	 */
 	public static void randomlyScreen(OutbreakState current, Sampler rng) {
-		ModelNav.people(current).filter(p -> !p.getCurrentState().isDead())
-				.forEach(ps -> {
-					if (!ps.getNextHistory().isPresent()) {
-						throw new RuntimeException(
-								"Tried to update screening after at wrong time in lifecycle"
-						);
-					}
-					randomlyScreen(
-							ps.getNextHistory().get(), ps.getCurrentState(),
-							current.getScreeningProbability(), rng
+		ModelNav.people(current)
+			.filter(
+				p -> !p.getCurrentState()
+					.isDead()
+			)
+			.forEach(ps -> {
+				if (!ps.getNextHistory()
+					.isPresent())
+					throw new RuntimeException(
+							"Tried to update screening after at wrong time in lifecycle"
 					);
-				});
+				randomlyScreen(
+					ps.getNextHistory()
+						.get(),
+					ps.getCurrentState(),
+					current.getScreeningProbability(),
+					rng
+				);
+			});
 	}
 
 	/**
@@ -631,22 +654,20 @@ public class StateUtils {
 	public static void restoreSociabilitySlowly(
 			ImmutablePersonState.Builder builder, PersonState person
 	) {
-		builder
-				.setMobilityModifier(
-						decayToOne(
-								person.getMobilityModifier(),
-								ModelNav.modelParam(person)
-										.getOrganicRateOfMobilityChange()
-						)
-				);
-		builder
-				.setTransmissibilityModifier(
-						decayToOne(
-								person.getTransmissibilityModifier(),
-								ModelNav.modelParam(person)
-										.getOrganicRateOfMobilityChange()
-						)
-				);
+		builder.setMobilityModifier(
+			decayToOne(
+				person.getMobilityModifier(),
+				ModelNav.modelParam(person)
+					.getOrganicRateOfMobilityChange()
+			)
+		);
+		builder.setTransmissibilityModifier(
+			decayToOne(
+				person.getTransmissibilityModifier(),
+				ModelNav.modelParam(person)
+					.getOrganicRateOfMobilityChange()
+			)
+		);
 	}
 
 	/**
@@ -679,11 +700,14 @@ public class StateUtils {
 	 * @param current current outbreak state
 	 */
 	public static void returnPeopleFromBranch(OutbreakState current) {
-		ModelNav.people(current).forEach(ps -> {
-			if (!ps.getCurrentState().isDead()) {
-				ps.getStateMachine().returnFromBranch();
-			}
-		});
+		ModelNav.people(current)
+			.forEach(ps -> {
+				if (!ps.getCurrentState()
+					.isDead()) {
+					ps.getStateMachine()
+						.returnFromBranch();
+				}
+			});
 	}
 
 	/**
@@ -696,7 +720,8 @@ public class StateUtils {
 	public static TestResult screenLFT(
 			ImmutablePersonHistory.Builder builder, PersonState person
 	) {
-		var test = TestResult.resultFrom(person, Type.LFT).get();
+		var test = TestResult.resultFrom(person, Type.LFT)
+			.get();
 		return test;
 	}
 
@@ -714,7 +739,8 @@ public class StateUtils {
 	public static TestResult screenPCR(
 			ImmutablePersonHistory.Builder builder, PersonState person
 	) {
-		var test = TestResult.screeningResultFrom(person, Type.PCR).get();
+		var test = TestResult.screeningResultFrom(person, Type.PCR)
+			.get();
 		builder.addTodaysTests(test);
 		return test;
 	}

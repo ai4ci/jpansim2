@@ -9,7 +9,11 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.immutables.datatype.Datatype;
 
 import io.github.ai4ci.abm.PersonDemographic;
@@ -30,16 +34,15 @@ public class ReflectionUtils {
 			Object object, PersonDemographic demog, SimpleFunction ageAdjustment,
 			Scale.ScaleType scale
 	) {
-		if (demog.getAge() == Double.NaN) { return object; }
+		if (demog.getAge() == Double.NaN) return object;
 		var factor = ageAdjustment.value(demog.getAge());
 		if (object instanceof Distribution) {
 			var base = ((Distribution) object).sample();
 			return SimpleDistribution
 				.point(Scale.ScaleType.scale(base, factor, scale));
 		}
-		if (object instanceof Double) {
+		if (object instanceof Double)
 			return Scale.ScaleType.scale((Double) object, factor, scale);
-		}
 		throw new RuntimeException(
 				"Attempt to scale something not a number or distribution"
 		);
@@ -87,29 +90,41 @@ public class ReflectionUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	private static <X> Optional<X> get(Object o, String s) {
-		try {
-			return Optional.ofNullable((X) getter(s, o.getClass()).invoke(o));
-		} catch (IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e) {
-			throw new RuntimeException(e);
-		} catch (NoSuchMethodException e) {
+		var m = getter(s, o.getClass());
+		if (m != null) {
+			try {
+				return Optional.ofNullable((X) m.invoke(o));
+			} catch (IllegalAccessException | InvocationTargetException e) {
+				throw new RuntimeException(e);
+			}
+		} else
 			return Optional.empty();
-		}
 	}
 
-	private static Method getter(String s, Class<?> clz)
-			throws NoSuchMethodException {
-		return clz.getMethod(capitalize(s.replaceFirst("^(get|set)", ""), "get"));
+	private static Map<Class<?>, Map<String, Method>> getters = new ConcurrentHashMap<>();
+
+	private static Method getter(String s, Class<?> clz) {
+		var methods = getters.computeIfAbsent(clz, c -> {
+
+			var tmp = new HashMap<String, Method>();
+			Arrays.stream(c.getMethods())
+				.forEach(m -> tmp.put(m.getName(), m));
+			return tmp;
+
+		});
+
+		var getterName = capitalize(s.replaceFirst("^(get|set)", ""), "get");
+		return methods.getOrDefault(getterName, null);
 	}
 
 	private static <X> Class<?> iface(Class<X> clz) {
 		if (!clz.getSimpleName()
-			.startsWith("Immutable")) { return clz; }
+			.startsWith("Immutable")) return clz;
 		var tmp = clz.getSimpleName()
 			.replaceFirst("Immutable", "");
 		for (Class<?> iclz : clz.getInterfaces()) {
 			if (iclz.getSimpleName()
-				.endsWith(tmp)) { return iclz; }
+				.endsWith(tmp)) return iclz;
 		}
 		return clz.getSuperclass();
 	}
@@ -126,9 +141,8 @@ public class ReflectionUtils {
 		if (clz.getSimpleName()
 			.startsWith("Immutable")
 				|| clz.getSimpleName()
-					.startsWith("Modifiable")) {
+					.startsWith("Modifiable"))
 			return clz;
-		}
 		Class<?> immClz;
 		var tmp = clz.getPackageName() + ".Immutable" + clz.getSimpleName();
 		try {
@@ -150,7 +164,7 @@ public class ReflectionUtils {
 	@SuppressWarnings("unchecked")
 	public static <X> X initialise(Class<X> clz, Object... params) {
 		var paramTypes = Arrays.stream(params)
-			.map(o -> o.getClass())
+			.map(Object::getClass)
 			.toArray(i -> new Class<?>[i]);
 		Throwable err = null;
 		for (Method m : clz.getMethods()) {
@@ -169,12 +183,10 @@ public class ReflectionUtils {
 				}
 			}
 		}
-		if (err == null) {
-			throw new RuntimeException(
-					"Cannot initialise " + clz.getCanonicalName()
-							+ ": no static factory method found"
-			);
-		}
+		if (err == null) throw new RuntimeException(
+				"Cannot initialise " + clz.getCanonicalName()
+						+ ": no static factory method found"
+		);
 		throw new RuntimeException(
 				"Cannot initialise " + clz.getCanonicalName()
 						+ ": factory threw an exception: "
@@ -277,9 +289,14 @@ public class ReflectionUtils {
 
 							tmp.addAll((Collection<Object>) value1.get());
 							m.invoke(builder, tmp);
-						} else if (value1.get().getClass().isArray()) {
+						} else if (value1.get()
+							.getClass()
+							.isArray()) {
 							Optional<?> baseValue = get(base, m.getName());
-							m.invoke(builder, new Object[] {merge(baseValue.get(), value1.get())});
+							m.invoke(
+								builder,
+								new Object[] { merge(baseValue.get(), value1.get()) }
+							);
 						} else {
 							m.invoke(builder, value1.get());
 						}
@@ -301,19 +318,20 @@ public class ReflectionUtils {
 
 	@SuppressWarnings("unchecked")
 	private static <X> X[] merge(Object a_in, Object b_in) {
-		X[] a = (X[]) a_in;
-		X[] b = (X[]) b_in;
-		Class<X> type = (Class<X>) a.getClass().getComponentType();
-		X[] out = (X[]) Array.newInstance(type, a.length+b.length);
-		for (int i=0;i<a.length;i++) {
+		var a = (X[]) a_in;
+		var b = (X[]) b_in;
+		var type = (Class<X>) a.getClass()
+			.getComponentType();
+		var out = (X[]) Array.newInstance(type, a.length + b.length);
+		for (var i = 0; i < a.length; i++) {
 			out[i] = a[i];
 		}
-		for (int i=0;i<b.length;i++) {
-			out[i+a.length] = b[i];
+		for (var i = 0; i < b.length; i++) {
+			out[i + a.length] = b[i];
 		}
 		return out;
 	}
-	
+
 	/**
 	 * Apply demographic adjustments to a configuration object. This is similar
 	 * to merge but instead of replacing values with the modifier's values, it
@@ -358,8 +376,7 @@ public class ReflectionUtils {
 
 					Optional<?> value = get(base, m.getName());
 					if (value.isPresent()) {
-						var ageAdjustment = (SimpleFunction) m
-							.invoke(modifiers);
+						var ageAdjustment = (SimpleFunction) m.invoke(modifiers);
 						if (ageAdjustment != null) {
 							var scale = m.getAnnotation(Scale.class)
 								.value();
@@ -413,17 +430,15 @@ public class ReflectionUtils {
 				if (method.getReturnType()
 					.isPrimitive()) {
 					if (method.getReturnType()
-						.equals(Boolean.TYPE)) { return false; }
+						.equals(Boolean.TYPE)) return false;
 					if (method.getReturnType()
-						.equals(Integer.TYPE)) { return 0; }
+						.equals(Integer.TYPE)) return 0;
 					if (method.getReturnType()
-						.equals(Long.TYPE)) { return 0L; }
+						.equals(Long.TYPE)) return 0L;
 					if (method.getReturnType()
-						.equals(Double.TYPE)) {
-						return Double.NaN;
-					}
+						.equals(Double.TYPE)) return Double.NaN;
 					if (method.getReturnType()
-						.equals(Float.TYPE)) { return Float.NaN; }
+						.equals(Float.TYPE)) return Float.NaN;
 				}
 				return null;
 			}
@@ -455,9 +470,8 @@ public class ReflectionUtils {
 			if (m.getName()
 				.equals(sn) && m.getParameterCount() == 1
 					&& m.getParameters()[0].getType()
-						.isAssignableFrom(type)) {
+						.isAssignableFrom(type))
 				return m;
-			}
 		}
 		throw new NoSuchMethodException(
 				"No match for " + clz.getCanonicalName() + "("
@@ -469,7 +483,7 @@ public class ReflectionUtils {
 	private void copy(Object from, Object to, String s)
 			throws NoSuchMethodException {
 		Optional<?> value1 = get(from, s);
-		if (value1.isEmpty()) { return; }
+		if (value1.isEmpty()) return;
 		if (value1.get() instanceof Collection) {
 			Collection<Object> tmp = new ArrayList<>(
 					(Collection<Object>) value1.get()

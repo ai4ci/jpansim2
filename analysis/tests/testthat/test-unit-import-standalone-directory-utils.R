@@ -125,4 +125,33 @@ test_that(".here unit test", {
 })
 
 # unit test end: .here ----
+# unit test start: .this_script ----
+
+test_that(".this_script unit test", {
+
+  # Automatically generated test case from roxygen @unit tag
+  # Do not edit here - follow the link to the source file.
+  # or navigate to topic with <F2>
+  F2 = .this_script
+  
+
+  testthat::expect_no_error(withCallingHandlers(
+    {
+      .this_script()
+    },
+    warning = function(e) {
+      message("Warning issued: ", e$message)
+      invokeRestart("muffleWarning")
+    }
+  ))
+
+  # generates a failure if the overall test is failing with a link to the 
+  # source of the unit test:
+  testthat::expect(rlang::caller_env(n = 2)$ok,
+    failure_message = "Source link for failing @unit test.",
+    srcref = srcref(srcfile("../../R/import-standalone-directory-utils.R"), c(248, 1, 248+1, 1))
+  )
+})
+
+# unit test end: .this_script ----
 # end of unit tests ----

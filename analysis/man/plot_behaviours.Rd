@@ -4,11 +4,9 @@
 \alias{plot_behaviours}
 \title{Plot a behaviour area chart.}
 \usage{
-plot_behaviours(tables, ..., mapping = .gg_check_for_aes(...), facet = TRUE)
+plot_behaviours(..., mapping = .gg_check_for_aes(...), facet = TRUE)
 }
 \arguments{
-\item{tables}{the output of the \code{load_duckdb()} function}
-
 \item{...}{ggplot format options which can be used to control the plot and
 faceting}
 
@@ -26,6 +24,8 @@ given time during the simulation.
 Plot a behaviour area chart.
 }
 \examples{
-tables = load_duckdb("/home/vp22681/Data/ai4ci/0.3.2/behaviour-comparison")
-tables \%>\% plot_behaviours()
+with_results_dir(
+  here("../scratch/examples/behaviour-comparison"),
+  plot_behaviours()
+)
 }

@@ -612,8 +612,11 @@
 # the subset of ... params that apply to a geom plus any default values
 # This allows us to supply irrelevant aesthetics in ... for a function that we
 # map to geoms that are more relevant
-..flt = function(geom, dots, mapping, .default = list()) {
-  dots = dots[names(dots) %in% geom$aesthetics()]
+..flt = function(geom, stat, dots, mapping, .default = list()) {
+  dots = dots[
+    names(dots) %in% geom$aesthetics() | names(dots) %in% geom$parameters() |
+    names(dots) %in% stat$aesthetics() | names(dots) %in% stat$parameters()
+    ]
   dots = dots[!names(dots) %in% names(mapping)]
   dots = c(dots, .default[!names(.default) %in% c(names(dots), names(mapping))])
   return(dots)
@@ -637,6 +640,7 @@
 #'   or augmented (see example)
 #' @param ... inherit from the higher level function to enable user customisation
 #'   these are checked for their relevance to the `geom` before being passed on
+#' @param stat The `ggplot2` stat to use e.g. `ggplot::StatIdentity`
 #' @param .default a list containing default aesthetics e.g.
 #'   `list(colour='blue')` that can be overridden by the user if they supply a
 #'   `...` or `mapping` aesthetic that overrides.
@@ -670,6 +674,7 @@
   data = NULL,
   mapping,
   ...,
+  stat = ggplot2::StatIdentity,
   .default = list(),
   .switch_fill = inherits(geom, "GeomRibbon")
 ) {
@@ -682,7 +687,7 @@
   return(
     ggplot2::layer(
       geom = geom,
-      stat = ggplot2::StatIdentity,
+      stat = stat,
       data = data,
       mapping = .gg_check_in_data(data, mapping),
       position = dots$position %||% "identity",
@@ -690,7 +695,7 @@
       inherit.aes = dots$inherit.aes %||% FALSE,
       check.aes = dots$check.aes %||% TRUE,
       check.param = dots$check.param %||% TRUE,
-      param = ..flt(geom, dots, mapping, .default = .default)
+      param = ..flt(geom, stat, dots, mapping, .default = .default)
     )
   )
 }

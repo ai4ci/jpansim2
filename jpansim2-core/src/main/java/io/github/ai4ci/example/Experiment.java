@@ -1,11 +1,11 @@
 package io.github.ai4ci.example;
 
+import io.github.ai4ci.abm.behaviour.FixedBehaviour;
 import io.github.ai4ci.abm.behaviour.NonCompliant;
 import io.github.ai4ci.abm.behaviour.ReactiveTestAndIsolate;
 import io.github.ai4ci.abm.behaviour.SmartAgentLFTTesting;
 import io.github.ai4ci.abm.behaviour.SmartAgentTesting;
 import io.github.ai4ci.abm.behaviour.Symptomatic;
-import io.github.ai4ci.abm.behaviour.FixedBehaviour;
 import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.abm.policy.ReactiveLockdown;
 import io.github.ai4ci.abm.policy.Trigger.Value;
@@ -24,6 +24,7 @@ import io.github.ai4ci.config.setup.AgeStratifiedDemography;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
 import io.github.ai4ci.config.setup.ErdosReyniConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
+import io.github.ai4ci.config.setup.UnstratifiedDemography;
 import io.github.ai4ci.config.setup.WattsStrogatzConfiguration;
 import io.github.ai4ci.functions.SimpleDistribution;
 
@@ -84,14 +85,27 @@ public enum Experiment {
 						.withDefaultBehaviourModelName(
 							NonCompliant.class.getSimpleName()
 						)
-						.withImportationProbability(0D)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+						.withImportationProbability(0D)// .setInHostConfiguration(StochasticModel.DEFAULT)
 				)
 				.withFacet(
 					"behaviour",
 					PartialExecutionConfiguration.builder()
 						.setName("ignore")
-						.setDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
+						.setDefaultBehaviourModelName(
+							FixedBehaviour.class.getSimpleName()
+						)
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("symptom-management")
+						.setDefaultBehaviourModelName(
+							Symptomatic.class.getSimpleName()
+						)
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("reactive-test")
+						.setDefaultBehaviourModelName(
+							ReactiveTestAndIsolate.class.getSimpleName()
+						)
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("smart-agent")
@@ -104,20 +118,10 @@ public enum Experiment {
 						.setDefaultBehaviourModelName(
 							SmartAgentLFTTesting.class.getSimpleName()
 						)
-						.build(),
-					PartialExecutionConfiguration.builder()
-						.setName("reactive-test")
-						.setDefaultBehaviourModelName(
-							ReactiveTestAndIsolate.class.getSimpleName()
-						)
-						.build(),
-					PartialExecutionConfiguration.builder()
-						.setName("symptom-management")
-						.setDefaultBehaviourModelName(
-							Symptomatic.class.getSimpleName()
-						)
 						.build()
 				)
+				.withExecutionReplications(5)
+				.withSetupReplications(5)
 	),
 
 	/**
@@ -135,27 +139,31 @@ public enum Experiment {
 				.withExecutionConfig(
 					ExecutionConfiguration.DEFAULT
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
-						.withImportationProbability(0D) // .001D)
-//						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
-//						// .withInHostConfiguration(StochasticModel.DEFAULT)
+						.withDefaultBehaviourModelName(
+							FixedBehaviour.class.getSimpleName()
+						)
+						.withImportationProbability(0D)// .001D)
+					//						.withContactProbability( SimpleDistribution.unimodalBeta(0.1, 0.1) )
+					//						// .withInHostConfiguration(StochasticModel.DEFAULT)
 				)
 				.withExecutionReplications(1)
 				.withFacet(
 					"R",
 					PartialExecutionConfiguration.builder()
 						.setName("1.0")
-						.setR0(1D)
+						.setR0(SimpleDistribution.point(1D))
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("2.0")
-						.setR0(2D)
+						.setR0(SimpleDistribution.point(2D))
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("3.0")
-						.setR0(3D)
+						.setR0(SimpleDistribution.point(3D))
 						.build()
 				)
+				.withExecutionReplications(5)
+				.withSetupReplications(5)
 	),
 
 	/**
@@ -163,8 +171,9 @@ public enum Experiment {
 	 */
 	AGE_STRAT(
 			"age-stratification",
-			ExperimentConfiguration.DEFAULT
-				.withDescription("An uncontrolled outbreak with no controls, and fixed behaviour, in an age stratified population")
+			ExperimentConfiguration.DEFAULT.withDescription(
+				"An uncontrolled outbreak with no controls, and fixed behaviour, in an age stratified population"
+			)
 				.withBatchConfig(
 					BatchConfiguration.DEFAULT.withSimulationDuration(200)
 						.withUrnBase("age-stratification")
@@ -176,17 +185,20 @@ public enum Experiment {
 						.withDemographics(AgeStratifiedDemography.DEFAULT)
 						.withDescription()
 				)
-				.withSetupReplications(1)
 				.withExecutionConfig(
-					ExecutionConfiguration.DEFAULT
-						.withDescription("A configuration with no behaviour or policy control.",
-							"Symptoms are completely sensitive and specific for disease.")
+					ExecutionConfiguration.DEFAULT.withDescription(
+						"A configuration with no behaviour or policy control.",
+						"Symptoms are completely sensitive and specific for disease."
+					)
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
+						.withDefaultBehaviourModelName(
+							FixedBehaviour.class.getSimpleName()
+						)
 						.withImportationProbability(0D)
 						.withDemographicAdjustment(DemographicAdjustment.AGE_DEFAULT)
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
 				)
+				.withSetupReplications(1)
 				.withExecutionReplications(1)
 	),
 
@@ -200,13 +212,14 @@ public enum Experiment {
 					BatchConfiguration.DEFAULT.withExporters(Exporters.values())
 				)
 				.withExecutionConfig(
-					ExecutionConfiguration.DEFAULT
-						.withDescription(
-							"A default phenomenomolgical in-host model with no behaviour or policy control.",
-							"Symptoms are completely sensitive and specific for disease."
-						)
+					ExecutionConfiguration.DEFAULT.withDescription(
+						"A default phenomenomolgical in-host model with no behaviour or policy control.",
+						"Symptoms are completely sensitive and specific for disease."
+					)
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
-						.withDefaultBehaviourModelName(FixedBehaviour.class.getSimpleName())
+						.withDefaultBehaviourModelName(
+							FixedBehaviour.class.getSimpleName()
+						)
 						.withImportationProbability(0D)
 						.withSymptomSensitivity(SimpleDistribution.point(1D))
 						.withSymptomSpecificity(SimpleDistribution.point(1D))
@@ -214,21 +227,29 @@ public enum Experiment {
 				.withFacet(
 					"in-host-models",
 					PartialExecutionConfiguration.builder()
-						.setDescription("Uses a markov-state model for in host viral load")
+						.setDescription(
+							"Uses a markov-state model for in host viral load"
+						)
 						.setName("markov")
 						.setInHostConfiguration(MarkovStateModel.DEFAULT)
 						.build(),
 					PartialExecutionConfiguration.builder()
-						.setDescription("Uses a phenomenological model for in host viral load")
+						.setDescription(
+							"Uses a phenomenological model for in host viral load"
+						)
 						.setName("phenomenological")
 						.setInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.build(),
 					PartialExecutionConfiguration.builder()
-						.setDescription("Uses a target cell model for in host viral load")
+						.setDescription(
+							"Uses a target cell model for in host viral load"
+						)
 						.setName("stochastic")
 						.setInHostConfiguration(StochasticModel.DEFAULT)
 						.build()
 				)
+				.withSetupReplications(1)
+				.withExecutionReplications(1)
 	),
 
 	/**
@@ -243,14 +264,14 @@ public enum Experiment {
 						.withUrnBase("lockdown-compliance")
 				)
 				.withExecutionConfig(
-					ExecutionConfiguration.DEFAULT
-						.withDescription("A markov-state in-host, with agents who will seek tests based on symptoms.")
+					ExecutionConfiguration.DEFAULT.withDescription(
+						"A markov-state in-host, with agents who do not change their behaviour except for lockdowns."
+					)
 						.withInHostConfiguration(MarkovStateModel.DEFAULT)
 						.withDefaultBehaviourModelName(
-							ReactiveTestAndIsolate.class.getSimpleName()
+							FixedBehaviour.class.getSimpleName()
 						)
-						.withImportationProbability(0D)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+						.withImportationProbability(0D)// .setInHostConfiguration(StochasticModel.DEFAULT)
 				)
 				.withFacet(
 					"trigger",
@@ -260,48 +281,52 @@ public enum Experiment {
 						.setDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.build(),
 					PartialExecutionConfiguration.builder()
-						.setDescription("Reactive lockdowns when screening tests have a 5% positivity")
-						.setName("5%-1%")
+						.setDescription(
+							"Reactive lockdowns when screening tests have a 2% positivity"
+						)
+						.setName("2%-1%")
+						.setDefaultPolicyModelName(
+							ReactiveLockdown.class.getSimpleName()
+						)
+						.setLockdownStartTrigger(0.02)
+						.setLockdownReleaseTrigger(0.01)
+						.setLockdownTriggerValue(Value.SCREENING_TEST_POSITIVITY)
+						.setInitialScreeningProbability(0.1)
+						.build(),
+					PartialExecutionConfiguration.builder()
+						.setName("5%-2%")
+						.setDescription(
+							"Reactive lockdowns when screening tests have a 5% positivity"
+						)
 						.setDefaultPolicyModelName(
 							ReactiveLockdown.class.getSimpleName()
 						)
 						.setLockdownStartTrigger(0.05)
-						.setLockdownReleaseTrigger(0.01)
-						.setLockdownTriggerValue(Value.SCREENING_TEST_POSITIVITY)
-						.setInitialScreeningProbability(0.01)
-						.build(),
-					PartialExecutionConfiguration.builder()
-						.setName("10%-2%")
-						.setDescription("Reactive lockdowns when screening tests have a 10% positivity")
-						.setDefaultPolicyModelName(
-							ReactiveLockdown.class.getSimpleName()
-						)
-						.setLockdownStartTrigger(0.1)
 						.setLockdownReleaseTrigger(0.02)
 						.setLockdownTriggerValue(Value.SCREENING_TEST_POSITIVITY)
-						.setInitialScreeningProbability(0.01)
+						.setInitialScreeningProbability(0.1)
 						.build(),
 					PartialExecutionConfiguration.builder()
-						.setName("15%-3%")
+						.setName("8%-3%")
 						.setDefaultPolicyModelName(
 							ReactiveLockdown.class.getSimpleName()
 						)
-						.setDescription("Reactive lockdowns when screening tests have a 15% positivity")
-						.setLockdownStartTrigger(0.15)
+						.setDescription(
+							"Reactive lockdowns when screening tests have a 8% positivity"
+						)
+						.setLockdownStartTrigger(0.08)
 						.setLockdownReleaseTrigger(0.03)
 						.setLockdownTriggerValue(Value.SCREENING_TEST_POSITIVITY)
-						.setInitialScreeningProbability(0.01)
+						.setInitialScreeningProbability(0.1)
 						.build()
 				)
-				.withFacet(
-					"isolation",
-					PartialExecutionConfiguration.builder()
-						.setName("none")
-						.setDescription("Lockdowns are completely ineffective")
-						.setMaximumSocialContactReduction(
-							SimpleDistribution.point(1.0)
-						)
-						.build(),
+				.withFacet("isolation", //					PartialExecutionConfiguration.builder()
+				//						.setName("none")
+				//						.setDescription("Lockdowns are completely ineffective")
+				//						.setMaximumSocialContactReduction(
+				//							SimpleDistribution.point(1.0)
+				//						)
+				//						.build(),
 					PartialExecutionConfiguration.builder()
 						.setName("mild")
 						.setDescription("Lockdowns reduce contacts by 25%")
@@ -324,6 +349,8 @@ public enum Experiment {
 						)
 						.build()
 				)
+				.withSetupReplications(5)
+				.withExecutionReplications(5)
 
 	),
 
@@ -334,54 +361,61 @@ public enum Experiment {
 			"network-type",
 			ExperimentConfiguration.DEFAULT
 				.withBatchConfig(
-					BatchConfiguration.DEFAULT.withExporters(Exporters.values())
-						.withSimulationDuration(200)
+					BatchConfiguration.DEFAULT.withSimulationDuration(200)
 						.withUrnBase("networks")
 				)
 				.withSetupConfig(
 					SetupFacet.of(
 						SetupConfiguration.DEFAULT.withName("erdos-reyni")
 							.withNetwork(ErdosReyniConfiguration.DEFAULT)
+							.withDemographics(UnstratifiedDemography.DEFAULT)
+							.withCalibrateR0ToNetwork(false)
 					),
 					SetupFacet.of(
 						SetupConfiguration.DEFAULT.withName("watts-strogatz")
 							.withNetwork(WattsStrogatzConfiguration.DEFAULT)
+							.withDemographics(UnstratifiedDemography.DEFAULT)
+							.withCalibrateR0ToNetwork(false)
 					),
 					SetupFacet.of(
 						SetupConfiguration.DEFAULT.withName("barabasi-albert")
 							.withNetwork(BarabasiAlbertConfiguration.DEFAULT)
+							.withDemographics(UnstratifiedDemography.DEFAULT)
+							.withCalibrateR0ToNetwork(false)
 					)
 				)
 				.withExecutionConfig(
-					ExecutionConfiguration.DEFAULT
-						.withDescription("A default phenomenomolgical in-host model with no behaviour or policy control.")
+					ExecutionConfiguration.DEFAULT.withDescription(
+						"A default phenomenomolgical in-host model with no behaviour or policy control."
+					)
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.withDefaultBehaviourModelName(
 							NonCompliant.class.getSimpleName()
 						)
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.withImportationProbability(0D)
-						.withR0(2.5)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+						.withR0(SimpleDistribution.point(2.5))// .setInHostConfiguration(StochasticModel.DEFAULT)
 				)
 				.withFacet(
 					"R",
 					PartialExecutionConfiguration.builder()
 						.setDescription("R0 is calibrated around 1.")
 						.setName("1.0")
-						.setR0(1D)
+						.setR0(SimpleDistribution.point(1D))
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setDescription("R0 is calibrated around 2.")
 						.setName("2.0")
-						.setR0(2D)
+						.setR0(SimpleDistribution.point(2D))
 						.build(),
 					PartialExecutionConfiguration.builder()
 						.setDescription("R0 is calibrated around 3.")
 						.setName("3.0")
-						.setR0(3D)
+						.setR0(SimpleDistribution.point(3D))
 						.build()
 				)
+				.withSetupReplications(5)
+				.withExecutionReplications(5)
 	),
 
 	/**
@@ -402,16 +436,16 @@ public enum Experiment {
 					)
 				)
 				.withExecutionConfig(
-					ExecutionConfiguration.DEFAULT
-						.withDescription("A default phenomenomolgical in-host model with no behaviour or policy control and R0 of 2.5.")
+					ExecutionConfiguration.DEFAULT.withDescription(
+						"A default phenomenomolgical in-host model with no behaviour or policy control and R0 of 2.5."
+					)
 						.withInHostConfiguration(PhenomenologicalModel.DEFAULT)
 						.withDefaultBehaviourModelName(
 							NonCompliant.class.getSimpleName()
 						)
 						.withDefaultPolicyModelName(NoControl.class.getSimpleName())
 						.withImportationProbability(0D)
-						.withR0(2.5)
-					// .setInHostConfiguration(StochasticModel.DEFAULT)
+						.withR0(SimpleDistribution.point(2.5))// .setInHostConfiguration(StochasticModel.DEFAULT)
 				)
 	)
 
@@ -435,7 +469,7 @@ public enum Experiment {
 	 */
 	public ImmutableExperimentConfiguration config;
 
-	private Experiment(String name, ImmutableExperimentConfiguration config) {
+	Experiment(String name, ImmutableExperimentConfiguration config) {
 		this.name = name;
 		this.config = config;
 	}

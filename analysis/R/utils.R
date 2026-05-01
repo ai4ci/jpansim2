@@ -74,6 +74,7 @@ split_urn = function(urns) {
       return(NULL)
     }
     names(values) = sprintf("%sDimension",x[c(TRUE, FALSE)])
+    values = lapply(values,forcats::as_factor)
     return(dplyr::as_tibble(as.list(values)))
   }))
 }
@@ -81,14 +82,17 @@ split_urn = function(urns) {
 
 
 
-#' Get preserved group characteristics
+#' Get preserved group characteristics.
+#' 
+#' These are variables that are the same for all members of a group and are
+#' thus effectively a group wide characteristic.
 #'
 #' @param grp_df a grouped data frame
 #' @param distinct defaults to `TRUE`, creates a unique row for every group.
 #'
 #' @returns a dataframe that contains the groups and other variables that do not 
-#'   vary within group
-#' @keywords internal
+#'   vary within group.
+#' @export
 #'
 #' @examples
 #' grp_df = ggplot2::diamonds %>% 
@@ -109,18 +113,29 @@ invariants = function(grp_df, distinct = TRUE) {
 
 
 #' Get preserved group characteristics that define groups
+#' 
+#' Group characteristics that define a group are the same within a group but 
+#' vary between groups so in some regard define the group. This function returns
+#' the data frame grouped with only those defining characteristics preserved. It
+#' will enter nested dataframes as well.
 #'
 #' @param grp_df a grouped data frame
 #'
 #' @returns a dataframe that contains the groups and other variables that do not 
-#'   vary within group but do vary between groups.
-#' @keywords internal
+#'   vary within group but do vary between groups, plus other distractors that
+#'   either vary within group or are constant over all groups.
+#' @export
 #'
 #' @examples
 #' grp_df = ggplot2::diamonds %>% 
 #'   dplyr::mutate(idx = as.numeric(cut) * as.numeric(color), dup=1) %>% 
 #'   dplyr::group_by(cut, color) 
 #' grp_df %>% group_deltas()
+#' 
+#' # In our case:
+#' tables$parameters %>% 
+#'   dplyr::group_by(experimentName, modelName) %>% 
+#'   group_deltas()
 group_deltas = function(grp_df) {
   
   grps = grp_df %>% dplyr::group_vars()

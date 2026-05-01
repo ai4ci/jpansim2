@@ -95,23 +95,22 @@ public interface DefaultOutbreakBaseliner {
 			Sampler sampler
 	) {
 		var configuration = outbreak.getExecutionConfiguration();
+		var R0 = configuration.getR0()
+			.sample();
 
 		// N.B. happens after people are baselined.., I think
 		double parameter;
 		if (outbreak.getSetupConfiguration()
-			.isR0NetworkNormalised()) {
-			parameter = Calibration.inferViralLoadTransmissionParameter(
-				outbreak,
-				configuration.getR0()
-			);
+			.isCalibrateR0ToNetwork()) {
+			parameter = Calibration
+				.inferViralLoadTransmissionParameter(outbreak, R0);
 		} else {
-			parameter = Calibration.inferViralLoadTransmissionParameterErdosReyni(
-				outbreak,
-				configuration.getR0()
-			);
+			parameter = Calibration
+				.inferViralLoadTransmissionParameterErdosReyni(outbreak, R0);
 		}
 		builder.setDefaultPolicyState(configuration.getDefaultPolicyModel())
 			.setViralLoadTransmissibilityParameter(parameter)
+			.setR0(R0)
 			.setExpectedContactsPerPersonPerDay(
 				Calibration.contactsPerPersonPerDay(outbreak)
 			)

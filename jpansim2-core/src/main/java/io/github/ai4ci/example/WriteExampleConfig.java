@@ -47,12 +47,13 @@ public class WriteExampleConfig {
 	public static void main(String[] args) {
 
 		Path d;
-		if (args.length == 0)
+		if (args.length == 0) {
 			d = Path.of(System.getProperty("user.home"))
-				.resolve("tmp/test");
-		else
+				.resolve("Git/jpansim2/scratch/examples");
+		} else {
 			d = Path.of(args[0])
 				.resolve("examples");
+		}
 
 		License.iConfirmNonCommercialUse("rob.challen@bristol.ac.uk");
 
@@ -63,8 +64,9 @@ public class WriteExampleConfig {
 
 		try {
 			Files.createDirectories(d);
-			if (!Files.exists(d.resolve(".nojekyll")))
+			if (!Files.exists(d.resolve(".nojekyll"))) {
 				Files.createFile(d.resolve(".nojekyll"));
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(
 					"Could not create .nojekyll file in output directory.", e
@@ -81,10 +83,7 @@ public class WriteExampleConfig {
 						"Writing example configuration for " + a.name + " to "
 								+ tmp.toAbsolutePath()
 					);
-					a.config
-						// .withSetupReplications(5)
-						// .withExecutionReplications(5)
-						.writeConfig(tmp, true);
+					a.config.writeConfig(tmp, true);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}

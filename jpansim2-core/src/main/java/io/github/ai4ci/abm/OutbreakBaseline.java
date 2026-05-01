@@ -26,6 +26,9 @@ public interface OutbreakBaseline extends Serializable {
 	 * match simulation R0 given the network topology by
 	 * {@link Calibration#inferViralLoadTransmissionParameter(Outbreak, double)}.
 	 *
+	 * This is used by {@link #getTransmissibilityBaseline(double)} to get a
+	 * value with a scale parameter specifically calibrated for this simulation.
+	 *
 	 * The function that links viral load to transmission is:
 	 *
 	 * <pre>
@@ -42,7 +45,7 @@ public interface OutbreakBaseline extends Serializable {
 	static double transmissibilityFromViralLoad(
 			double viralLoad, double parameter
 	) {
-		if (viralLoad < 1) { return 0D; }
+		if (viralLoad < 1) return 0D;
 		return 1 - Math.exp(-parameter * (viralLoad - 1));
 	}
 
@@ -94,6 +97,14 @@ public interface OutbreakBaseline extends Serializable {
 	 * @return the {@link DelayDistribution} representing the infectivity profile
 	 */
 	DelayDistribution getInfectivityProfile();
+
+	/**
+	 * An R0 value specific for this simulation run. Typically this is sampled
+	 * from an input distribution during execution configuration.
+	 *
+	 * @return the baseline R0 value
+	 */
+	double getR0();
 
 	/**
 	 * Calibrated from the infection case ratio and the case fatality rate this
@@ -150,6 +161,8 @@ public interface OutbreakBaseline extends Serializable {
 	 * factors such as individual personal variation of susceptibility to
 	 * infection (e.g. medications, such as PreP) and individual day to day
 	 * variation of transmission due to things such as mask wearing.
+	 * 
+	 * @see #getViralLoadTransmissibilityParameter()
 	 *
 	 * @param viralLoad the (unitless) viral load value from the in-host model
 	 * @return baseline per-contact transmission probability for the given viral
@@ -174,6 +187,8 @@ public interface OutbreakBaseline extends Serializable {
 	 * edge transmission.
 	 * {@link Calibration#inferViralLoadTransmissionParameter(Outbreak, double)}
 	 *
+	 * @see io.github.ai4ci.flow.builders.DefaultOutbreakBaseliner#baselineOutbreak(io.github.ai4ci.abm.ImmutableOutbreakBaseline.Builder,
+	 *      Outbreak, io.github.ai4ci.util.Sampler)
 	 * @return the calibrated transmissibility scale parameter (k) applied to
 	 *         viral load
 	 */

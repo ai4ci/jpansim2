@@ -6,6 +6,9 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.github.ai4ci.abm.Outbreak;
 import io.github.ai4ci.flow.output.OutputWriter.Writeable;
 
@@ -19,6 +22,8 @@ import io.github.ai4ci.flow.output.OutputWriter.Writeable;
  *            CSVWriter.Writeable
  */
 public class ExportSelector<X extends CSVWriter.Writeable> {
+
+	static Logger log = LoggerFactory.getLogger(ExportSelector.class);
 	/**
 	 * Factory method to create an ExportSelector for a given export type. This
 	 * method takes a class type that extends CSVWriter.Writeable and is
@@ -62,12 +67,17 @@ public class ExportSelector<X extends CSVWriter.Writeable> {
 	private Function<Outbreak, Stream<? extends Writeable>> selector;
 
 	private ExportSelector(Class<X> type) {
-		Export.Stage stage = type.getAnnotation(Export.class).stage();
-		String file = type.getAnnotation(Export.class).value();
-		int size = type.getAnnotation(Export.class).size();
+		var stage = type.getAnnotation(Export.class)
+			.stage();
+		var file = type.getAnnotation(Export.class)
+			.value();
+		var size = type.getAnnotation(Export.class)
+			.size();
 		try {
-			this.selector = type.getAnnotation(Export.class).selector()
-					.getDeclaredConstructor().newInstance();
+			this.selector = type.getAnnotation(Export.class)
+				.selector()
+				.getDeclaredConstructor()
+				.newInstance();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -95,10 +105,19 @@ public class ExportSelector<X extends CSVWriter.Writeable> {
 	@SuppressWarnings("unchecked")
 	public void finishSetup(Path directory) {
 		try {
-			this.writer = this.type.getAnnotation(Export.class).writer()
-					.getDeclaredConstructor().newInstance();
+			this.writer = this.type.getAnnotation(Export.class)
+				.writer()
+				.getDeclaredConstructor()
+				.newInstance();
 			this.writer.setup(
-					this.type, directory.resolve(this.filename).toFile(), this.size
+				this.type,
+				directory.resolve(this.filename)
+					.toFile(),
+				this.size
+			);
+			log.info(
+				"Exporting " + this.type.getSimpleName() + " to "
+						+ directory.resolve(this.filename)
 			);
 		} catch (IOException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException | InvocationTargetException

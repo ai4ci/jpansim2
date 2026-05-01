@@ -44,7 +44,7 @@ public class Sampler implements UniformRandomProvider {
 	}
 
 	private static ThreadLocal<Sampler> INSTANCE = ThreadLocal
-			.withInitial(() -> new Sampler());
+		.withInitial(Sampler::new);
 
 	/**
 	 * Obtain the thread local sampler instance.
@@ -62,7 +62,8 @@ public class Sampler implements UniformRandomProvider {
 	 * @return the thread local sampler with the seed set for this thread
 	 */
 	public static Sampler getSampler(String urn) {
-		return INSTANCE.get().withSeed(urn);
+		return INSTANCE.get()
+			.withSeed(urn);
 	}
 
 	private static double invLogit(double x) {
@@ -76,10 +77,8 @@ public class Sampler implements UniformRandomProvider {
 	private static LogNormalDistribution logNormalfromMeanAndSd(
 			double mean, double sd
 	) {
-		if (mean <= 0) {
-			throw new OutOfRangeException("Log normal mean is <= 0");
-		}
-		if (sd <= 0) { throw new OutOfRangeException("Log normal sd is < 0"); }
+		if (mean <= 0) throw new OutOfRangeException("Log normal mean is <= 0");
+		if (sd <= 0) throw new OutOfRangeException("Log normal sd is < 0");
 		var mu = Math.log(mean / (Math.sqrt(Math.pow(sd / mean, 2) + 1)));
 		var sigma = Math.sqrt(Math.log(Math.pow(sd / mean, 2) + 1));
 		return LogNormalDistribution.of(mu, sigma);
@@ -118,7 +117,7 @@ public class Sampler implements UniformRandomProvider {
 	 * @return Optional containing value if event occurs, otherwise empty
 	 */
 	public <X> Optional<X> bern(Double p, X value) {
-		if (this.bern(p)) { return Optional.of(value); }
+		if (this.bern(p)) return Optional.of(value);
 		return Optional.empty();
 	}
 
@@ -131,15 +130,15 @@ public class Sampler implements UniformRandomProvider {
 	 * @param convex whether to constrain sd for unimodality
 	 * @return a Beta sample in (0,1)
 	 */
-	public synchronized double beta(double mean, double sd, boolean convex) {
+	public double beta(double mean, double sd, boolean convex) {
 		if (convex) {
 			// This constraint makes beta distribution convex and therefore
 			// unimodal
 			var sigma = Math.sqrt(
-					Math.min(
-							mean * mean * (1 - mean) / (1 + mean),
-							(1 - mean) * (1 - mean) * (mean) / (2 - mean)
-					)
+				Math.min(
+					mean * mean * (1 - mean) / (1 + mean),
+					(1 - mean) * (1 - mean) * (mean) / (2 - mean)
+				)
 			);
 			sd = sd * sigma;
 		}
@@ -147,7 +146,9 @@ public class Sampler implements UniformRandomProvider {
 		if (tmp <= 0) { tmp = Double.MIN_NORMAL; }
 		var alpha = tmp * mean;
 		var beta = tmp * (1 - mean);
-		return BetaDistribution.of(alpha, beta).createSampler(this).sample();
+		return BetaDistribution.of(alpha, beta)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -158,15 +159,15 @@ public class Sampler implements UniformRandomProvider {
 	 * @param sd   the standard deviation
 	 * @return a Binomial sample
 	 */
-	public synchronized int binom(double mean, double sd) {
+	public int binom(double mean, double sd) {
 		var n = (int) Math.round(mean / (1 - (sd * sd) / mean));
-		if (n < 0) {
-			throw new OutOfRangeException(
-					"SD is too big and implied binomial count is <= 0"
-			);
-		}
+		if (n < 0) throw new OutOfRangeException(
+				"SD is too big and implied binomial count is <= 0"
+		);
 		var p = mean / n;
-		return BinomialDistribution.of(n, p).createSampler(this).sample();
+		return BinomialDistribution.of(n, p)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -176,12 +177,11 @@ public class Sampler implements UniformRandomProvider {
 	 * @param probability success probability
 	 * @return Binomial sample
 	 */
-	public synchronized int binom(int count, double probability) {
-		if (count < 0) {
-			throw new OutOfRangeException("Binomial count is <= 0");
-		}
-		return BinomialDistribution.of(count, probability).createSampler(this)
-				.sample();
+	public int binom(int count, double probability) {
+		if (count < 0) throw new OutOfRangeException("Binomial count is <= 0");
+		return BinomialDistribution.of(count, probability)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -190,8 +190,10 @@ public class Sampler implements UniformRandomProvider {
 	 * @param mean the mean
 	 * @return a Gamma sample
 	 */
-	public synchronized double gamma(double mean) {
-		return GammaDistribution.of(mean, 1).createSampler(this).sample();
+	public double gamma(double mean) {
+		return GammaDistribution.of(mean, 1)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -201,10 +203,12 @@ public class Sampler implements UniformRandomProvider {
 	 * @param sd   the standard deviation
 	 * @return a Gamma sample
 	 */
-	public synchronized double gamma(double mean, double sd) {
+	public double gamma(double mean, double sd) {
 		var shape = (mean * mean) / (sd * sd);
 		var scale = (sd * sd) / mean;
-		return GammaDistribution.of(shape, scale).createSampler(this).sample();
+		return GammaDistribution.of(shape, scale)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -214,7 +218,7 @@ public class Sampler implements UniformRandomProvider {
 	 * @param scale  a scale parameter controlling dispersion
 	 * @return a sample in (0,1)
 	 */
-	public synchronized double logitNormal(double median, double scale) {
+	public double logitNormal(double median, double scale) {
 		var mu = logit(median);
 		// double sigma = scale*(1+Math.abs(mu));
 		var sigma = scale * (2 + Math.pow(Math.abs(mu), (7.0 / 4.0)));
@@ -228,9 +232,10 @@ public class Sampler implements UniformRandomProvider {
 	 * @param sd   the standard deviation (>0)
 	 * @return a log-normal sample
 	 */
-	public synchronized double logNormal(double mean, double sd) {
-		if (sd == 0) { return mean; }
-		return logNormalfromMeanAndSd(mean, sd).createSampler(this).sample();
+	public double logNormal(double mean, double sd) {
+		if (sd == 0) return mean;
+		return logNormalfromMeanAndSd(mean, sd).createSampler(this)
+			.sample();
 
 	}
 
@@ -248,7 +253,7 @@ public class Sampler implements UniformRandomProvider {
 	public final <X> Optional<X> multinom(Pair<Double, X>... probabilities) {
 		var tmp = this.uniform();
 		for (Pair<Double, X> element : probabilities) {
-			if (tmp < element.getKey()) { return Optional.of(element.getValue()); }
+			if (tmp < element.getKey()) return Optional.of(element.getValue());
 			tmp = tmp - element.getKey();
 		}
 		return Optional.empty();
@@ -261,14 +266,16 @@ public class Sampler implements UniformRandomProvider {
 	 * @param sd   the standard deviation
 	 * @return a Pascal (negative binomial) sample
 	 */
-	public synchronized int negBinom(double mean, double sd) {
+	public int negBinom(double mean, double sd) {
 		var r = (int) Math.round((mean * mean) / (sd * sd - mean));
 		var p = mean / (sd * sd);
-		return PascalDistribution.of(r, p).createSampler(this).sample();
+		return PascalDistribution.of(r, p)
+			.createSampler(this)
+			.sample();
 	}
 
 	@Override
-	public synchronized long nextLong() {
+	public long nextLong() {
 		return this.random.nextLong();
 	}
 
@@ -279,8 +286,8 @@ public class Sampler implements UniformRandomProvider {
 	 * @param sd   the standard deviation
 	 * @return a normal sample
 	 */
-	public synchronized double normal(double mean, double sd) {
-		if (sd == 0) { return mean; }
+	public double normal(double mean, double sd) {
+		if (sd == 0) return mean;
 		return this.random.nextGaussian() * sd + mean;
 	}
 
@@ -311,9 +318,11 @@ public class Sampler implements UniformRandomProvider {
 	 * @param mean the mean (>=0)
 	 * @return a Poisson sample
 	 */
-	public synchronized int poisson(double mean) {
-		if (mean == 0) { return 0; }
-		return PoissonDistribution.of(mean).createSampler(this).sample();
+	public int poisson(double mean) {
+		if (mean == 0) return 0;
+		return PoissonDistribution.of(mean)
+			.createSampler(this)
+			.sample();
 	}
 
 	/**
@@ -353,7 +362,7 @@ public class Sampler implements UniformRandomProvider {
 	 *
 	 * @return a uniform double in [0,1)
 	 */
-	public synchronized double uniform() {
+	public double uniform() {
 		return this.random.nextDouble();
 	}
 
@@ -376,11 +385,9 @@ public class Sampler implements UniformRandomProvider {
 	 * @return this sampler instance
 	 */
 	public Sampler withSeed(String urn) {
-		long tmp = (urn + ":thread:" + Thread.currentThread().getId()).hashCode();
-		if (this.seed != tmp) {
-			this.seed = tmp;
-			this.random.setSeed(tmp);
-		}
+		long tmp = (urn + ":thread:" + Thread.currentThread()
+			.getId()).hashCode();
+		if (this.seed != tmp) { this.seed = tmp; this.random.setSeed(tmp); }
 		return this;
 	}
 
@@ -391,10 +398,8 @@ public class Sampler implements UniformRandomProvider {
 	 * @param poissonMean     the Poisson mean
 	 * @return the sample
 	 */
-	public synchronized int zeroInflatedPoisson(
-			double probabilityZero, double poissonMean
-	) {
-		if (this.uniform() < probabilityZero) { return 0; }
+	public int zeroInflatedPoisson(double probabilityZero, double poissonMean) {
+		if (this.uniform() < probabilityZero) return 0;
 		return this.poisson(poissonMean);
 	}
 

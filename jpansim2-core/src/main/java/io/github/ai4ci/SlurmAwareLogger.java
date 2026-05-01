@@ -11,6 +11,8 @@ import org.apache.logging.log4j.core.appender.FileAppender;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.NullConfiguration;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.ai4ci.config.ExperimentConfiguration;
 
@@ -53,6 +55,8 @@ import io.github.ai4ci.config.ExperimentConfiguration;
  */
 public class SlurmAwareLogger {
 
+	static Logger log = LoggerFactory.getLogger(SlurmAwareLogger.class);
+
 	/**
 	 * Configure logging for the experiment run.
 	 *
@@ -81,48 +85,58 @@ public class SlurmAwareLogger {
 
 		var ctx = Configurator.initialize(new NullConfiguration());
 		var config = ctx.getConfiguration();
-		config.getAppenders().forEach(
+		config.getAppenders()
+			.forEach(
 				(key, value) -> config.getRootLogger()
-						.removeAppender(value.getName())
-		);
+					.removeAppender(value.getName())
+			);
 
 		var pattern = String.format(
-				"%%d{yyyy-MM-dd HH:mm:ss.SSS} [%s] [%%-5level] %%msg%%n",
-				cfg.getBatchConfig().getBatchName()
+			"%%d{yyyy-MM-dd HH:mm:ss.SSS} [%s] [%%-5level] %%msg%%n",
+			cfg.getBatchConfig()
+				.getBatchName()
 		);
 
-		Layout<?> layout = PatternLayout.newBuilder().withPattern(pattern)
-				.withConfiguration(config).build();
+		Layout<?> layout = PatternLayout.newBuilder()
+			.withPattern(pattern)
+			.withConfiguration(config)
+			.build();
 
 		// Console Appender — always configured; SLURM captures stdout/stderr
 		var consoleAppender = ConsoleAppender.newBuilder()
-				.setName("ConsoleAppender").setLayout(layout).build();
+			.setName("ConsoleAppender")
+			.setLayout(layout)
+			.build();
 
 		consoleAppender.start();
 		config.addAppender(consoleAppender);
 
-		var rootLogger = config.getLoggerConfig(
-				org.apache.logging.log4j.LogManager.ROOT_LOGGER_NAME
-		);
+		var rootLogger = config
+			.getLoggerConfig(org.apache.logging.log4j.LogManager.ROOT_LOGGER_NAME);
 		rootLogger.setLevel(Level.DEBUG);
 		rootLogger.addAppender(consoleAppender, console, null);
 
-		if (!cfg.getBatchConfig().isSlurmBatch()) {
+		if (!cfg.getBatchConfig()
+			.isSlurmBatch()) {
 
 			// File Appender only if SLURM not running otherwise console output
 			// is directed to file by SLURM. Writing a local per-run file is useful
 			// for interactive development and reproducible local debugging.
 
-			var logFileName = batchDirectory.resolve("jpansim2.log").toString();
+			var logFileName = batchDirectory.resolve("jpansim2.log")
+				.toString();
 			try {
 				Files.deleteIfExists(batchDirectory.resolve("jpansim2.log"));
 			} catch (IOException e) {
 				System.out
-						.println("Problem deleting old log files: " + e.getMessage());
+					.println("Problem deleting old log files: " + e.getMessage());
 			}
 
-			var fileAppender = FileAppender.newBuilder().withFileName(logFileName)
-					.setName("FileAppender").setLayout(layout).build();
+			var fileAppender = FileAppender.newBuilder()
+				.withFileName(logFileName)
+				.setName("FileAppender")
+				.setLayout(layout)
+				.build();
 
 			fileAppender.start();
 			config.addAppender(fileAppender);
@@ -130,5 +144,18 @@ public class SlurmAwareLogger {
 		}
 
 		ctx.updateLoggers();
+		log.info("Bootstrapping logger.");
+		log.info(
+			"Starting batch: " + cfg.getBatchConfig()
+				.getBatchName()
+		);
+		log.info(
+			"Batch model configurations: " + cfg.getBatchSetupList()
+				.size()
+		);
+		log.info(
+			"Executions per model: " + cfg.getExecution()
+				.size()
+		);
 	}
 }

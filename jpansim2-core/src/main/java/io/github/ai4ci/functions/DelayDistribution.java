@@ -8,6 +8,8 @@ import java.util.stream.IntStream;
 import org.apache.commons.statistics.distribution.GammaDistribution;
 import org.immutables.value.Value;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * A delay distribution representing a probability distribution in discrete time
  * conditional on an event happening. This class is useful for generating
@@ -65,18 +67,20 @@ public abstract class DelayDistribution implements Serializable {
 	public static DelayDistribution discretisedGamma(
 			double mean, double sd, int length
 	) {
-		double shape = (mean * mean) / (sd * sd);
-		double scale = (sd * sd) / mean;
-		GammaDistribution tmp = GammaDistribution.of(shape, scale);
-		double[] out = new double[length];
-		double x0 = 0D;
-		double x1 = 0.5D;
-		for (int i = 0; i < length; i++) {
+		var shape = (mean * mean) / (sd * sd);
+		var scale = (sd * sd) / mean;
+		var tmp = GammaDistribution.of(shape, scale);
+		var out = new double[length];
+		var x0 = 0D;
+		var x1 = 0.5D;
+		for (var i = 0; i < length; i++) {
 			out[i] = tmp.probability(x0, x1);
 			x0 = x1;
 			x1 += 1;
 		}
-		return ImmutableDelayDistribution.builder().setProfile(out).build();
+		return ImmutableDelayDistribution.builder()
+			.setProfile(out)
+			.build();
 	}
 
 	/**
@@ -85,8 +89,9 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return empty DelayDistribution instance
 	 */
 	public static DelayDistribution empty() {
-		return ImmutableDelayDistribution.builder().setProfile(new double[0])
-				.build();
+		return ImmutableDelayDistribution.builder()
+			.setProfile()
+			.build();
 	}
 
 	/**
@@ -103,12 +108,12 @@ public abstract class DelayDistribution implements Serializable {
 	public static double[] trimTail(
 			double[] x, double epsilon, boolean absolute
 	) {
-		double total = 0;
+		var total = 0D;
 		for (double element : x) {
 			total += element;
 		}
-		double limit = absolute ? total - epsilon : total * (1 - epsilon);
-		for (int i = x.length - 1; i >= 0; i--) {
+		var limit = absolute ? total - epsilon : total * (1 - epsilon);
+		for (var i = x.length - 1; i >= 0; i--) {
 			total -= x[i];
 			if (total < limit) return Arrays.copyOf(x, i + 1);
 		}
@@ -123,7 +128,7 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return array with trailing zeros removed
 	 */
 	public static double[] trimZeros(double[] x) {
-		int i = x.length;
+		var i = x.length;
 		if (x[i - 1] > 0) return x;
 		while (i > 0) {
 			if (x[i - 1] > 0) return Arrays.copyOf(x, i);
@@ -140,8 +145,10 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return normalised DelayDistribution instance
 	 */
 	public static ImmutableDelayDistribution unnormalised(double... profile) {
-		return ImmutableDelayDistribution.builder().setProfile(trimZeros(profile))
-				.setPAffected(1).build();
+		return ImmutableDelayDistribution.builder()
+			.setProfile(trimZeros(profile))
+			.setPAffected(1)
+			.build();
 	}
 
 	/**
@@ -161,11 +168,12 @@ public abstract class DelayDistribution implements Serializable {
 	 *
 	 * @return array of conditional probabilities
 	 */
-	@Value.Derived
+	@Value.Derived @JsonIgnore
 	public double[] condDensity() {
 		if (this.getProfile().length == 0) return new double[0];
-		return DoubleStream.of(this.getProfile()).map(d -> d / this.total())
-				.toArray();
+		return DoubleStream.of(this.getProfile())
+			.map(d -> d / this.total())
+			.toArray();
 	}
 
 	/**
@@ -189,8 +197,10 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return new DelayDistribution instance with updated pAffected
 	 */
 	public DelayDistribution conditionedOn(double pAffected) {
-		return ImmutableDelayDistribution.builder().from(this)
-				.setPAffected(pAffected).build();
+		return ImmutableDelayDistribution.builder()
+			.from(this)
+			.setPAffected(pAffected)
+			.build();
 	}
 
 	/**
@@ -198,9 +208,9 @@ public abstract class DelayDistribution implements Serializable {
 	 * × by[j]) for j < i and j < by.length
 	 */
 	private double[] convolution(double[] input, double[] by) {
-		double[] output = new double[input.length];
-		for (int i = 0; i < input.length; i++) {
-			for (int j = 0; j < i && j < by.length; j++) {
+		var output = new double[input.length];
+		for (var i = 0; i < input.length; i++) {
+			for (var j = 0; j < i && j < by.length; j++) {
 				output[i] += input[i - j] * by[j];
 			}
 		}
@@ -248,11 +258,12 @@ public abstract class DelayDistribution implements Serializable {
 	 *
 	 * @return array of unconditional probabilities
 	 */
-	@Value.Derived
+	@Value.Derived @JsonIgnore
 	public double[] density() {
 		if (this.getProfile().length == 0) return new double[0];
 		return DoubleStream.of(this.condDensity())
-				.map(d -> d * this.getPAffected()).toArray();
+			.map(d -> d * this.getPAffected())
+			.toArray();
 	}
 
 	/**
@@ -284,8 +295,8 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return expected number of events in the population
 	 */
 	public double expected(double sampleSize) {
-		double out = 0.0D;
-		for (int i = 0; i < this.density().length; i++) {
+		var out = 0.0D;
+		for (var i = 0; i < this.density().length; i++) {
 			out += i * this.density()[i];
 		}
 		return out * sampleSize;
@@ -321,7 +332,7 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return smallest time index where cumulative > d
 	 */
 	public int getQuantile(double d) {
-		for (int i = 0; i < this.size(); i++) {
+		for (var i = 0; i < this.size(); i++) {
 			if (this.cumulative(i) > d) return i;
 		}
 		return (int) this.size();
@@ -333,11 +344,11 @@ public abstract class DelayDistribution implements Serializable {
 	 *
 	 * @return array of hazard rates
 	 */
-	@Value.Derived
+	@Value.Derived @JsonIgnore
 	public double[] hazard() {
 		if (this.getProfile().length == 0) return new double[0];
-		double[] hazard = new double[this.survival().length];
-		for (int i = 0; i < this.density().length; i++) {
+		var hazard = new double[this.survival().length];
+		for (var i = 0; i < this.density().length; i++) {
 			hazard[i] = this.density()[i] / (i == 0 ? 1 : this.survival()[i - 1]);
 		}
 		return hazard;
@@ -362,9 +373,10 @@ public abstract class DelayDistribution implements Serializable {
 	 * @return mean time to event (conditional on event occurrence)
 	 */
 	public double mean() {
-		double[] density = this.condDensity();
-		return IntStream.range(0, density.length).mapToDouble(i -> i * density[i])
-				.sum();
+		var density = this.condDensity();
+		return IntStream.range(0, density.length)
+			.mapToDouble(i -> i * density[i])
+			.sum();
 	}
 
 	/**
@@ -394,12 +406,12 @@ public abstract class DelayDistribution implements Serializable {
 	 *
 	 * @return array of survival probabilities
 	 */
-	@Value.Derived
+	@Value.Derived @JsonIgnore
 	public double[] survival() {
 		if (this.getProfile().length == 0) return new double[0];
-		double[] survival = new double[this.density().length];
+		var survival = new double[this.density().length];
 
-		for (int i = 0; i < this.density().length; i++) {
+		for (var i = 0; i < this.density().length; i++) {
 			survival[i] = (i == 0 ? 1 : survival[i - 1]) - this.density()[i];
 		}
 		return survival;
@@ -422,8 +434,9 @@ public abstract class DelayDistribution implements Serializable {
 	 *
 	 * @return sum of all profile values
 	 */
-	@Value.Derived
+	@Value.Derived @JsonIgnore
 	public double total() {
-		return DoubleStream.of(this.getProfile()).sum();
+		return DoubleStream.of(this.getProfile())
+			.sum();
 	}
 }

@@ -1,7 +1,7 @@
 package io.github.ai4ci.util;
 
 import java.io.Serializable;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
 /**
  * An optional value that is serializable. It is used to temporarily hold the
@@ -62,7 +62,8 @@ public class Ephemeral<T> implements Serializable {
 	 *                                          the value is null)
 	 */
 	public T get() {
-		return this.toOptional().get();
+		if (this.value == null) throw new NoSuchElementException();
+		return this.value;
 	}
 
 	/**
@@ -71,16 +72,6 @@ public class Ephemeral<T> implements Serializable {
 	 * @return true if a value is present (i.e., the held value is not null),
 	 *         false otherwise
 	 */
-	public boolean isPresent() { return this.toOptional().isPresent(); }
-
-	/**
-	 * Converts the held value to an Optional.
-	 *
-	 * @return an Optional containing the held value, or empty if the value is
-	 *         null
-	 */
-	public Optional<T> toOptional() {
-		return Optional.ofNullable(this.value);
-	}
+	public boolean isPresent() { return this.value != null; }
 
 }

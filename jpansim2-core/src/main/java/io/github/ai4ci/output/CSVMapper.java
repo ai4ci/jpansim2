@@ -323,5 +323,9 @@ public abstract class CSVMapper {
 	 * @param outbreak the outbreak to map
 	 * @return CSV DTO for the outbreak configuration
 	 */
+	@Mapping(
+			source = "baseline",
+			target = "outbreakBaseline"
+	)
 	public abstract ImmutableOutbreakConfigurationJson toJson(Outbreak outbreak);
 }

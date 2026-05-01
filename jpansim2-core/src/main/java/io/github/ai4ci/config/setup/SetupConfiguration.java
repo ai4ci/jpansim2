@@ -125,13 +125,16 @@ public interface SetupConfiguration extends Abstraction.Named,
 	Integer getInitialImports();
 
 	/**
-	 * Should the R0 value be normalised to each individual network (true) or
-	 * against a uniform Erdos-Reyni network
+	 * Should the R0 value be calibrated to this specific individual network
+	 * (true) or against a standard Erdos-Reyni network (false). If comparing
+	 * networks against each other this should be set to false so that the
+	 * effects of network topology on transmission is not lost through
+	 * re-calibration of transmission probability.
 	 * 
 	 * @return true if R0 is normalised to the network topology, false otherwise.
 	 */
 	@Value.Default
-	default boolean isR0NetworkNormalised() { return true; }
+	default boolean isCalibrateR0ToNetwork() { return true; }
 
 	/**
 	 * Network generation configuration.

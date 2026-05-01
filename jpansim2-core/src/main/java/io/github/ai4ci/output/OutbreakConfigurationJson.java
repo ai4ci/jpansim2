@@ -2,6 +2,7 @@ package io.github.ai4ci.output;
 
 import org.immutables.value.Value;
 
+import io.github.ai4ci.abm.OutbreakBaseline;
 import io.github.ai4ci.config.execution.ExecutionConfiguration;
 import io.github.ai4ci.config.setup.SetupConfiguration;
 
@@ -29,7 +30,7 @@ public interface OutbreakConfigurationJson extends CommonCSV.Execution {
 	 * @return the execution configuration instance describing runtime policies,
 	 *         testing and in‑host model selection
 	 */
-	public ExecutionConfiguration getExecutionConfiguration();
+	ExecutionConfiguration getExecutionConfiguration();
 
 	/**
 	 * Get the setup configuration used to create the outbreak.
@@ -37,6 +38,14 @@ public interface OutbreakConfigurationJson extends CommonCSV.Execution {
 	 * @return the setup configuration instance describing population and network
 	 *         generation parameters
 	 */
-	public SetupConfiguration getSetupConfiguration();
+	SetupConfiguration getSetupConfiguration();
+
+	/**
+	 * Get the baseline parametrisation of the outbreak.
+	 *
+	 * @return the outbreak baseline instance describing population and network
+	 *         generation parameters
+	 */
+	OutbreakBaseline getOutbreakBaseline();
 
 }

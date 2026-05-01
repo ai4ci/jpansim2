@@ -33,6 +33,7 @@ import io.github.ai4ci.functions.Distribution;
 import io.github.ai4ci.functions.EmpiricalKernel;
 import io.github.ai4ci.functions.GaussianKernel;
 import io.github.ai4ci.functions.KernelFunction;
+import io.github.ai4ci.functions.SimpleDistribution;
 import io.github.ai4ci.util.ShallowList;
 
 /**
@@ -111,7 +112,7 @@ public interface ExecutionConfiguration
 	ImmutableExecutionConfiguration DEFAULT = ImmutableExecutionConfiguration
 		.builder()
 		.setName("execution")
-		.setR0(1.75)
+		.setR0(SimpleDistribution.point(1.75))
 		.setAsymptomaticFraction(0.5)
 		.setCaseHospitalisationRate(0.05)
 		.setCaseFatalityRate(0.01)
@@ -352,8 +353,9 @@ public interface ExecutionConfiguration
 	default BehaviourModel getDefaultBehaviourModel() {
 		try {
 			var name = this.getDefaultBehaviourModelName();
-			if (!name.startsWith(BehaviourModel.class.getPackageName()))
+			if (!name.startsWith(BehaviourModel.class.getPackageName())) {
 				name = BehaviourModel.class.getPackageName() + "." + name;
+			}
 			Class<?> clz = Class.forName(name);
 			var m = clz.getDeclaredMethod("values");
 			var x = (BehaviourModel[]) m.invoke(null);
@@ -397,8 +399,9 @@ public interface ExecutionConfiguration
 	default PolicyModel getDefaultPolicyModel() {
 		try {
 			var name = this.getDefaultPolicyModelName();
-			if (!name.startsWith(PolicyModel.class.getPackageName()))
+			if (!name.startsWith(PolicyModel.class.getPackageName())) {
 				name = PolicyModel.class.getPackageName() + "." + name;
+			}
 			Class<?> clz = Class.forName(name);
 			var m = clz.getDeclaredMethod("values");
 			var x = (PolicyModel[]) m.invoke(null);
@@ -720,7 +723,7 @@ public interface ExecutionConfiguration
 	 * @return Average number of secondary cases from one infected individual
 	 * @see #getContactProbability()
 	 */
-	Double getR0();
+	Distribution getR0();
 
 	/**
 	 * Gets the kernel function for contact based risk assessment in the

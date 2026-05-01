@@ -121,8 +121,8 @@ public class ThreadSafeArray<X> implements Serializable {
 				if (this.locked) throw new ReadOnlyException();
 				// Updating flag is set to true so no writes will occur whilst we
 				// update.
-				int newCapacity = Math
-						.max(this.data.length * 2, this.pointer.get() * 2 + 16);
+				var newCapacity = Math
+					.max(this.data.length * 2, this.pointer.get() * 2 + 16);
 				// debug System.out.println(newCapacity);
 				// writtenItems = Arrays.copyOf(writtenItems, newCapacity);
 				this.data = Arrays.copyOf(this.data, newCapacity);
@@ -169,7 +169,7 @@ public class ThreadSafeArray<X> implements Serializable {
 		// Ensure all threads see the 'locked' update before proceeding
 		synchronized (this) {
 
-			int p = this.pointer.get();
+			var p = this.pointer.get();
 			this.data = Arrays.copyOfRange(this.data, 0, p);
 			// writtenItems = Arrays.copyOfRange(writtenItems, 0, p);
 			this.locked = true; // prevent further writes
@@ -221,10 +221,33 @@ public class ThreadSafeArray<X> implements Serializable {
 	 *
 	 * @return a parallel stream of the array contents
 	 */
+//	public Stream<X> parallelStream() {
+//		if (!this.locked) throw new WriteOnlyException();
+//		int p = this.pointer.get();
+//		return IntStream.range(0, p).parallel().mapToObj(i -> this.get(i));
+//	}
+//	
 	public Stream<X> parallelStream() {
 		if (!this.locked) throw new WriteOnlyException();
-		int p = this.pointer.get();
-		return IntStream.range(0, p).parallel().mapToObj(i -> this.get(i));
+		var p = this.pointer.get();
+		if (p == 0) return Stream.empty();
+
+		// Use a fixed number of batches to match the Grace core count.
+		// This reduces the 'Join' overhead significantly.
+		var numCores = Runtime.getRuntime()
+			.availableProcessors();
+		var batchSize = Math.max(1, p / numCores);
+
+		return IntStream.range(0, (p + batchSize - 1) / batchSize)
+			.parallel()
+			.boxed()
+			.flatMap(batchIdx -> {
+				var start = batchIdx * batchSize;
+				var end = Math.min(start + batchSize, p);
+				// Create a sub-stream for this specific core's chunk
+				return IntStream.range(start, end)
+					.mapToObj(i -> this.data[i]);
+			});
 	}
 
 	/**
@@ -246,7 +269,7 @@ public class ThreadSafeArray<X> implements Serializable {
 			Thread.onSpinWait();
 		}
 		if (this.locked) throw new ReadOnlyException();
-		int p = this.pointer.getAndIncrement();
+		var p = this.pointer.getAndIncrement();
 		this.ensureCapacityOrWait(p);
 		this.data[p] = value;
 		// this.writtenItems[p] = true;
@@ -280,8 +303,9 @@ public class ThreadSafeArray<X> implements Serializable {
 	 */
 	public Stream<X> stream() {
 		if (!this.locked) throw new WriteOnlyException();
-		int p = this.pointer.get();
-		return IntStream.range(0, p).mapToObj(i -> this.get(i));
+		var p = this.pointer.get();
+		return IntStream.range(0, p)
+			.mapToObj(this::get);
 	}
 
 	/**

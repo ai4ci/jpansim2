@@ -4,35 +4,39 @@
 \alias{load_duckdb}
 \title{Load all \code{duckdb} files and CSV files}
 \usage{
-load_duckdb(directory = get_results_dir())
+load_duckdb(dir = get_results_dir())
 }
 \arguments{
-\item{directory}{the directory where simulation results are found. This may
+\item{dir}{the directory where simulation results are found. This may
 be a flat directory from simulations run on a single node, or a set of
 directories with the output of multiple nodes. Within the output
 directory/ies the individual \code{duckdb} and \code{csv} files are all consistently
-named and these names will be in the output.}
+named by the simulation.}
 }
 \value{
 A named list:
 \itemize{
 \item \code{dimensions}: a list which details how many different simulations were
 run and the breakdown of whether these were replications or comparisons.
-\item \code{comparisons}: a native \code{dplyr} table which links the
+\item \code{experiments}: a lazy \code{tbl} dataframe backed by \code{duckdb} which links the
 experiment name with the combination of changes made to the default
 configuration for that experiment.
-\item \code{parameters}: a native \code{dplyr} table which links each simulation run to
-the full parametrisation (of both the model setup and execution). This has
-all the configuration used for that model run.
+\item \code{models}: a table which links the
+experiment name with the combination of changes made to the default
+configuration for that model.
+\item \code{parameters}: a  lazy \code{tbl} dataframes backed by \code{duckdb} which links
+each simulation run to the full parametrisation (of both the model setup
+and execution). This has all the configuration used for that model run.
 \item remaining entries are lazy \code{tbl} dataframes backed by \code{duckdb}. These can
 be queried with \code{dplyr} but natively support will be slightly limited by
 the \code{duckdb} backed.
 }
 
-The return value will have a \code{con} attribute holding the \code{duckdb} connection.
+The return value will have a \code{con} attribute holding the \code{duckdb}
+connection.
 
-When using the \code{comparisons} or \code{parameters} tables, native \code{dplyr} or
-is needed for the list columns. The \code{duckdb} tables will need to be copied
+When using the \code{comparisons} or \code{parameters} tables, native \code{dplyr} or is
+needed for the list columns. The \code{duckdb} tables will need to be copied
 into the R session with a \code{dplyr::collect()} call.
 }
 \description{
@@ -42,6 +46,6 @@ outputs from multiple SLURM nodes if needed. It augments the raw output data
 with the names of the facets in each simulation.
 }
 \examples{
-tables = load_duckdb("/home/vp22681/Data/ai4ci/0.3.2/behaviour-comparison")
+tables = load_duckdb(here("../scratch/examples/behaviour-comparison"))
 
 }

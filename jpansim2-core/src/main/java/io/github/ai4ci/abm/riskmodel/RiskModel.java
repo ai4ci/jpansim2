@@ -80,7 +80,7 @@ import io.github.ai4ci.util.Conversions;
 public interface RiskModel extends Serializable {
 
 	/** Logger for debugging and tracing risk model calculations */
-	public Logger log = LoggerFactory.getLogger(RiskModel.class);
+	Logger log = LoggerFactory.getLogger(RiskModel.class);
 
 	/**
 	 * Probability of reporting symptoms when symptomatic (app compliance). This
@@ -116,22 +116,24 @@ public interface RiskModel extends Serializable {
 	static RiskModel initialise(Person person) {
 		var config = ModelNav.modelParam(person);
 		var meanContacts = ModelNav.modelBase(person)
-				.getExpectedContactsPerPersonPerDay();
-		return ImmutableRiskModel.builder().setEntity(person)
-				.setTime(
-						person.getOutbreak().getCurrentState() == null ? 0
-								: person.getOutbreak().getCurrentState().getTime()
-				)
-				.setSymptomKernel(
-						ConvolutionFilter.from(config.getRiskModelSymptomKernel())
-				)
-				.setTestKernel(
-						ConvolutionFilter.from(config.getRiskModelTestKernel())
-				)
-				.setContactsKernel(
-						ConvolutionFilter.from(config.getRiskModelContactsKernel())
-								.scale(1 / meanContacts)
-				).build();
+			.getExpectedContactsPerPersonPerDay();
+		return ImmutableRiskModel.builder()
+			.setEntity(person)
+			.setTime(
+				person.getOutbreak()
+					.getCurrentState() == null ? 0 : person.getOutbreak()
+						.getCurrentState()
+						.getTime()
+			)
+			.setSymptomKernel(
+				ConvolutionFilter.from(config.getRiskModelSymptomKernel())
+			)
+			.setTestKernel(ConvolutionFilter.from(config.getRiskModelTestKernel()))
+			.setContactsKernel(
+				ConvolutionFilter.from(config.getRiskModelContactsKernel())
+					.scale(1 / meanContacts)
+			)
+			.build();
 	}
 
 	/**
@@ -190,7 +192,7 @@ public interface RiskModel extends Serializable {
 	 * @return log-odds evidence for infectiousness on that day
 	 */
 	default double getDirectLogOddsInPast(int i) {
-		if (i < 0 || i >= this.getDirectLogOdds().length) { return 0; }
+		if (i < 0 || i >= this.getDirectLogOdds().length) return 0;
 		return this.getDirectLogOdds()[i];
 	}
 
@@ -250,20 +252,23 @@ public interface RiskModel extends Serializable {
 		var logOdds = 0D;
 
 		for (var i = 0; i < contacts.retrospectiveSize(); i++) {
-			var ph = this.getEntity().getHistory(i);
+			var ph = this.getEntity()
+				.getHistory(i);
 			final var density = contacts.getDensity(i);
 			if (ph.isPresent()) {
-				for (Contact c : ph.get().getTodaysContacts()) {
+				for (Contact c : ph.get()
+					.getTodaysContacts()) {
 					try {
 						if (c.isDetected()) {
-							logOdds += c.getParticipantState(ph.get()).getRiskModel()
-									.getDirectLogOddsInPast(i) *
+							logOdds += c.getParticipantState(ph.get())
+								.getRiskModel()
+								.getDirectLogOddsInPast(i) *
 							// c.getProximityDuration() *
 									density;
 						}
 					} catch (NullPointerException e) {
 						log.error(
-								"Persistent null pointer in contact network detected"
+							"Persistent null pointer in contact network detected"
 						);
 					}
 				}
@@ -309,10 +314,14 @@ public interface RiskModel extends Serializable {
 	@Value.Derived
 	default int getMaxLength() {
 		return Math.max(
-				Math.max(
-						this.getContactsKernel().retrospectiveSize(),
-						this.getSymptomKernel().retrospectiveSize()
-				), this.getTestKernel().retrospectiveSize()
+			Math.max(
+				this.getContactsKernel()
+					.retrospectiveSize(),
+				this.getSymptomKernel()
+					.retrospectiveSize()
+			),
+			this.getTestKernel()
+				.retrospectiveSize()
 		);
 	}
 
@@ -333,7 +342,7 @@ public interface RiskModel extends Serializable {
 	 *
 	 * @return probability of infectiousness today ∈ [0,1]
 	 */
-	@Value.Lazy
+	@Value.Derived
 	default double getProbabilityInfectiousToday() {
 		var prior = 0.0025;
 		// double prior = 0.5;
@@ -342,8 +351,8 @@ public interface RiskModel extends Serializable {
 		// double prior = getEntity().getCurrentHistory().map(p ->
 		// p.getPresumedLocalPrevalence()).orElse(0.0001);
 		return Conversions.expit(
-				Conversions.logit(prior) + this.getDirectLogOddsInPast(0)
-						+ this.getIndirectLogOdds()
+			Conversions.logit(prior) + this.getDirectLogOddsInPast(0)
+					+ this.getIndirectLogOdds()
 		);
 	}
 
@@ -405,17 +414,17 @@ public interface RiskModel extends Serializable {
 	private double symptomLogLik(boolean isKnownSymptomatic) {
 		// At the moment this is not adjusted for the probability of app usage
 		var sens = ModelNav.modelState(this.getEntity())
-				.getPresumedSymptomSensitivity();
+			.getPresumedSymptomSensitivity();
 		var spec = ModelNav.modelState(this.getEntity())
-				.getPresumedSymptomSpecificity();
+			.getPresumedSymptomSpecificity();
 		// Assume that the app only knows about positive symptoms, and not all
 		// positive symptoms reported.
 		return isKnownSymptomatic ?
 		// Value of a symptom
-				Math.log(sens / (1 - spec)) * PROB_REPORTING_POSITIVE_SYMPTOMS :
-				// Value of a not reported symptom? could be 0D;
-				// If symptoms
-				Math.log((1 - sens) / (spec)) * PROB_REPORTING_NEGATIVE_SYMPTOMS;
+			Math.log(sens / (1 - spec)) * PROB_REPORTING_POSITIVE_SYMPTOMS :
+			// Value of a not reported symptom? could be 0D;
+			// If symptoms
+			Math.log((1 - sens) / (spec)) * PROB_REPORTING_NEGATIVE_SYMPTOMS;
 	}
 
 	/**
@@ -436,9 +445,10 @@ public interface RiskModel extends Serializable {
 	 *         incorporated
 	 */
 	default RiskModel update() {
-		var tmp = ImmutableRiskModel.builder().from(this);
-		tmp.setDirectLogOdds(this.updateDirectLogOdds(this.getDirectLogOdds()))
-				.setTime(this.getTime() + 1);
+		var tmp = ImmutableRiskModel.builder()
+			.from(this);
+		tmp.setDirectLogOdds(this.updatedDirectLogOdds())
+			.setTime(this.getTime() + 1);
 		return tmp.build();
 	}
 
@@ -470,8 +480,9 @@ public interface RiskModel extends Serializable {
 	 * @param old previous day's evidence array
 	 * @return updated evidence array incorporating today's information
 	 */
-	private double[] updateDirectLogOdds(double[] old) {
+	private double[] updatedDirectLogOdds() {
 
+		var old = this.getDirectLogOdds();
 		// the old state accounts for information from symptoms up to last time
 		// point and we can reuse that (since results are not updated in this
 		// model).
@@ -485,11 +496,14 @@ public interface RiskModel extends Serializable {
 		// included here
 		// This is all updating index 0 of the array
 		for (var i = 0; i < symptoms.retrospectiveSize(); i++) {
-			var ph = this.getEntity().getHistory(i);
+			var ph = this.getEntity()
+				.getHistory(i);
 			final var density = symptoms.getDensity(i);
 			if (ph.isPresent()) {
-				newer[0] += this.symptomLogLik(ph.get().isReportedSymptomatic())
-						* density;
+				newer[0] += this.symptomLogLik(
+					ph.get()
+						.isReportedSymptomatic()
+				) * density;
 			}
 		}
 
@@ -497,13 +511,16 @@ public interface RiskModel extends Serializable {
 		// old time points up to past part of the kernel
 		// this is updating indices 1..N of the array
 		{
-			var ph = this.getEntity().getCurrentHistory();
+			var ph = this.getEntity()
+				.getCurrentHistory();
 			if (ph.isPresent()) {
 				var maxIndex = Math
-						.min(newer.length - 1, symptoms.prospectiveSize());
+					.min(newer.length - 1, symptoms.prospectiveSize());
 				for (var i = 1; i <= maxIndex; i++) {
-					newer[i] += this.symptomLogLik(ph.get().isReportedSymptomatic())
-							* symptoms.getDensity(-i);
+					newer[i] += this.symptomLogLik(
+						ph.get()
+							.isReportedSymptomatic()
+					) * symptoms.getDensity(-i);
 				}
 			}
 		}
@@ -515,12 +532,14 @@ public interface RiskModel extends Serializable {
 		// inform today.
 		var tests = this.getTestKernel();
 		for (var i = 0; i < tests.retrospectiveSize(); i++) {
-			var ph = this.getEntity().getHistory(i);
+			var ph = this.getEntity()
+				.getHistory(i);
 			var density = tests.getDensity(i);
 			final var tmpI = i;
 			if (ph.isPresent()) {
 				// on day i in the past there were tests taken.
-				for (TestResult tr : ph.get().getTodaysTests()) {
+				for (TestResult tr : ph.get()
+					.getTodaysTests()) {
 					// the information value of that test depends on the time
 					// delay, while the result is pending
 					// tests taken today with no delay should be included here.
@@ -533,16 +552,18 @@ public interface RiskModel extends Serializable {
 		// OK what do todays results tell us about the past?
 
 		{
-			var ph = this.getEntity().getCurrentHistory();
+			var ph = this.getEntity()
+				.getCurrentHistory();
 			if (ph.isPresent()) {
-				for (TestResult tr : ph.get().getTodaysResults()) {
+				for (TestResult tr : ph.get()
+					.getTodaysResults()) {
 					// for a given test result delayed by 3 days with a kernel
 					// with max past size of 7 days
 					// a positive result influences everything up to the past size
 					// of the kernel plus the delay (from 1 to 10 days in the past).
 					var maxIndex = Math.min(
-							newer.length - 1,
-							tests.prospectiveSize() + (int) tr.getDelay()
+						newer.length - 1,
+						tests.prospectiveSize() + (int) tr.getDelay()
 					);
 					for (var i = 1; i <= maxIndex; i++) {
 						// The kernel offset has to be calculated such that the

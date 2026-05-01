@@ -32,15 +32,19 @@ public interface BatchConfiguration extends Abstraction.Described {
 	 *
 	 * @see io.github.ai4ci.example.Experiment
 	 */
-	public static ImmutableBatchConfiguration DEFAULT = ImmutableBatchConfiguration
-			.builder()
-			.setSimulationDuration(200)
-			.setUrnBase("default")
-			.setExporters(
-					Exporters.DEMOGRAPHICS, Exporters.SUMMARY,
-					Exporters.INFECTIVITY_PROFILE, Exporters.FINAL_STATE,
-					Exporters.BEHAVIOUR, Exporters.CONTACT_COUNTS
-			).build();
+	ImmutableBatchConfiguration DEFAULT = ImmutableBatchConfiguration.builder()
+		.setSimulationDuration(200)
+		.setUrnBase("default")
+		.setExporters(
+			Exporters.DEMOGRAPHICS,
+			Exporters.SUMMARY,
+			Exporters.INFECTIVITY_PROFILE,
+			Exporters.FINAL_STATE,
+			Exporters.BEHAVIOUR,
+			Exporters.CONTACT_COUNTS
+		)
+		.build();
+	String NOT_SLURM = "NOT_SLURM";
 
 	// static Logger log = LoggerFactory.getLogger(BatchConfiguration.class);
 
@@ -66,10 +70,15 @@ public interface BatchConfiguration extends Abstraction.Described {
 	 */
 	@JsonIgnore @Value.Derived
 	default int getBatchNumber() {
-		String tmp = System.getenv("SLURM_ARRAY_TASK_ID"); // will be set to the
-																			// job array index
-																			// value or null.
-		if (tmp != null) return Integer.parseInt(tmp);
+		var tmp = System.getenv("SLURM_ARRAY_TASK_ID"); // will be set to the
+																		// job array index
+																		// value or null.
+		if (tmp != null) {
+			var t = Integer.parseInt(tmp);
+			if (t == 0) { t = this.getBatchTotal(); }
+			return t;
+		}
+
 		return 1;
 	}
 
@@ -83,10 +92,10 @@ public interface BatchConfiguration extends Abstraction.Described {
 	 */
 	@JsonIgnore @Value.Derived
 	default int getBatchTotal() {
-		String tmp = System.getenv("SLURM_ARRAY_TASK_COUNT"); // will be set to
-																				// the number of
-																				// tasks in the job
-																				// array or null.
+		var tmp = System.getenv("SLURM_ARRAY_TASK_COUNT"); // will be set to
+																			// the number of
+																			// tasks in the job
+																			// array or null.
 		if (tmp != null) return Integer.parseInt(tmp);
 		return 1;
 	}
@@ -118,8 +127,14 @@ public interface BatchConfiguration extends Abstraction.Described {
 	@Value.Default
 	default String getUrnBase() { return ""; }
 
+	@JsonIgnore @Value.Default
+	default String getLocalDir() {
+		return System.getenv("LOCALDIR") == null ? NOT_SLURM
+			: System.getenv("LOCALDIR");
+	}
+
 	/**
-	 * Checks if the current execution is part of a SLURM batch job by looking
+	 * Checks if the current execution is part of a SLURM array job by looking
 	 * for the presence of the SLURM_ARRAY_TASK_ID environment variable.
 	 *
 	 * @return true if the SLURM_ARRAY_TASK_ID environment variable is set,
@@ -131,4 +146,26 @@ public interface BatchConfiguration extends Abstraction.Described {
 		return System.getenv("SLURM_ARRAY_TASK_ID") != null;
 	}
 
+	/**
+	 * Checks if the current execution is part of a SLURM job by looking for the
+	 * presence of the SLURM_JOB_ID environment variable.
+	 *
+	 * @return true if the SLURM_JOB_ID environment variable is set, indicating
+	 *         that the code is running as part of a SLURM job; false otherwise.
+	 */
+	@JsonIgnore @Value.Derived
+	default boolean isSlurmJob() {
+		return System.getenv("SLURM_JOB_ID") != null;
+	}
+
+	/**
+	 * The SLURM job id
+	 *
+	 * @return the SLURM_JOB_ID environment variable.
+	 */
+	@JsonIgnore @Value.Derived
+	default String getSlurmId() {
+		return System.getenv("SLURM_JOB_ID") == null ? NOT_SLURM
+			: System.getenv("SLURM_JOB_ID");
+	}
 }

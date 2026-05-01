@@ -346,7 +346,10 @@ public interface PersonState extends PersonTemporalState {
 			.getNormalisedViralLoad();
 	}
 
-	@Override @Value.Lazy
+//	#TODO:
+//	spends a
+//	lot of time here
+	@Override @Value.Derived
 	default double getPresumedLocalPrevalence() {
 		var prev = this.getContactHistory()
 			.filter(Contact::isDetected)

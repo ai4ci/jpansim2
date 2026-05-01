@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Level;
 
 import io.github.ai4ci.SlurmAwareLogger;
 import io.github.ai4ci.config.ExperimentConfiguration;
+import io.github.ai4ci.config.ImmutableExperimentConfiguration;
 import io.github.ai4ci.flow.SimulationMonitor;
 
 class RunExampleSim {
@@ -20,10 +21,17 @@ class RunExampleSim {
 		if (args.length > 0) {
 			name = args[0];
 		} else {
-			name = Experiment.BEHAVIOUR.name();
+			name = Experiment.DEFAULT.name();
 		}
 		var expt = Experiment.valueOf(name);
 		ExperimentConfiguration config = expt.config;
+		config = ImmutableExperimentConfiguration.copyOf(config)
+			.withBatchConfig(
+				config.getBatchConfig()
+					.withLocalDir("/tmp/working")
+			)
+			.withExecutionReplications(1)
+			.withSetupReplications(1);
 
 		var dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		var dtfs = dtf.format(LocalDateTime.now());

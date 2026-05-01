@@ -14,7 +14,7 @@ This package provides visualization and analysis tools for outputs from the JPan
 - Build: `devtools::build()`
 - Test: `devtools::test()`
 - Documentation: `roxygen2::roxygenise()`
-- Set results directory: `set_results_directory()` and `get_results_dir()`
+- Set results directory: `set_results_dir()` and `get_results_dir()`
 
 ## Project-Specific Patterns
 - State is kept in the `state` environment (see `R/state.R`). Avoid global variables elsewhere.
