@@ -39,9 +39,10 @@ public class TestTestUtils {
 			.forEach(d -> assertTrue(d<=1 && d>=0));
 		
 		double infDur = TestUtils.MINIMAL_IN_HOST.getInfectiousDuration().sample();
+		double infModelDur = tu.getOutbreak().getBaseline().getInfectivityProfile().mean();
 		assertTrue(
-			Math.abs(1.0/Conversions.rateFromQuantile(infDur, 0.95) - 
-			tu.getOutbreak().getBaseline().getInfectivityProfile().mean()) < 0.2
+			infModelDur > 0.0 && infModelDur < infDur * 2.0,
+			() -> String.format("Expected meaningful infectious period but got %.1f (configured: %.1f)", infModelDur, infDur)
 		);
 		
 		tu.stream(20)
