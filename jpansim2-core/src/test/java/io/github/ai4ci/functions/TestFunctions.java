@@ -10,6 +10,8 @@ class TestFunctions {
 	void testMathematical() {
 		var tmp = ImmutableMathematicalFunction.builder()
 			.setFXExpression("exp((x-45)/10*lg(2))")
+			.setMinimum(0)
+			.setMaximum(100)
 			.build();
 		
 		IntStream.range(0,100).mapToDouble(i -> tmp.value((double) i))

@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = ImmutableGaussianKernel.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonTypeName("gaussian")
-public interface GaussianKernel extends KernelFunction {
+public interface GaussianKernel extends java.io.Serializable, KernelFunction {
 
 	/**
 	 * Mean of the Gaussian kernel.

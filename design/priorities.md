@@ -37,6 +37,7 @@ That sequence fits the current state of the repository:
 | 5 | Integrate further in-host modelling and calibration work | High value, but currently blocked by missing inputs and validation approach |
 | 6 | Add venue-aware modelling | Depends on clearer requirements, data, and testing harnesses |
 | 7 | Alternative server frontend | Useful later, but not a good next-stage investment |
+| 8 | Scale efficiently on Isambard/Grace Hopper — reduce sequential gates and lock contention | Blocking production runs at scale
 
 ## 1. Document as-is project architecture and technical debt
 
@@ -247,6 +248,31 @@ venue-specific interventions.
 - A lighter interim approach may be possible by selectively reducing
   relationship strength between age or context-linked groups, but this should be
   treated as an approximation, not a substitute for proper venue modelling.
+
+## 9. Scale efficiently on Isambard/Grace Hopper — reduce sequential gates and lock contention
+
+**Goal:** Make JPanSim2 scale efficiently on a 72-core Grace Hopper node (shared L2 cache, memory-bound workload) rather than being slower than 16-core x86. The current 5 sequential gates per timestep stall all parallel threads, with severe lock contention on state machines and ThreadSafeArray.
+
+**Status:** Recommended — blocking production runs at scale
+**Effort:** High (6 weeks, 4 phases)
+**Value:** High — enables all future HPC runs
+**Dependencies:** JFR profiling capability, reference scenario tests
+
+**Why this is not a tuning problem**
+
+- Reducing JVM parallelism to 16 cores did not help — the problem is structural, not parameter-driven.
+- The 5 sequential gates (`prepareUpdate` → `updateHistory` → `switchHistory` → `updateState` → `switchState`) create bottlenecks that scale *worse* with more cores because contention on shared locks increases.
+- Grace's shared L2 cache (~144MB across 72 cores) is thrashed by lock metadata from thousands of `synchronized()` blocks.
+
+**Known bottlenecks:**
+
+- `Updater.update()` — 5 sequential gates at `Updater.java:469-478`
+- `StateMachine.performStateUpdate()` — `synchronized` methods per person (`StateMachine.java:182, 202`)
+- `ThreadSafeArray` element access — `synchronized(this)` in read/write (`ThreadSafeArray.java:170`)
+- `parallelStream()` in `contactNetwork()` — competes with ForkJoinPool commonPool for threads
+- `ThreadLocal<Sampler>` — each new worker thread spawns a 600+ byte MersenneTwister instance
+
+**Detailed implementation plan:** See `design/implementation/in-progress/001-grace-scale.md`
 
 ## 8. Alternative server frontend
 

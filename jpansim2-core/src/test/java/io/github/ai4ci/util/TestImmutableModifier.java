@@ -7,8 +7,8 @@ import org.immutables.value.Value;
 import org.junit.jupiter.api.Test;
 
 import io.github.ai4ci.Data.Partial;
-import io.github.ai4ci.abm.ImmutablePersonDemographic;
 import io.github.ai4ci.abm.PersonDemographic;
+import io.github.ai4ci.abm.TestUtils;
 import io.github.ai4ci.config.Modification;
 import io.github.ai4ci.config.execution.PartialDemographicAdjustment;
 import io.github.ai4ci.functions.Distribution;
@@ -61,11 +61,8 @@ public class TestImmutableModifier {
 					.setAppUseProbability(FixedValueFunction.of(2))
 					.build();
 		
-		PersonDemographic test = ImmutablePersonDemographic.builder()
-				.setAge(10)
-				.build();
-		
-		TestSetting tmp2 = ReflectionUtils.modify(tmp, mod, test);
+		PersonDemographic demog = TestUtils.mockPerson().getDemographic();
+		TestSetting tmp2 = ReflectionUtils.modify(tmp, mod, demog);
 		System.out.println(tmp2);
 		System.out.println(tmp2.getAppUseProbability().sample());
 	}
