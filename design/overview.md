@@ -77,6 +77,25 @@ jpansim2/                        ← Maven reactor root; invoke `mvn` here
 - `design/overview.md` — this document; essential project context
 - `design/build.md` — build, release, SLURM packaging, troubleshooting
 - `design/conventions.md` — Java and R coding conventions, Javadoc rules
+- `design/priorities.md` — current priorities, outstanding issues, technical debt
+- `design/news.md` — high level list of changes
+
+### Architectural Decision Records
+
+- `design/adr/001-execution-pipeline.md` — SimulationMonitor/SimulationFactory/SimulationExecutor producer-consumer pattern with memory-based backpressure
+- `design/adr/002-configuration.md` — Immutables + Jackson polymorphism for config; facet-based combinatorial grid
+- `design/adr/003-output-export.md` — Pre-mutation snapshot exports with async CSV/DuckDB writers
+- `design/adr/004-state-machines.md` — Enum-based behaviour and policy state machines with branch mechanism
+- `design/adr/005-testing-strategy.md` — Current test coverage gaps and recommended approach
+
+### Methods Documentation
+
+- `design/methods/001-calibration.md` — R₀ calibration via percolation theory and Poisson binomial estimator
+- `design/methods/002-phenomenological-in-host.md` — Biphasic logistic viral load model with multiple exposure superposition
+- `design/methods/003-stochastic-in-host.md` — Stochastic compartment model (virions, target cells, immune cells)
+- `design/methods/004-markov-in-host.md` — Discrete-time disease and symptom progression Markov chains
+- `design/methods/005-risk-model.md` — Bayesian temporal risk estimation with convolution kernels
+- `design/methods/006-distributions.md` — Parametric, empirical, and delay distributions; interpolation and fitting
 
 ---
 
