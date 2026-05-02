@@ -2,7 +2,7 @@
 
 **Status**: Accepted
 
-**Date**: 2026-05-02
+**Date**: 2026-05-02 (updated 2026-05-02)
 
 ## Context
 
@@ -11,6 +11,14 @@ The project has a mix of established unit tests, exploratory scripts, and deprec
 ## Decision
 
 The current test architecture uses JUnit Jupiter 5 + AssertJ with tests in `jpansim2-core/src/test/java/io/github/ai4ci/`. Tests are not separated into unit/integration/e2e categories. Test resources include example config JSON files and a JSON schema in `src/test/resources/`.
+
+**Current state (as of 2026-05-02):** 90 tests across 22 classes, all passing.
+
+**Key fix**: Upgraded from Maven Surefire 2.12.4 (2014, JUnit 4 only) to 3.5.2 with JUnit Jupiter engine. Before this, only 11 tests were actually discovered via bean-introspection fallback. The upgrade uncovered 4 pre-existing test failures that were never running:
+- `GaussianKernel` missing `Serializable` (fixed)
+- `MathematicalFunction` builder missing required attributes (fixed)
+- `PersonDemographic` builder missing required `entity` (fixed)
+- `TestTestUtils` assertion mismatch with Markov model behavior (fixed)
 
 Based on the codebase exploration, the test coverage breaks down as:
 

@@ -21,3 +21,29 @@ Comprehensive exploration of the codebase completed. Design documents added:
 
 - Created directory structure for `design/implementation/` (scoping, in-progress, complete subdirectories)
 - Updated `design/overview.md` with new artefact listings
+- Updated `design/priorities.md` with Grace scaling priority (#8)
+- Created `design/implementation/in-progress/001-grace-scale.md` — detailed plan for fixing HPC scaling
+
+## 2026-05-02 JUnit 5 upgrade and test fixes
+
+- Upgraded Maven Surefire from 2.12.4 (2014) to 3.5.2 with JUnit Jupiter engine
+- Tests discovered: **90 across 22 classes** (was 11 via bean-introspection fallback)
+- Fixed 4 pre-existing test failures uncovered by the upgrade:
+  - `GaussianKernel` missing `Serializable` interface
+  - `MathematicalFunction` builder missing required `minimum`/`maximum` attributes
+  - `TestImmutableModifier` using incomplete `PersonDemographic` builder
+  - `TestTestUtils` assertion mismatch with Markov model infectivity profile
+- Updated `design/adr/005-testing-strategy.md` with current test counts and fix history
+- Updated `design/priorities.md` with Grace scaling priority (#8)
+- Created `design/implementation/in-progress/001-grace-scale.md` — detailed plan for fixing HPC scaling
+
+## 2026-05-02 JUnit 5 upgrade and test fixes
+
+- Upgraded Maven Surefire from 2.12.4 (2014) to 3.5.2 with JUnit Jupiter engine
+- Tests discovered: **90 across 22 classes** (was 11 via bean-introspection fallback)
+- Fixed 4 pre-existing test failures uncovered by the upgrade:
+  - `GaussianKernel` missing `Serializable` interface
+  - `MathematicalFunction` builder missing required `minimum`/`maximum` attributes
+  - `TestImmutableModifier` using incomplete `PersonDemographic` builder
+  - `TestTestUtils` assertion mismatch with Markov model infectivity profile
+- Updated `design/adr/005-testing-strategy.md` with current test counts and fix history
