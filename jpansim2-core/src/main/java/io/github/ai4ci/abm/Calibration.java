@@ -351,7 +351,7 @@ public class Calibration {
 	public static double contactsPerPersonPerDay(Outbreak outbreak) {
 
 		var social = outbreak.getSocialNetwork();
-		var totalContactProbability = social.stream()
+		var totalContactProbability = social.parallelStream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -385,7 +385,7 @@ public class Calibration {
 	) {
 
 		return outbreak.getSocialNetwork()
-			.stream()
+			.parallelStream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -500,18 +500,18 @@ public class Calibration {
 		// So we need to forward simulate the number of exposures given viral load
 		// for every potential contact in the outbreak
 		double parameter;
+		var viralLoadProfile = outbreak.getExecutionConfiguration()
+			.getViralLoadProfile();
 		try {
 			parameter = Calibration.inferViralLoadTransmissionParameterQuick(
 				outbreak,
-				outbreak.getExecutionConfiguration()
-					.getViralLoadProfile(),
+				viralLoadProfile,
 				R0
 			);
 		} catch (Exception e) {
 			parameter = Calibration.inferViralLoadTransmissionParameter(
 				outbreak,
-				outbreak.getExecutionConfiguration()
-					.getViralLoadProfile(),
+				viralLoadProfile,
 				R0
 			);
 		}
@@ -597,7 +597,7 @@ public class Calibration {
 			Outbreak outbreak, double[][] viralLoadProfile, double R0
 	) {
 		var contactProbability = outbreak.getSocialNetwork()
-			.stream()
+			.parallelStream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);
@@ -677,7 +677,7 @@ public class Calibration {
 		var degrees = new AtomicDoubleArray(o.getPopulationSize());
 
 		o.getSocialNetwork()
-			.stream()
+			.parallelStream()
 			.forEach(r -> {
 				var person1 = r.getSource(o);
 				var person2 = r.getTarget(o);
@@ -757,7 +757,7 @@ public class Calibration {
 		var variances = new AtomicDoubleArray(o.getPopulationSize());
 
 		o.getSocialNetwork()
-			.stream()
+			.parallelStream()
 			.forEach(r -> {
 				var person1 = r.getSource(o);
 				var person2 = r.getTarget(o);
@@ -827,7 +827,7 @@ public class Calibration {
 		// This will be used as the uniform contact probability for the ER
 		// reference
 		var avgContactProb = outbreak.getSocialNetwork()
-			.stream()
+			.parallelStream()
 			.mapToDouble(r -> {
 				var person1 = r.getSource(outbreak);
 				var person2 = r.getTarget(outbreak);

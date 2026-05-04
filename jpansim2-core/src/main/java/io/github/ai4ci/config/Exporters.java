@@ -11,6 +11,8 @@ import io.github.ai4ci.output.ImmutableOutbreakContactCountCSV;
 import io.github.ai4ci.output.ImmutableOutbreakFinalStateCSV;
 import io.github.ai4ci.output.ImmutableOutbreakHistoryCSV;
 import io.github.ai4ci.output.ImmutablePersonDemographicsDuckDB;
+import io.github.ai4ci.output.ImmutablePostVaccineCSV;
+import io.github.ai4ci.output.ImmutableViralChallengeCSV;
 
 /**
  * Enumeration of the different exporters available in the system, each
@@ -57,6 +59,21 @@ public enum Exporters {
 			ExportSelector.of(ImmutableInfectivityProfileCSV.class)
 	),
 	/**
+	 * Exporter for in host viral load profile data, using the
+	 * ImmutableInHostModelCSV format.
+	 */
+	VIRAL_CHALLENGE(
+			ExportSelector.of(ImmutableViralChallengeCSV.class)
+	),
+
+	/**
+	 * Exporter for in host viral load profile data, using the
+	 * ImmutableInHostModelCSV format.
+	 */
+	POST_VACCINATION(
+			ExportSelector.of(ImmutablePostVaccineCSV.class)
+	),
+	/**
 	 * Exporter for person demographic data, using the
 	 * ImmutablePersonDemographicsCSV format.
 	 */
@@ -94,7 +111,7 @@ public enum Exporters {
 
 	private ExportSelector<?> selector;
 
-	private Exporters(ExportSelector<?> selector) {
+	Exporters(ExportSelector<?> selector) {
 		this.selector = selector;
 	}
 

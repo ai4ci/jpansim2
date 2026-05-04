@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.github.ai4ci.config.ExperimentConfiguration;
 import io.github.ai4ci.flow.output.SimulationExporter;
 import oshi.SystemInfo;
-import oshi.hardware.HardwareAbstractionLayer;
+import oshi.hardware.GlobalMemory;
 
 /**
  * There is one monitor thread running during the simulation. It keeps track of
@@ -28,7 +28,8 @@ public class SimulationMonitor implements Runnable {
 	private static final long RESERVE = 512 * 1024 * 1024;
 
 	static SystemInfo si = new SystemInfo();
-	static HardwareAbstractionLayer hal = si.getHardware();
+	static GlobalMemory hal = si.getHardware()
+		.getMemory();
 	static Logger log = LoggerFactory.getLogger(SimulationMonitor.class);
 
 	/**
@@ -40,8 +41,7 @@ public class SimulationMonitor implements Runnable {
 	 *         and percentage, and available system memory in GB
 	 */
 	public static String freeMemG() {
-		var sys = ((float) hal.getMemory()
-			.getAvailable()) / (1024 * 1024 * 1024);
+		var sys = ((float) hal.getAvailable()) / (1024 * 1024 * 1024);
 		var freeHeap = ((float) Runtime.getRuntime()
 			.freeMemory()) / (1024 * 1024 * 1024);
 		var maxHeap = ((float) Runtime.getRuntime()
@@ -71,8 +71,8 @@ public class SimulationMonitor implements Runnable {
 	 */
 	public static double usedOfAvailable(long sysReserved) {
 
-		var sysAvail = ((float) hal.getMemory()
-			.getAvailable() - sysReserved) / (1024 * 1024 * 1024);
+		var sysAvail = ((float) hal.getAvailable() - sysReserved)
+				/ (1024 * 1024 * 1024);
 		var freeHeap = ((float) Runtime.getRuntime()
 			.freeMemory()) / (1024 * 1024 * 1024);
 		var maxHeap = ((float) Runtime.getRuntime()
@@ -185,8 +185,7 @@ public class SimulationMonitor implements Runnable {
 		SimulationExecutor executor = null;
 		try {
 
-			double freeSysGb = hal.getMemory()
-				.getAvailable() / (1024 * 1024 * 1024);
+			double freeSysGb = hal.getAvailable() / (1024 * 1024 * 1024);
 
 			var abortTime = Long.MAX_VALUE;
 

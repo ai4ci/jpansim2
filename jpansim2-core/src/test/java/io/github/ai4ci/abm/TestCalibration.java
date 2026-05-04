@@ -10,7 +10,6 @@ import io.github.ai4ci.abm.behaviour.NonCompliant;
 import io.github.ai4ci.abm.policy.NoControl;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
 import io.github.ai4ci.config.setup.BarabasiAlbertConfiguration;
-import io.github.ai4ci.functions.ImmutableDelayDistribution;
 import io.github.ai4ci.functions.SimpleDistribution;
 import io.github.ai4ci.util.Conversions;
 
@@ -113,29 +112,29 @@ class TestCalibration {
 		System.out.println(Calibration.inferSeverityCutoff(this.out, 0.999));
 	}
 
-	@Test
-	void testConversions() {
-		var param30 = Calibration
-			.inferViralLoadTransmissionParameter(this.out, 2.0);
-		var dd = (ImmutableDelayDistribution) InHostConfiguration
-			.getInfectivityProfile(
-				this.out.getExecutionConfiguration(),
-				param30,
-				100,
-				100
-			);
-		dd = dd.withPAffected(0.4);
-
-		Arrays.stream(
-			InHostConfiguration
-				.getViralLoadProfile(this.out.getExecutionConfiguration(), 100, 100)
-		)
-			.forEach(System.out::println);
-
-		System.out.println(Conversions.oddsRatio(0.25, 0.5));
-		System.out.println(Conversions.oddsRatio(0.5, 0.25));
-		System.out.println(Conversions.oddsRatio(0.1, 0.4));
-	}
+//	@Test
+//	void testConversions() {
+//		var param30 = Calibration
+//			.inferViralLoadTransmissionParameter(this.out, 2.0);
+//		var dd = (ImmutableDelayDistribution) InHostConfiguration
+//			.getInfectivityProfile(
+//				this.out.getExecutionConfiguration(),
+//				param30,
+//				100,
+//				100
+//			);
+//		dd = dd.withPAffected(0.4);
+//
+//		Arrays.stream(
+//			InHostConfiguration
+//				.getViralLoadProfile(this.out.getExecutionConfiguration(), 100, 100)
+//		)
+//			.forEach(System.out::println);
+//
+//		System.out.println(Conversions.oddsRatio(0.25, 0.5));
+//		System.out.println(Conversions.oddsRatio(0.5, 0.25));
+//		System.out.println(Conversions.oddsRatio(0.1, 0.4));
+//	}
 
 	@Test
 	void testExponential() {

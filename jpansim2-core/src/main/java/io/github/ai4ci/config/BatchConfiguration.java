@@ -41,7 +41,9 @@ public interface BatchConfiguration extends Abstraction.Described {
 			Exporters.INFECTIVITY_PROFILE,
 			Exporters.FINAL_STATE,
 			Exporters.BEHAVIOUR,
-			Exporters.CONTACT_COUNTS
+			Exporters.CONTACT_COUNTS,
+			Exporters.POST_VACCINATION,
+			Exporters.VIRAL_CHALLENGE
 		)
 		.build();
 	String NOT_SLURM = "NOT_SLURM";

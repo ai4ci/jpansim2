@@ -23,6 +23,7 @@ import io.github.ai4ci.abm.PersonDemographic;
 import io.github.ai4ci.abm.PersonHistory;
 import io.github.ai4ci.abm.PersonState;
 import io.github.ai4ci.abm.TestResult;
+import io.github.ai4ci.abm.inhost.InHostModelState;
 import io.github.ai4ci.util.Binomial;
 
 /**
@@ -277,6 +278,14 @@ public abstract class CSVMapper {
 	)
 	public abstract ImmutablePersonTestsDuckDB toCSV(
 			TestResult t, PersonHistory ph
+	);
+
+	public abstract ImmutablePostVaccineCSV toPostVaccineCSV(
+			Outbreak o, int personId, InHostModelState<?> state
+	);
+
+	public abstract ImmutableViralChallengeCSV toViralChallengeCSV(
+			Outbreak o, int personId, InHostModelState<?> state
 	);
 
 	/**

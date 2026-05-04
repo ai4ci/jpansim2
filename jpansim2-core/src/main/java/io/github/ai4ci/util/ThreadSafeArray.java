@@ -3,10 +3,12 @@ package io.github.ai4ci.util;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * A thread-safe, dynamically growing array designed for a write-once-read-many
@@ -229,25 +231,69 @@ public class ThreadSafeArray<X> implements Serializable {
 //	
 	public Stream<X> parallelStream() {
 		if (!this.locked) throw new WriteOnlyException();
-		var p = this.pointer.get();
-		if (p == 0) return Stream.empty();
+		if (this.isEmpty()) return Stream.empty();
+		return StreamSupport.stream(new ParentSpliterator(), true); // , true);
+	}
 
-		// Use a fixed number of batches to match the Grace core count.
-		// This reduces the 'Join' overhead significantly.
-		var numCores = Runtime.getRuntime()
-			.availableProcessors();
-		var batchSize = Math.max(1, p / numCores);
+	private class ParentSpliterator implements Spliterator<X> {
 
-		return IntStream.range(0, (p + batchSize - 1) / batchSize)
-			.parallel()
-			.boxed()
-			.flatMap(batchIdx -> {
-				var start = batchIdx * batchSize;
-				var end = Math.min(start + batchSize, p);
-				// Create a sub-stream for this specific core's chunk
-				return IntStream.range(start, end)
-					.mapToObj(i -> this.data[i]);
-			});
+		AtomicInteger head = new AtomicInteger(0);
+		AtomicInteger splits = new AtomicInteger(1);
+
+		@Override
+		public boolean tryAdvance(Consumer<? super X> action) {
+			var i = this.head.getAndAdd(1);
+			if (i >= ThreadSafeArray.this.size()) return false;
+			action.accept(ThreadSafeArray.this.data[i]);
+			return true;
+		}
+
+		@Override
+		public Spliterator<X> trySplit() {
+			return new ChildSpliterator(this);
+		}
+
+		@Override
+		public long estimateSize() {
+			return (ThreadSafeArray.this.size() - this.head.get())
+					/ this.splits.get();
+		}
+
+		@Override
+		public int characteristics() {
+			return Spliterator.IMMUTABLE + Spliterator.NONNULL + Spliterator.SIZED;
+		}
+
+	}
+
+	private class ChildSpliterator implements Spliterator<X> {
+
+		ParentSpliterator parent;
+
+		ChildSpliterator(ParentSpliterator parent) {
+			this.parent = parent;
+			parent.splits.incrementAndGet();
+		}
+
+		@Override
+		public boolean tryAdvance(Consumer<? super X> action) {
+			return this.parent.tryAdvance(action);
+		}
+
+		@Override
+		public Spliterator<X> trySplit() {
+			return new ChildSpliterator(this.parent);
+		}
+
+		@Override
+		public long estimateSize() {
+			return this.parent.estimateSize();
+		}
+
+		@Override
+		public int characteristics() {
+			return Spliterator.IMMUTABLE + Spliterator.NONNULL;
+		}
 	}
 
 	/**
@@ -303,9 +349,8 @@ public class ThreadSafeArray<X> implements Serializable {
 	 */
 	public Stream<X> stream() {
 		if (!this.locked) throw new WriteOnlyException();
-		var p = this.pointer.get();
-		return IntStream.range(0, p)
-			.mapToObj(this::get);
+		if (this.isEmpty()) return Stream.empty();
+		return StreamSupport.stream(new ParentSpliterator(), true);
 	}
 
 	/**

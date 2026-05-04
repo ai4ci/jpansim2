@@ -87,4 +87,40 @@ public interface CommonCSV {
 		int getTime();
 	}
 
+	/** A state for a person */
+	public interface Individual extends State {
+
+		/**
+		 * Unique identifier for the person.
+		 *
+		 * @return the person identifier used across exported tables to join
+		 *         records
+		 */
+		int getPersonId();
+
+		/**
+		 * Normalised severity score for the person.
+		 *
+		 * @return normalised severity on a 0–1 scale where values nearer 1
+		 *         indicate greater clinical severity
+		 */
+		double getNormalisedSeverity();
+
+		/**
+		 * Normalised viral load estimate for the person.
+		 *
+		 * @return normalised viral load on a 0–1 scale used as a proxy for
+		 *         infectiousness in analytic pipelines
+		 */
+		double getNormalisedViralLoad();
+
+		/**
+		 * Immune activity estimate for the person.
+		 *
+		 * @return a scalar representing the strength of immune response used by
+		 *         the in‑host model; interpretation depends on in‑host model type
+		 */
+		double getImmuneActivity();
+	}
+
 }

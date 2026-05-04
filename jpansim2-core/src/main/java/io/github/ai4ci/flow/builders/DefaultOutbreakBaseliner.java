@@ -127,8 +127,10 @@ public interface DefaultOutbreakBaseliner {
 					.getSeverityFatalityCutoff(outbreak, configuration)
 			)
 			.setInfectivityProfile(
-				InHostConfiguration
-					.getInfectivityProfile(configuration, parameter, 100, 100)
+				InHostConfiguration.getInfectivityProfile(
+					configuration.getViralLoadProfile(),
+					parameter
+				)
 			)
 			.setSymptomDuration(
 				configuration.getSeverityProfile()

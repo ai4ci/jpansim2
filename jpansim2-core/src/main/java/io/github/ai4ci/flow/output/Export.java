@@ -55,6 +55,7 @@ public @interface Export {
 	 * and FINISH for final outputs after simulation completion.
 	 */
 	public static enum Stage {
+
 		/**
 		 * Export data at the baseline stage, typically for initial model
 		 * parameters.

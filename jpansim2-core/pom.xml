@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>io.github.ai4ci</groupId>
 		<artifactId>jpansim2-parent</artifactId>
-		<version>0.3.6</version>
+		<version>0.3.7</version>
 	</parent>
 
 	<artifactId>jpansim2-core</artifactId>

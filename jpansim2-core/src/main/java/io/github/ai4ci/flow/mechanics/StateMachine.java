@@ -67,7 +67,8 @@ public class StateMachine implements Serializable {
 	public StateMachine(
 			State<?, ?, ?, ?> defaultStateMachineState, StateMachineContext context
 	) {
-		this.context = ModifiableStateMachineContext.create().from(context);
+		this.context = ModifiableStateMachineContext.create()
+			.from(context);
 		this.currentState = defaultStateMachineState;
 	}
 
@@ -83,10 +84,11 @@ public class StateMachine implements Serializable {
 	public void forceTo(State.BehaviourState state) {
 		if (state.equals(NonCompliant.DEAD)) return;
 		if (this.getState() instanceof State.BehaviourState) {
-			synchronized (this) {
-				this.rememberCurrentState(state);
-				this.currentState = state;
-			}
+			// TODO: does this need to be synchronized?
+			// synchronized (this) {
+			this.rememberCurrentState(state);
+			this.currentState = state;
+			// }
 		} else
 			throw new RuntimeException("Cannot update a policy with a behaviour");
 	}
@@ -101,11 +103,12 @@ public class StateMachine implements Serializable {
 	 */
 	public void forceTo(State.PolicyState state) {
 		if (this.getState() instanceof State.PolicyState) {
-			synchronized (this) {
-				// If switching to a different behaviour model
-				this.rememberCurrentState(state);
-				this.currentState = state;
-			}
+			// TODO: does this need to be synchronized?
+			// synchronized (this) {
+			// If switching to a different behaviour model
+			this.rememberCurrentState(state);
+			this.currentState = state;
+			// }
 		} else
 			throw new RuntimeException("Cannot update a behaviour with a policy");
 	}
@@ -125,7 +128,7 @@ public class StateMachine implements Serializable {
 	public void init(State.BehaviourState policy) {
 		this.currentState = policy;
 		this.context = ModifiableStateMachineContext.create()
-				.setBaselineState(policy);
+			.setBaselineState(policy);
 	}
 
 	/**
@@ -136,7 +139,7 @@ public class StateMachine implements Serializable {
 	public void init(State.PolicyState policy) {
 		this.currentState = policy;
 		this.context = ModifiableStateMachineContext.create()
-				.setBaselineState(policy);
+			.setBaselineState(policy);
 	}
 
 	/**
@@ -151,7 +154,7 @@ public class StateMachine implements Serializable {
 			Sampler rng
 	) {
 		if (this.getState() instanceof State.PolicyState) {
-			State.PolicyState state = (State.PolicyState) this.getState();
+			var state = (State.PolicyState) this.getState();
 			state.updateHistory(builder, outbreak, this.context, rng);
 		}
 	}
@@ -167,7 +170,7 @@ public class StateMachine implements Serializable {
 			ImmutablePersonHistory.Builder builder, PersonState person, Sampler rng
 	) {
 		if (this.getState() instanceof State.BehaviourState) {
-			State.BehaviourState state = (State.BehaviourState) this.getState();
+			var state = (State.BehaviourState) this.getState();
 			state.updateHistory(builder, person, this.context, rng);
 		}
 	}
@@ -179,14 +182,14 @@ public class StateMachine implements Serializable {
 	 * @param outbreak the current outbreak state
 	 * @param rng      the random number generator for stochastic operations
 	 */
-	public synchronized void performStateUpdate(
+	public void performStateUpdate(
 			ImmutableOutbreakState.Builder builder, OutbreakState outbreak,
 			Sampler rng
 	) {
 		if (this.getState() instanceof State.PolicyState) {
-			State.PolicyState state = (State.PolicyState) this.getState();
-			State.PolicyState next = state
-					.nextState(builder, outbreak, this.context, rng);
+			var state = (State.PolicyState) this.getState();
+			var next = state
+				.nextState(builder, outbreak, this.context, rng);
 			this.currentState = next;
 		}
 	}
@@ -199,17 +202,18 @@ public class StateMachine implements Serializable {
 	 * @param person  the current person state
 	 * @param rng     the random number generator for stochastic operations
 	 */
-	public synchronized void performStateUpdate(
+	public void performStateUpdate(
 			ImmutablePersonState.Builder builder, PersonState person, Sampler rng
 	) {
+		// TODO: does this need to be synchronized?
 		if (person.isDead()) {
 			this.currentState = NonCompliant.DEAD
-					.nextState(builder, person, this.context, rng);
+				.nextState(builder, person, this.context, rng);
 		} else {
 			if (this.getState() instanceof State.BehaviourState) {
-				State.BehaviourState state = (State.BehaviourState) this.getState();
-				State.BehaviourState next = state
-						.nextState(builder, person, this.context, rng);
+				var state = (State.BehaviourState) this.getState();
+				var next = state
+					.nextState(builder, person, this.context, rng);
 				this.currentState = next;
 			}
 		}
@@ -234,8 +238,7 @@ public class StateMachine implements Serializable {
 			// Don't remember if this is a different state from same behaviour
 			// model
 			if (((Enum<?>) state).getDeclaringClass()
-					.equals(((Enum<?>) this.getState()).getDeclaringClass()))
-				return;
+				.equals(((Enum<?>) this.getState()).getDeclaringClass())) return;
 		}
 		this.context.pushState(this.currentState);
 	}
@@ -260,7 +263,8 @@ public class StateMachine implements Serializable {
 	 */
 	@Override
 	public String toString() {
-		return this.getState().getName();
+		return this.getState()
+			.getName();
 	}
 
 }

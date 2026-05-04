@@ -375,37 +375,37 @@ public class Updater {
 				.forEach(person -> {
 					if (person instanceof ModifiablePerson) {
 						var p = (ModifiablePerson) person;
-						synchronized (p) {
-							var tmp = p.getHistory();
-							tmp.add(
-								0,
-								p.getNextHistory()
-									.get()
-									.build()
-							);
-							while (tmp.size() > limit) {
-								tmp.remove(limit);
-							}
-							p.setNextHistory(
-								p.getNextHistory()
-									.clear()
-							);
+						// synchronized (p) {
+						var tmp = p.getHistory();
+						tmp.add(
+							0,
+							p.getNextHistory()
+								.get()
+								.build()
+						);
+						while (tmp.size() > limit) {
+							tmp.remove(limit);
 						}
+						p.setNextHistory(
+							p.getNextHistory()
+								.clear()
+						);
+						// }
 					}
 				});
-			synchronized (m) {
-				m.getHistory()
-					.add(
-						0,
-						m.getNextHistory()
-							.get()
-							.build()
-					);
-				m.setNextHistory(
+			// synchronized (m) {
+			m.getHistory()
+				.add(
+					0,
 					m.getNextHistory()
-						.clear()
+						.get()
+						.build()
 				);
-			}
+			m.setNextHistory(
+				m.getNextHistory()
+					.clear()
+			);
+			// }
 		}
 	}
 
@@ -426,37 +426,37 @@ public class Updater {
 				.forEach(person -> {
 					if (person instanceof ModifiablePerson) {
 						var p = (ModifiablePerson) person;
-						synchronized (p) {
-							// TODO: Update spatio-temporal state network if explicit.
-							// This is where the new and old state co-exist
-							// it is one place where we could make a record in a
-							// spatio-temporal network. Possibly the only place.
-							// It would have to be thread safe and non blocking.
-							// alternatively we can just use the PersonHistory for this
-							p.setCurrentState(
-								p.getNextState()
-									.get()
-									.build()
-							);
-							p.setNextState(
-								p.getNextState()
-									.clear()
-							);
-						}
+						// synchronized (p) {
+						// TODO: Update spatio-temporal state network if explicit.
+						// This is where the new and old state co-exist
+						// it is one place where we could make a record in a
+						// spatio-temporal network. Possibly the only place.
+						// It would have to be thread safe and non blocking.
+						// alternatively we can just use the PersonHistory for this
+						p.setCurrentState(
+							p.getNextState()
+								.get()
+								.build()
+						);
+						p.setNextState(
+							p.getNextState()
+								.clear()
+						);
 					}
+					// }
 				});
-			synchronized (m) {
-				m.setCurrentState(
-					m.getNextState()
-						.get()
-						.build()
-				);
-				m.setNextState(
-					m.getNextState()
-						.clear()
-				);
+			// synchronized (m) {
+			m.setCurrentState(
+				m.getNextState()
+					.get()
+					.build()
+			);
+			m.setNextState(
+				m.getNextState()
+					.clear()
+			);
 
-			}
+			// }
 		}
 	}
 
@@ -606,6 +606,7 @@ public class Updater {
 			var m = (ModifiablePerson) person;
 
 			// Update the state machine (for the behaviour).
+			// N.b. the state machine is not immutable, and holds context
 			m.getStateMachine()
 				.performStateUpdate(nextState, person.getCurrentState(), sampler);
 

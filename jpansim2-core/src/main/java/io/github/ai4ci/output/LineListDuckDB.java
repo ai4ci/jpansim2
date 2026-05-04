@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 import io.github.ai4ci.abm.Outbreak;
+import io.github.ai4ci.abm.Person;
 import io.github.ai4ci.flow.output.DuckDBWriter;
 import io.github.ai4ci.flow.output.Export;
 import io.github.ai4ci.flow.output.Export.Stage;
@@ -34,7 +35,7 @@ import io.github.ai4ci.flow.output.Export.Stage;
 		selector = LineListDuckDB.Selector.class,
 		writer = DuckDBWriter.class
 )
-public interface LineListDuckDB extends CommonCSV.State {
+public interface LineListDuckDB extends CommonCSV.Individual {
 
 	/**
 	 * Selector class that implements Export.Selector to provide a stream of
@@ -43,8 +44,10 @@ public interface LineListDuckDB extends CommonCSV.State {
 	static class Selector implements Export.Selector {
 		@Override
 		public Stream<LineListDuckDB> apply(Outbreak o) {
-			return o.getPeople().stream().map(p -> p.getCurrentState())
-					.map(CSVMapper.INSTANCE::toCSV);
+			return o.getPeople()
+				.stream()
+				.map(Person::getCurrentState)
+				.map(CSVMapper.INSTANCE::toCSV);
 		}
 	}
 
@@ -109,43 +112,12 @@ public interface LineListDuckDB extends CommonCSV.State {
 	long getExposureCount();
 
 	/**
-	 * Immune activity estimate for the person.
-	 *
-	 * @return a scalar representing the strength of immune response used by the
-	 *         in‑host model; interpretation depends on in‑host model type
-	 */
-	double getImmuneActivity();
-
-	/**
 	 * Log odds of being infectious today, useful for multiplicative models.
 	 *
 	 * @return the log odds corresponding to
 	 *         {@link #getProbabilityInfectiousToday()}
 	 */
 	double getLogOddsInfectiousToday();
-
-	/**
-	 * Normalised severity score for the person.
-	 *
-	 * @return normalised severity on a 0–1 scale where values nearer 1 indicate
-	 *         greater clinical severity
-	 */
-	double getNormalisedSeverity();
-
-	/**
-	 * Normalised viral load estimate for the person.
-	 *
-	 * @return normalised viral load on a 0–1 scale used as a proxy for
-	 *         infectiousness in analytic pipelines
-	 */
-	double getNormalisedViralLoad();
-
-	/**
-	 * Unique identifier for the person.
-	 *
-	 * @return the person identifier used across exported tables to join records
-	 */
-	int getPersonId();
 
 	/**
 	 * Presumed local prevalence as estimated by the agent.

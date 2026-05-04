@@ -24,6 +24,7 @@ import io.github.ai4ci.abm.policy.Trigger;
 import io.github.ai4ci.abm.riskmodel.RiskModel;
 import io.github.ai4ci.config.TestParameters;
 import io.github.ai4ci.config.inhost.InHostConfiguration;
+import io.github.ai4ci.config.inhost.InHostModelProfile;
 import io.github.ai4ci.config.inhost.PhenomenologicalModel;
 import io.github.ai4ci.example.Kernels;
 import io.github.ai4ci.flow.mechanics.StateUtils;
@@ -866,9 +867,20 @@ public interface ExecutionConfiguration
 	 *
 	 * @return 2D array of viral load profiles (time steps x number of profiles)
 	 */
-	@JsonIgnore @Value.Lazy
+	@JsonIgnore
 	default double[][] getViralLoadProfile() {
-		return InHostConfiguration.getViralLoadProfile(this, 100, 100);
+		return this.getViralChallengeProfile()
+			.getViralLoadProfile();
+	}
+
+	@JsonIgnore @Value.Lazy
+	default InHostModelProfile getViralChallengeProfile() {
+		return InHostConfiguration.getViralChallengeProfile(this, 100, 100);
+	}
+
+	@JsonIgnore @Value.Lazy
+	default InHostModelProfile getPostImmunisationProfile() {
+		return InHostConfiguration.getPostImmunisationProfile(this, 100, 100);
 	}
 
 	/**

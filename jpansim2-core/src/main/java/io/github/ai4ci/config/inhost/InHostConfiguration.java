@@ -75,8 +75,30 @@ public interface InHostConfiguration
 	double LIMIT = 0.999;
 
 	/**
-	 * Calculate the infectivity profile from a viral load profile and a
-	 * transmission parameter.
+	 * Derived distribution determined by in host viral load model and overall
+	 * transmission rate required to get desired R0. <br>
+	 * <br>
+	 *
+	 * Infectivity profile assumes a contact has occurred and it is the
+	 * conditional probability of transmission on that day versus any other
+	 * particular day. This is controlled in real life by things like symptoms
+	 * and behaviour, but in theory that is controlled for by the condition that
+	 * transmission has occurred. This is the difference between the generation
+	 * time, and the effective generation time, and parallels R0 and Rt. This is
+	 * effectively G0 not Gt, and is determined only by the average viral load in
+	 * a naive host, following a standard exposure.
+	 *
+	 * There is a question as to whether the infectivity profile is solely
+	 * dependent on viral load, or there is an element of contact behaviour in
+	 * here as well. If the latter then repeated contacts would make viral load a
+	 * hazard function of generation time, as people with multiple exposures
+	 * eventually get infected. This would tend to make the GT look shorter than
+	 * the infectious period.
+	 *
+	 * The infectivity profile is the calibrated transmission probability for the
+	 * average case conditioned on a transmission occurring. Although this is
+	 * calculated it is not really used internally, except to calculate an
+	 * estimate of $R_t$, and to define the true length of the infective period.
 	 *
 	 * <p>
 	 * This is used to calculate the infectivity profile from the viral load
@@ -106,8 +128,11 @@ public interface InHostConfiguration
 		// Sample (1st dimension: samples wise ) average to get transmission
 		// probability array
 		var meanTrans = new double[duration];
-		for (var i = 0; i < duration; i++) for (var n = 0; n < samples; n++)
-			meanTrans[i] += trans[n][i] / samples;
+		for (var i = 0; i < duration; i++) {
+			for (var n = 0; n < samples; n++) {
+				meanTrans[i] += trans[n][i] / samples;
+			}
+		}
 		DelayDistribution tmp = DelayDistribution
 			.unnormalised(DelayDistribution.trimTail(meanTrans, 1 - LIMIT, false));
 		log.debug(
@@ -115,72 +140,6 @@ public interface InHostConfiguration
 					+ "; mean duration: " + tmp.expected()
 		);
 		return tmp;
-	}
-
-	/**
-	 * Derived distribution determined by in host viral load model and overall
-	 * transmission rate required to get desired R0. <br>
-	 * <br>
-	 *
-	 * Infectivity profile assumes a contact has occurred and it is the
-	 * conditional probability of transmission on that day versus any other
-	 * particular day. This is controlled in real life by things like symptoms
-	 * and behaviour, but in theory that is controlled for by the condition that
-	 * transmission has occurred. This is the difference between the generation
-	 * time, and the effective generation time, and parallels R0 and Rt. This is
-	 * effectively G0 not Gt, and is determined only by the average viral load in
-	 * a naive host, following a standard exposure.
-	 *
-	 * There is a question as to whether the infectivity profile is solely
-	 * dependent on viral load, or there is an element of contact behaviour in
-	 * here as well. If the latter then repeated contacts would make viral load a
-	 * hazard function of generation time, as people with multiple exposures
-	 * eventually get infected. This would tend to make the GT look shorter than
-	 * the infectious period.
-	 *
-	 * The infectivity profile is the calibrated transmission probability for the
-	 * average case conditioned on a transmission occurring. Although this is
-	 * calculated it is not really used internally, except to calculate an
-	 * estimate of $R_t$, and to define the true length of the infective period.
-	 *
-	 * @param execConfig            the configuration to get the viral load
-	 *                              profile for. This is used to get the in host
-	 *                              configuration, but also to get the infection
-	 *                              case rate, hospitalisation rate and fatality
-	 *                              rate to calculate the severity cutoffs for
-	 *                              symptoms, hospitalisation and fatality by the
-	 *                              downstream class {@link Calibration}.
-	 * @param transmissionParameter the transmission parameter to use to
-	 *                              calculate the infectivity profile. This
-	 * @param samples               the number of samples to use to get the
-	 *                              average profile. This should be large enough
-	 *                              to get a stable estimate of the profile, but
-	 *                              not too large to be inefficient. The profile
-	 *                              is trimmed to the point where 99.9% of
-	 *                              transmission has occurred, so this is not
-	 *                              critical as long as it is large enough.
-	 * @param duration              the number of time steps to calculate the
-	 *                              profile for. This should be long enough to
-	 *                              capture the full profile, but not too long to
-	 *                              be inefficient. The profile is trimmed to the
-	 *                              point where 99.9% of transmission has
-	 *                              occurred, so this is not critical as long as
-	 *                              it is long enough.
-	 * @return a delay distribution with the average transmission probability at
-	 *         each time post exposure, averaged across all agents, and
-	 *         conditioned on a transmission occurring. The profile is trimmed to
-	 *         the point where 99.9% of transmission has occurred, so this is not
-	 *         critical as long as it is long enough.
-	 *
-	 */
-	static DelayDistribution getInfectivityProfile(
-			ExecutionConfiguration execConfig, double transmissionParameter,
-			int samples, int duration
-	) {
-		return getInfectivityProfile(
-			getViralLoadProfile(execConfig, samples, duration),
-			transmissionParameter
-		);
 	}
 
 	/**
@@ -221,8 +180,9 @@ public interface InHostConfiguration
 			var max = 0D;
 			state = state.update(rng, 1D, 0);
 			for (var j = 0; j < duration; j++) {
-				if (state.getNormalisedSeverity() > max)
+				if (state.getNormalisedSeverity() > max) {
 					max = state.getNormalisedSeverity();
+				}
 				state = state.update(rng, 0, 0);
 			}
 			x[i] = max;
@@ -330,31 +290,18 @@ public interface InHostConfiguration
 	 *         second dimension is the average viral load across all the agents
 	 *         at that time post exposure
 	 */
-	static double[][] getViralLoadProfile(
+	static InHostModelProfile getViralChallengeProfile(
 			ExecutionConfiguration execConfig, int samples, int duration
 	) {
-		// TODO: need to switch this to Stream<double[]> and calculate
-		// transmission
-		// from viral load for each profile separately because the average tends
-		// to under represent when cut off of 1 is applied later. Interestingly
-		// this probably is why it used to work as the cutoff was before
-		// averaging.
-		var config = execConfig.getInHostConfiguration();
+		return InHostModelProfile.from(execConfig, 100, 100, 1, 0);
+	}
 
-		var rng = Sampler.getSampler();
-		var load = new double[samples][duration];
-		for (var n = 0; n < samples; n++) {
-			InHostModelState<?> state = InHostModelState
-				.test(config, execConfig, rng);
-			// viral exposure at t=0.
-			// This is a standard unit dose.
-			state = state.update(rng, 1D, 0);
-			for (var i = 0; i < duration; i++) {
-				load[n][i] = state.getNormalisedViralLoad();
-				state = state.update(rng, 0, 0);
-			}
-		}
-		return load;
+	static InHostModelProfile getPostImmunisationProfile(
+			ExecutionConfiguration execConfig, int samples, int duration
+	) {
+
+		return InHostModelProfile.from(execConfig, 100, 100, 0, 1);
+
 	}
 
 	private static double[][] transmissionFromLoad(
@@ -363,11 +310,14 @@ public interface InHostConfiguration
 		var samples = viralLoad.length;
 		var duration = viralLoad[0].length;
 		var trans = new double[samples][duration];
-		for (var n = 0; n < samples; n++) for (var i = 0; i < duration; i++)
-			trans[n][i] = OutbreakBaseline.transmissibilityFromViralLoad(
-				viralLoad[n][i],
-				transmissionParameter
-			);
+		for (var n = 0; n < samples; n++) {
+			for (var i = 0; i < duration; i++) {
+				trans[n][i] = OutbreakBaseline.transmissibilityFromViralLoad(
+					viralLoad[n][i],
+					transmissionParameter
+				);
+			}
+		}
 		return trans;
 	}
 
