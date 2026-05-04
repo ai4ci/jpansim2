@@ -472,17 +472,10 @@
 
 					<additionalOptions>
 						<additionalOption>--allow-script-in-comments</additionalOption>
-						<additionalOption>
-							-header '&lt;script
-							type="text/javascript"
-							src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
-						<additionalOption>
-							-umlExcludedTypeReferences
-							"java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
-						<additionalOption>-umlCustomDirective "left to right
-							direction"</additionalOption>
-						<additionalOption>--uml-exclude-package-dependencies
-							true</additionalOption>
+						<additionalOption>-header '&lt;script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOption>
+						<additionalOption>-umlExcludedTypeReferences "java.io.Serializable,java.lang.Object,java.lang.Enum,java.lang.annotation.Annotation"</additionalOption>
+						<additionalOption>-umlCustomDirective "left to right direction"</additionalOption>
+						<additionalOption>--uml-exclude-package-dependencies true</additionalOption>
 						<!--						<additionalOption>uml-exclude-package-diagrams
 						true</additionalOption>-->
 						<!--						<additionalOption>uml-exclude-class-diagrams
