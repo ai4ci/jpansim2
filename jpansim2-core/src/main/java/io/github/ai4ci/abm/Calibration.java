@@ -487,7 +487,7 @@ public class Calibration {
 	 * The calculation requires a set of viral load profiles based on a random
 	 * sampling of 100 average people, exposed to a 1 unit dose of virus which is
 	 * handled by
-	 * {@link io.github.ai4ci.config.inhost.InHostConfiguration#getViralLoadProfile(io.github.ai4ci.config.ExecutionConfiguration, int, int)
+	 * {@link io.github.ai4ci.config.inhost.InHostConfiguration#getViralChallengeProfile(io.github.ai4ci.config.execution.ExecutionConfiguration, int, int)
 	 * the in host model configuration}
 	 *
 	 * @param outbreak the outbreak configuration to use for calibration

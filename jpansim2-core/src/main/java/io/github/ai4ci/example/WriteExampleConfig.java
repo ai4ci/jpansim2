@@ -7,7 +7,6 @@ import java.util.Arrays;
 
 import org.mariuszgromada.math.mxparser.License;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.victools.jsonschema.generator.Option;
@@ -39,9 +38,8 @@ public class WriteExampleConfig {
 	 * first argument to the program.
 	 *
 	 * @param args the first argument is the path to the output directory
-	 * @throws JsonProcessingException
-	 * @throws RuntimeException        if the output directory cannot be created
-	 *                                 or if no output directory is provided
+	 * @throws RuntimeException if the output directory cannot be created or if
+	 *                          no output directory is provided
 	 *
 	 */
 	public static void main(String[] args) {

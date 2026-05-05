@@ -103,12 +103,13 @@ public interface InHostConfiguration
 	 * <p>
 	 * This is used to calculate the infectivity profile from the viral load
 	 * profile calculated by
-	 * {@link #getViralLoadProfile(ExecutionConfiguration, int, int)}, which is
-	 * used to calibrate the transmission parameter to get the desired R0, and to
-	 * calculate the infectivity profile. It is not used directly in the model,
-	 * which calculates transmission from the viral load of each individual
-	 * agent. The profile is trimmed to the point where 99.9% of transmission has
-	 * occurred, so this is not critical as long as it is long enough.
+	 * {@link #getViralChallengeProfile(ExecutionConfiguration, int, int)}, which
+	 * is used to calibrate the transmission parameter to get the desired R0, and
+	 * to calculate the infectivity profile. It is not used directly in the
+	 * model, which calculates transmission from the viral load of each
+	 * individual agent. The profile is trimmed to the point where 99.9% of
+	 * transmission has occurred, so this is not critical as long as it is long
+	 * enough.
 	 *
 	 * @param viralLoad             the viral load profile to use to calculate
 	 *                              the infectivity profile.

@@ -170,7 +170,7 @@ public interface ExperimentConfiguration extends Abstraction.Described {
 	 * settings. The exporter will use the batch-specific output directory if
 	 * running in a multi-node SLURM batch job.
 	 *
-	 * @param baseDirectory Root directory for output files
+	 * @param workingDirectory Root directory for output files
 	 * @return Configured SimulationExporter instance
 	 * @see #getBatchDirectoryPath(Path)
 	 */
