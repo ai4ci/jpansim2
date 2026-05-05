@@ -68,76 +68,77 @@
 <span class="source-line-no">055</span><span id="line-55">         * and FINISH for final outputs after simulation completion.</span>
 <span class="source-line-no">056</span><span id="line-56">         */</span>
 <span class="source-line-no">057</span><span id="line-57">        public static enum Stage {</span>
-<span class="source-line-no">058</span><span id="line-58">                /**</span>
-<span class="source-line-no">059</span><span id="line-59">                 * Export data at the baseline stage, typically for initial model</span>
-<span class="source-line-no">060</span><span id="line-60">                 * parameters.</span>
-<span class="source-line-no">061</span><span id="line-61">                 */</span>
-<span class="source-line-no">062</span><span id="line-62">                BASELINE,</span>
-<span class="source-line-no">063</span><span id="line-63">                /**</span>
-<span class="source-line-no">064</span><span id="line-64">                 * Export data at the start of the simulation, typically for initial</span>
-<span class="source-line-no">065</span><span id="line-65">                 * conditions.</span>
-<span class="source-line-no">066</span><span id="line-66">                 */</span>
-<span class="source-line-no">067</span><span id="line-67">                START,</span>
-<span class="source-line-no">068</span><span id="line-68">                /**</span>
-<span class="source-line-no">069</span><span id="line-69">                 * Export data during simulation updates, typically for time‑indexed</span>
-<span class="source-line-no">070</span><span id="line-70">                 * records.</span>
-<span class="source-line-no">071</span><span id="line-71">                 */</span>
-<span class="source-line-no">072</span><span id="line-72">                UPDATE,</span>
-<span class="source-line-no">073</span><span id="line-73">                /**</span>
-<span class="source-line-no">074</span><span id="line-74">                 * Export data at the finish of the simulation, typically for final</span>
-<span class="source-line-no">075</span><span id="line-75">                 * outputs.</span>
-<span class="source-line-no">076</span><span id="line-76">                 */</span>
-<span class="source-line-no">077</span><span id="line-77">                FINISH</span>
-<span class="source-line-no">078</span><span id="line-78">        }</span>
-<span class="source-line-no">079</span><span id="line-79"></span>
-<span class="source-line-no">080</span><span id="line-80">        /**</span>
-<span class="source-line-no">081</span><span id="line-81">         * Get the selector class responsible for extracting data from the Outbreak</span>
-<span class="source-line-no">082</span><span id="line-82">         * simulation for export. The selector class implements the Export.Selector</span>
-<span class="source-line-no">083</span><span id="line-83">         * interface and defines the logic for transforming the Outbreak object into</span>
-<span class="source-line-no">084</span><span id="line-84">         * a stream of records that can be written to the output file.</span>
-<span class="source-line-no">085</span><span id="line-85">         *</span>
-<span class="source-line-no">086</span><span id="line-86">         * @return the class that implements the Selector interface and provides the</span>
-<span class="source-line-no">087</span><span id="line-87">         *         logic for extracting data from the Outbreak simulation for export.</span>
-<span class="source-line-no">088</span><span id="line-88">         */</span>
-<span class="source-line-no">089</span><span id="line-89">        Class&lt;? extends Selector&gt; selector();</span>
-<span class="source-line-no">090</span><span id="line-90"></span>
-<span class="source-line-no">091</span><span id="line-91">        /**</span>
-<span class="source-line-no">092</span><span id="line-92">         * Get the indicative cache size of the records to be exported.</span>
-<span class="source-line-no">093</span><span id="line-93">         *</span>
-<span class="source-line-no">094</span><span id="line-94">         * @return the expected number of fields in each record; used for validation</span>
-<span class="source-line-no">095</span><span id="line-95">         *         and to ensure consistency with the writer's output format</span>
-<span class="source-line-no">096</span><span id="line-96">         */</span>
-<span class="source-line-no">097</span><span id="line-97">        int size();</span>
-<span class="source-line-no">098</span><span id="line-98"></span>
-<span class="source-line-no">099</span><span id="line-99">        /**</span>
-<span class="source-line-no">100</span><span id="line-100">         * Get the export stage at which the data should be exported.</span>
-<span class="source-line-no">101</span><span id="line-101">         *</span>
-<span class="source-line-no">102</span><span id="line-102">         * @return the stage of the simulation (BASELINE, START, UPDATE, FINISH) at</span>
-<span class="source-line-no">103</span><span id="line-103">         *         which the data should be exported</span>
-<span class="source-line-no">104</span><span id="line-104">         */</span>
-<span class="source-line-no">105</span><span id="line-105">        Stage stage();</span>
-<span class="source-line-no">106</span><span id="line-106"></span>
-<span class="source-line-no">107</span><span id="line-107">        /**</span>
-<span class="source-line-no">108</span><span id="line-108">         * Get the output file name for the export.</span>
-<span class="source-line-no">109</span><span id="line-109">         *</span>
-<span class="source-line-no">110</span><span id="line-110">         * @return the name of the output file to which the exported data will be</span>
-<span class="source-line-no">111</span><span id="line-111">         *         written relative to the output directory; should include the</span>
-<span class="source-line-no">112</span><span id="line-112">         *         appropriate file extension.</span>
-<span class="source-line-no">113</span><span id="line-113">         */</span>
-<span class="source-line-no">114</span><span id="line-114">        String value();</span>
-<span class="source-line-no">115</span><span id="line-115"></span>
-<span class="source-line-no">116</span><span id="line-116">        /**</span>
-<span class="source-line-no">117</span><span id="line-117">         * Get the writer class responsible for handling the export of the data to</span>
-<span class="source-line-no">118</span><span id="line-118">         * the specified output file.</span>
-<span class="source-line-no">119</span><span id="line-119">         *</span>
-<span class="source-line-no">120</span><span id="line-120">         * @return the class that implements the OutputWriter interface and defines</span>
-<span class="source-line-no">121</span><span id="line-121">         *         how to write the exported data to the output file in the desired</span>
-<span class="source-line-no">122</span><span id="line-122">         *         format (e.g., CSV, DuckDB).</span>
-<span class="source-line-no">123</span><span id="line-123">         */</span>
-<span class="source-line-no">124</span><span id="line-124">        @SuppressWarnings("rawtypes")</span>
-<span class="source-line-no">125</span><span id="line-125">        Class&lt;? extends OutputWriter&gt; writer();</span>
-<span class="source-line-no">126</span><span id="line-126"></span>
-<span class="source-line-no">127</span><span id="line-127">}</span>
+<span class="source-line-no">058</span><span id="line-58"></span>
+<span class="source-line-no">059</span><span id="line-59">                /**</span>
+<span class="source-line-no">060</span><span id="line-60">                 * Export data at the baseline stage, typically for initial model</span>
+<span class="source-line-no">061</span><span id="line-61">                 * parameters.</span>
+<span class="source-line-no">062</span><span id="line-62">                 */</span>
+<span class="source-line-no">063</span><span id="line-63">                BASELINE,</span>
+<span class="source-line-no">064</span><span id="line-64">                /**</span>
+<span class="source-line-no">065</span><span id="line-65">                 * Export data at the start of the simulation, typically for initial</span>
+<span class="source-line-no">066</span><span id="line-66">                 * conditions.</span>
+<span class="source-line-no">067</span><span id="line-67">                 */</span>
+<span class="source-line-no">068</span><span id="line-68">                START,</span>
+<span class="source-line-no">069</span><span id="line-69">                /**</span>
+<span class="source-line-no">070</span><span id="line-70">                 * Export data during simulation updates, typically for time‑indexed</span>
+<span class="source-line-no">071</span><span id="line-71">                 * records.</span>
+<span class="source-line-no">072</span><span id="line-72">                 */</span>
+<span class="source-line-no">073</span><span id="line-73">                UPDATE,</span>
+<span class="source-line-no">074</span><span id="line-74">                /**</span>
+<span class="source-line-no">075</span><span id="line-75">                 * Export data at the finish of the simulation, typically for final</span>
+<span class="source-line-no">076</span><span id="line-76">                 * outputs.</span>
+<span class="source-line-no">077</span><span id="line-77">                 */</span>
+<span class="source-line-no">078</span><span id="line-78">                FINISH</span>
+<span class="source-line-no">079</span><span id="line-79">        }</span>
+<span class="source-line-no">080</span><span id="line-80"></span>
+<span class="source-line-no">081</span><span id="line-81">        /**</span>
+<span class="source-line-no">082</span><span id="line-82">         * Get the selector class responsible for extracting data from the Outbreak</span>
+<span class="source-line-no">083</span><span id="line-83">         * simulation for export. The selector class implements the Export.Selector</span>
+<span class="source-line-no">084</span><span id="line-84">         * interface and defines the logic for transforming the Outbreak object into</span>
+<span class="source-line-no">085</span><span id="line-85">         * a stream of records that can be written to the output file.</span>
+<span class="source-line-no">086</span><span id="line-86">         *</span>
+<span class="source-line-no">087</span><span id="line-87">         * @return the class that implements the Selector interface and provides the</span>
+<span class="source-line-no">088</span><span id="line-88">         *         logic for extracting data from the Outbreak simulation for export.</span>
+<span class="source-line-no">089</span><span id="line-89">         */</span>
+<span class="source-line-no">090</span><span id="line-90">        Class&lt;? extends Selector&gt; selector();</span>
+<span class="source-line-no">091</span><span id="line-91"></span>
+<span class="source-line-no">092</span><span id="line-92">        /**</span>
+<span class="source-line-no">093</span><span id="line-93">         * Get the indicative cache size of the records to be exported.</span>
+<span class="source-line-no">094</span><span id="line-94">         *</span>
+<span class="source-line-no">095</span><span id="line-95">         * @return the expected number of fields in each record; used for validation</span>
+<span class="source-line-no">096</span><span id="line-96">         *         and to ensure consistency with the writer's output format</span>
+<span class="source-line-no">097</span><span id="line-97">         */</span>
+<span class="source-line-no">098</span><span id="line-98">        int size();</span>
+<span class="source-line-no">099</span><span id="line-99"></span>
+<span class="source-line-no">100</span><span id="line-100">        /**</span>
+<span class="source-line-no">101</span><span id="line-101">         * Get the export stage at which the data should be exported.</span>
+<span class="source-line-no">102</span><span id="line-102">         *</span>
+<span class="source-line-no">103</span><span id="line-103">         * @return the stage of the simulation (BASELINE, START, UPDATE, FINISH) at</span>
+<span class="source-line-no">104</span><span id="line-104">         *         which the data should be exported</span>
+<span class="source-line-no">105</span><span id="line-105">         */</span>
+<span class="source-line-no">106</span><span id="line-106">        Stage stage();</span>
+<span class="source-line-no">107</span><span id="line-107"></span>
+<span class="source-line-no">108</span><span id="line-108">        /**</span>
+<span class="source-line-no">109</span><span id="line-109">         * Get the output file name for the export.</span>
+<span class="source-line-no">110</span><span id="line-110">         *</span>
+<span class="source-line-no">111</span><span id="line-111">         * @return the name of the output file to which the exported data will be</span>
+<span class="source-line-no">112</span><span id="line-112">         *         written relative to the output directory; should include the</span>
+<span class="source-line-no">113</span><span id="line-113">         *         appropriate file extension.</span>
+<span class="source-line-no">114</span><span id="line-114">         */</span>
+<span class="source-line-no">115</span><span id="line-115">        String value();</span>
+<span class="source-line-no">116</span><span id="line-116"></span>
+<span class="source-line-no">117</span><span id="line-117">        /**</span>
+<span class="source-line-no">118</span><span id="line-118">         * Get the writer class responsible for handling the export of the data to</span>
+<span class="source-line-no">119</span><span id="line-119">         * the specified output file.</span>
+<span class="source-line-no">120</span><span id="line-120">         *</span>
+<span class="source-line-no">121</span><span id="line-121">         * @return the class that implements the OutputWriter interface and defines</span>
+<span class="source-line-no">122</span><span id="line-122">         *         how to write the exported data to the output file in the desired</span>
+<span class="source-line-no">123</span><span id="line-123">         *         format (e.g., CSV, DuckDB).</span>
+<span class="source-line-no">124</span><span id="line-124">         */</span>
+<span class="source-line-no">125</span><span id="line-125">        @SuppressWarnings("rawtypes")</span>
+<span class="source-line-no">126</span><span id="line-126">        Class&lt;? extends OutputWriter&gt; writer();</span>
+<span class="source-line-no">127</span><span id="line-127"></span>
+<span class="source-line-no">128</span><span id="line-128">}</span>
 
 
 

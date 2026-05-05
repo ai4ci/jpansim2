@@ -151,7 +151,7 @@
 <span class="source-line-no">138</span><span id="line-138">         *</span>
 <span class="source-line-no">139</span><span id="line-139">         * @return the X coordinates defining the knot points</span>
 <span class="source-line-no">140</span><span id="line-140">         */</span>
-<span class="source-line-no">141</span><span id="line-141">        @Value.Derived</span>
+<span class="source-line-no">141</span><span id="line-141">        @JsonIgnore @Value.Derived</span>
 <span class="source-line-no">142</span><span id="line-142">        default double[] getX() {</span>
 <span class="source-line-no">143</span><span id="line-143">                return IntStream.rangeClosed(0, 100)</span>
 <span class="source-line-no">144</span><span id="line-144">                        .mapToDouble(</span>
@@ -165,7 +165,7 @@
 <span class="source-line-no">152</span><span id="line-152">         *</span>
 <span class="source-line-no">153</span><span id="line-153">         * @return the Y coordinates defining the knot points (true scale)</span>
 <span class="source-line-no">154</span><span id="line-154">         */</span>
-<span class="source-line-no">155</span><span id="line-155">        @Value.Derived</span>
+<span class="source-line-no">155</span><span id="line-155">        @JsonIgnore @Value.Derived</span>
 <span class="source-line-no">156</span><span id="line-156">        default double[] getY() {</span>
 <span class="source-line-no">157</span><span id="line-157">                var xArg = new Argument("x");</span>
 <span class="source-line-no">158</span><span id="line-158">                mXparser.disableUlpRounding();</span>

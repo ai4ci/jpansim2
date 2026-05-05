@@ -100,7 +100,43 @@
 <span class="source-line-no">087</span><span id="line-87">                int getTime();</span>
 <span class="source-line-no">088</span><span id="line-88">        }</span>
 <span class="source-line-no">089</span><span id="line-89"></span>
-<span class="source-line-no">090</span><span id="line-90">}</span>
+<span class="source-line-no">090</span><span id="line-90">        /** A state for a person */</span>
+<span class="source-line-no">091</span><span id="line-91">        public interface Individual extends State {</span>
+<span class="source-line-no">092</span><span id="line-92"></span>
+<span class="source-line-no">093</span><span id="line-93">                /**</span>
+<span class="source-line-no">094</span><span id="line-94">                 * Unique identifier for the person.</span>
+<span class="source-line-no">095</span><span id="line-95">                 *</span>
+<span class="source-line-no">096</span><span id="line-96">                 * @return the person identifier used across exported tables to join</span>
+<span class="source-line-no">097</span><span id="line-97">                 *         records</span>
+<span class="source-line-no">098</span><span id="line-98">                 */</span>
+<span class="source-line-no">099</span><span id="line-99">                int getPersonId();</span>
+<span class="source-line-no">100</span><span id="line-100"></span>
+<span class="source-line-no">101</span><span id="line-101">                /**</span>
+<span class="source-line-no">102</span><span id="line-102">                 * Normalised severity score for the person.</span>
+<span class="source-line-no">103</span><span id="line-103">                 *</span>
+<span class="source-line-no">104</span><span id="line-104">                 * @return normalised severity on a 0–1 scale where values nearer 1</span>
+<span class="source-line-no">105</span><span id="line-105">                 *         indicate greater clinical severity</span>
+<span class="source-line-no">106</span><span id="line-106">                 */</span>
+<span class="source-line-no">107</span><span id="line-107">                double getNormalisedSeverity();</span>
+<span class="source-line-no">108</span><span id="line-108"></span>
+<span class="source-line-no">109</span><span id="line-109">                /**</span>
+<span class="source-line-no">110</span><span id="line-110">                 * Normalised viral load estimate for the person.</span>
+<span class="source-line-no">111</span><span id="line-111">                 *</span>
+<span class="source-line-no">112</span><span id="line-112">                 * @return normalised viral load on a 0–1 scale used as a proxy for</span>
+<span class="source-line-no">113</span><span id="line-113">                 *         infectiousness in analytic pipelines</span>
+<span class="source-line-no">114</span><span id="line-114">                 */</span>
+<span class="source-line-no">115</span><span id="line-115">                double getNormalisedViralLoad();</span>
+<span class="source-line-no">116</span><span id="line-116"></span>
+<span class="source-line-no">117</span><span id="line-117">                /**</span>
+<span class="source-line-no">118</span><span id="line-118">                 * Immune activity estimate for the person.</span>
+<span class="source-line-no">119</span><span id="line-119">                 *</span>
+<span class="source-line-no">120</span><span id="line-120">                 * @return a scalar representing the strength of immune response used by</span>
+<span class="source-line-no">121</span><span id="line-121">                 *         the in‑host model; interpretation depends on in‑host model type</span>
+<span class="source-line-no">122</span><span id="line-122">                 */</span>
+<span class="source-line-no">123</span><span id="line-123">                double getImmuneActivity();</span>
+<span class="source-line-no">124</span><span id="line-124">        }</span>
+<span class="source-line-no">125</span><span id="line-125"></span>
+<span class="source-line-no">126</span><span id="line-126">}</span>
 
 
 

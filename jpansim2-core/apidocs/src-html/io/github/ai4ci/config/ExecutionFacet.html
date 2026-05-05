@@ -45,7 +45,7 @@
 <span class="source-line-no">032</span><span id="line-32">@Value.Immutable</span>
 <span class="source-line-no">033</span><span id="line-33">@JsonSerialize(as = ImmutableExecutionFacet.class)</span>
 <span class="source-line-no">034</span><span id="line-34">@JsonDeserialize(as = ImmutableExecutionFacet.class)</span>
-<span class="source-line-no">035</span><span id="line-35">public interface ExecutionFacet extends Abstraction.Named {</span>
+<span class="source-line-no">035</span><span id="line-35">public interface ExecutionFacet extends Abstraction.Named, Abstraction.Described {</span>
 <span class="source-line-no">036</span><span id="line-36">        /**</span>
 <span class="source-line-no">037</span><span id="line-37">         * Gets the list of modifications to apply to the execution configuration.</span>
 <span class="source-line-no">038</span><span id="line-38">         * These modifications are used to customise the execution parameters for</span>

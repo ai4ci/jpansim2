@@ -1,11 +1,12 @@
 {
   "batchConfig" : {
-    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ],
+    "exporters" : [ "DEMOGRAPHICS", "SUMMARY", "INFECTIVITY_PROFILE", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS", "POST_VACCINATION", "VIRAL_CHALLENGE" ],
     "simulationDuration" : 200,
     "urnBase" : "lockdown-compliance"
   },
   "executionConfig" : {
     "name" : "execution",
+    "description" : [ "A markov-state in-host, with agents who do not change their behaviour except for lockdowns." ],
     "appUseProbability" : {
       "@type" : "unimodal-beta",
       "dispersion" : 0.1,
@@ -42,12 +43,13 @@
       "dispersion" : 0.25,
       "mean" : 0.5
     },
-    "defaultBehaviourModelName" : "ReactiveTestAndIsolate",
+    "defaultBehaviourModelName" : "FixedBehaviour",
     "defaultPolicyModelName" : "ReactiveLockdown",
     "demographicAdjustment" : { },
     "importationProbability" : 0.0,
     "inHostConfiguration" : {
       "@type" : "markov",
+      "description" : [ "A SEIR like in host model with incubation period ~ 5 days, infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.", "The viral load is derived from the severity which is calibrated from the overall outbreak parameters" ],
       "immuneWaningHalfLife" : {
         "@type" : "log-normal",
         "mean" : 300.0,
@@ -83,7 +85,10 @@
       "mean" : 0.25
     },
     "organicRateOfMobilityChange" : 0.25,
-    "r0" : 1.75,
+    "r0" : {
+      "@type" : "point",
+      "mean" : 1.75
+    },
     "riskModelContactsKernel" : {
       "@type" : "gaussian",
       "maximum" : 10,
@@ -120,58 +125,59 @@
       "mean" : 0.95
     }
   },
-  "executionReplications" : 1,
+  "executionReplications" : 5,
   "facets" : [ {
     "name" : "trigger",
     "modifications" : [ {
       "name" : "none",
+      "description" : [ "A default policy with no controls" ],
       "defaultPolicyModelName" : "NoControl"
     }, {
-      "name" : "5%-1%",
+      "name" : "2%-1%",
+      "description" : [ "Reactive lockdowns when screening tests have a 2% positivity" ],
       "defaultPolicyModelName" : "ReactiveLockdown",
-      "initialScreeningProbability" : 0.01,
+      "initialScreeningProbability" : 0.1,
       "lockdownReleaseTrigger" : 0.01,
+      "lockdownStartTrigger" : 0.02,
+      "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY"
+    }, {
+      "name" : "5%-2%",
+      "description" : [ "Reactive lockdowns when screening tests have a 5% positivity" ],
+      "defaultPolicyModelName" : "ReactiveLockdown",
+      "initialScreeningProbability" : 0.1,
+      "lockdownReleaseTrigger" : 0.02,
       "lockdownStartTrigger" : 0.05,
       "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY"
     }, {
-      "name" : "10%-2%",
+      "name" : "8%-3%",
+      "description" : [ "Reactive lockdowns when screening tests have a 8% positivity" ],
       "defaultPolicyModelName" : "ReactiveLockdown",
-      "initialScreeningProbability" : 0.01,
-      "lockdownReleaseTrigger" : 0.02,
-      "lockdownStartTrigger" : 0.1,
-      "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY"
-    }, {
-      "name" : "15%-3%",
-      "defaultPolicyModelName" : "ReactiveLockdown",
-      "initialScreeningProbability" : 0.01,
+      "initialScreeningProbability" : 0.1,
       "lockdownReleaseTrigger" : 0.03,
-      "lockdownStartTrigger" : 0.15,
+      "lockdownStartTrigger" : 0.08,
       "lockdownTriggerValue" : "SCREENING_TEST_POSITIVITY"
     } ]
   }, {
     "name" : "isolation",
     "modifications" : [ {
-      "name" : "none",
-      "maximumSocialContactReduction" : {
-        "@type" : "uniform",
-        "mean" : 1.0
-      }
-    }, {
       "name" : "mild",
+      "description" : [ "Lockdowns reduce contacts by 25%" ],
       "maximumSocialContactReduction" : {
-        "@type" : "uniform",
+        "@type" : "point",
         "mean" : 0.75
       }
     }, {
       "name" : "moderate",
+      "description" : [ "Lockdowns reduce contacts by 50%" ],
       "maximumSocialContactReduction" : {
-        "@type" : "uniform",
+        "@type" : "point",
         "mean" : 0.5
       }
     }, {
       "name" : "severe",
+      "description" : [ "Lockdowns reduce contacts by 75%" ],
       "maximumSocialContactReduction" : {
-        "@type" : "uniform",
+        "@type" : "point",
         "mean" : 0.25
       }
     } ]
@@ -182,15 +188,19 @@
       "name" : "default",
       "demographics" : {
         "@type" : "location-aware",
+        "description" : [ "An increased association between contact strength and proximity (OR=2)." ],
         "contactProximityBias" : 2.0
       },
       "initialImports" : 30,
+      "calibrateR0ToNetwork" : true,
       "network" : {
         "@type" : "erdos-reyni",
+        "description" : [ "A 128x128 Erdos-Reyni network with 100 contacts per node." ],
         "networkDegree" : 100,
         "networkSize" : 16384
       }
     }
   } ],
-  "setupReplications" : 1
+  "setupReplications" : 5,
+  "version" : "0.3.8"
 }

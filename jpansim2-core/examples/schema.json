@@ -4,29 +4,29 @@
   "$defs" : {
     "Distribution" : {
       "anyOf" : [ {
-        "$ref" : "#/$defs/ImmutableBinomialDistribution"
+        "$ref" : "#/$defs/ImmutableBinomialDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutablePoissonDistribution"
+        "$ref" : "#/$defs/ImmutablePoissonDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableNegBinomialDistribution"
+        "$ref" : "#/$defs/ImmutableNegBinomialDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableGammaDistribution"
+        "$ref" : "#/$defs/ImmutableGammaDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableNormalDistribution"
+        "$ref" : "#/$defs/ImmutableNormalDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableLogNormalDistribution"
+        "$ref" : "#/$defs/ImmutableLogNormalDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableLogitNormalDistribution"
+        "$ref" : "#/$defs/ImmutableLogitNormalDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableBetaDistribution"
+        "$ref" : "#/$defs/ImmutableBetaDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableUnimodalBetaDistribution"
+        "$ref" : "#/$defs/ImmutableUnimodalBetaDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableUniformDistribution"
+        "$ref" : "#/$defs/ImmutableUniformDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutablePointDistribution"
+        "$ref" : "#/$defs/ImmutablePointDistribution-2"
       }, {
-        "$ref" : "#/$defs/ImmutableEmpiricalDistribution"
+        "$ref" : "#/$defs/ImmutableEmpiricalDistribution-2"
       } ]
     },
     "ExecutionFacet" : {
@@ -34,11 +34,17 @@
     },
     "Exporters" : {
       "type" : "string",
-      "enum" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
+      "enum" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "VIRAL_CHALLENGE", "POST_VACCINATION", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ]
     },
     "ImmutableBatchConfiguration" : {
       "type" : "object",
       "properties" : {
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
         "exporters" : {
           "type" : "array",
           "items" : {
@@ -46,74 +52,129 @@
           }
         },
         "simulationDuration" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "urnBase" : {
           "type" : "string"
         }
       }
     },
-    "ImmutableBetaDistribution" : {
+    "ImmutableBetaDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableBinomialDistribution" : {
+    "ImmutableBetaDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableBetaDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "beta"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableBinomialDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableDiscreteFunction" : {
+    "ImmutableBinomialDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableBinomialDistribution-1",
       "type" : "object",
       "properties" : {
+        "@type" : {
+          "const" : "binomial"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableDiscreteFunction-1" : {
+      "type" : "object",
+      "properties" : {
+        "fTExpression" : {
+          "type" : "string"
+        },
         "maximum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "minimum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "sum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableEmpiricalDistribution" : {
+    "ImmutableDiscreteFunction-2" : {
+      "$ref" : "#/$defs/ImmutableDiscreteFunction-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "function"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableEmpiricalDistribution-1" : {
       "type" : "object",
       "properties" : {
         "cumulativeProbability" : {
           "type" : "array",
           "items" : {
-            "type" : "number"
+            "type" : "number",
+            "format" : "double"
           }
         },
         "link" : {
           "$ref" : "#/$defs/LinkFunction"
         },
         "maximum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "minimum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "x" : {
           "type" : "array",
           "items" : {
-            "type" : "number"
+            "type" : "number",
+            "format" : "double"
           }
         }
       }
+    },
+    "ImmutableEmpiricalDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableEmpiricalDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "empirical"
+        }
+      },
+      "required" : [ "@type" ]
     },
     "ImmutableEmpiricalFunction" : {
       "type" : "object",
@@ -125,53 +186,72 @@
           "$ref" : "#/$defs/LinkFunction"
         },
         "maximum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "minimum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "x" : {
           "type" : "array",
           "items" : {
-            "type" : "number"
+            "type" : "number",
+            "format" : "double"
           }
         },
         "y" : {
           "type" : "array",
           "items" : {
-            "type" : "number"
+            "type" : "number",
+            "format" : "double"
           }
         }
       }
     },
-    "ImmutableEmpiricalKernel" : {
+    "ImmutableEmpiricalKernel-1" : {
       "type" : "object",
       "properties" : {
         "link" : {
           "$ref" : "#/$defs/LinkFunction"
         },
         "maximum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "minimum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "sum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "t" : {
           "type" : "array",
           "items" : {
-            "type" : "integer"
+            "type" : "integer",
+            "format" : "int32"
           }
         },
         "y" : {
           "type" : "array",
           "items" : {
-            "type" : "number"
+            "type" : "number",
+            "format" : "double"
           }
         }
       }
+    },
+    "ImmutableEmpiricalKernel-2" : {
+      "$ref" : "#/$defs/ImmutableEmpiricalKernel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "empirical"
+        }
+      },
+      "required" : [ "@type" ]
     },
     "ImmutableExecutionConfiguration" : {
       "type" : "object",
@@ -180,7 +260,8 @@
           "$ref" : "#/$defs/Distribution"
         },
         "asymptomaticFraction" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "availableTests" : {
           "type" : "array",
@@ -189,22 +270,27 @@
           }
         },
         "caseFatalityRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "caseHospitalisationRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "complianceDeteriorationRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "complianceImprovementRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "complianceProbability" : {
           "$ref" : "#/$defs/Distribution"
         },
         "contactDetectedProbability" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "contactProbability" : {
           "$ref" : "#/$defs/Distribution"
@@ -218,32 +304,46 @@
         "demographicAdjustment" : {
           "$ref" : "#/$defs/PartialDemographicAdjustment"
         },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
         "importationProbability" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "inHostConfiguration" : {
           "$ref" : "#/$defs/InHostConfiguration"
         },
         "initialEstimateIncubationPeriod" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "initialEstimateInfectionDuration" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "initialEstimateSymptomSensitivity" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "initialEstimateSymptomSpecificity" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "initialScreeningProbability" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "lockdownReleaseTrigger" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "lockdownStartTrigger" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "lockdownTriggerValue" : {
           "$ref" : "#/$defs/Value"
@@ -255,10 +355,11 @@
           "type" : "string"
         },
         "organicRateOfMobilityChange" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "r0" : {
-          "type" : "number"
+          "$ref" : "#/$defs/Distribution"
         },
         "riskModelContactsKernel" : {
           "$ref" : "#/$defs/KernelFunction"
@@ -270,7 +371,8 @@
           "$ref" : "#/$defs/KernelFunction"
         },
         "smartAppRiskTrigger" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "symptomSensitivity" : {
           "$ref" : "#/$defs/Distribution"
@@ -286,11 +388,18 @@
         "batchConfig" : {
           "$ref" : "#/$defs/ImmutableBatchConfiguration"
         },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
         "executionConfig" : {
           "$ref" : "#/$defs/ImmutableExecutionConfiguration"
         },
         "executionReplications" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "facets" : {
           "type" : "array",
@@ -305,7 +414,11 @@
           }
         },
         "setupReplications" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "version" : {
+          "type" : "string"
         }
       }
     },
@@ -313,66 +426,124 @@
       "type" : "object",
       "properties" : {
         "value" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableGammaDistribution" : {
+    "ImmutableGammaDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableGaussianKernel" : {
+    "ImmutableGammaDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableGammaDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "gamma"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableGaussianKernel-1" : {
       "type" : "object",
       "properties" : {
         "maximum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "minimum" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "mu" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sigma" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableLogNormalDistribution" : {
+    "ImmutableGaussianKernel-2" : {
+      "$ref" : "#/$defs/ImmutableGaussianKernel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "gaussian"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableLogNormalDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableLogitNormalDistribution" : {
+    "ImmutableLogNormalDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableLogNormalDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "log-normal"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableLogitNormalDistribution-1" : {
       "type" : "object",
       "properties" : {
         "median" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "scale" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableMarkovStateModel" : {
+    "ImmutableLogitNormalDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableLogitNormalDistribution-1",
       "type" : "object",
       "properties" : {
+        "@type" : {
+          "const" : "logit"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableMarkovStateModel-1" : {
+      "type" : "object",
+      "properties" : {
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
         "immuneWaningHalfLife" : {
           "$ref" : "#/$defs/Distribution"
         },
@@ -387,9 +558,22 @@
         }
       }
     },
+    "ImmutableMarkovStateModel-2" : {
+      "$ref" : "#/$defs/ImmutableMarkovStateModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "markov"
+        }
+      },
+      "required" : [ "@type" ]
+    },
     "ImmutableMathematicalFunction" : {
       "type" : "object",
       "properties" : {
+        "fXExpression" : {
+          "type" : "string"
+        },
         "interpolationType" : {
           "$ref" : "#/$defs/Interpolators"
         },
@@ -397,48 +581,62 @@
           "$ref" : "#/$defs/LinkFunction"
         },
         "maximum" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "minimum" : {
-          "type" : "number"
-        },
-        "x" : {
-          "type" : "array",
-          "items" : {
-            "type" : "number"
-          }
-        },
-        "y" : {
-          "type" : "array",
-          "items" : {
-            "type" : "number"
-          }
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableNegBinomialDistribution" : {
+    "ImmutableNegBinomialDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableNormalDistribution" : {
+    "ImmutableNegBinomialDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableNegBinomialDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "neg-binomial"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableNormalDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "sd" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutablePhenomenologicalModel" : {
+    "ImmutableNormalDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableNormalDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "normal"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutablePhenomenologicalModel-1" : {
       "type" : "object",
       "properties" : {
         "approxPeakImmuneResponse" : {
@@ -446,6 +644,12 @@
         },
         "approxPeakViralLoad" : {
           "$ref" : "#/$defs/Distribution"
+        },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
         },
         "immuneWaningHalfLife" : {
           "$ref" : "#/$defs/Distribution"
@@ -457,7 +661,8 @@
           "$ref" : "#/$defs/Distribution"
         },
         "infectiousnessCutoff" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "peakImmuneResponseDelay" : {
           "$ref" : "#/$defs/Distribution"
@@ -467,30 +672,70 @@
         }
       }
     },
-    "ImmutablePointDistribution" : {
+    "ImmutablePhenomenologicalModel-2" : {
+      "$ref" : "#/$defs/ImmutablePhenomenologicalModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "phenomenological"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutablePointDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutablePoissonDistribution" : {
+    "ImmutablePointDistribution-2" : {
+      "$ref" : "#/$defs/ImmutablePointDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "point"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutablePoissonDistribution-1" : {
       "type" : "object",
       "properties" : {
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableStochasticModel" : {
+    "ImmutablePoissonDistribution-2" : {
+      "$ref" : "#/$defs/ImmutablePoissonDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "poisson"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableStochasticModel-1" : {
       "type" : "object",
       "properties" : {
         "baselineViralInfectionRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "baselineViralReplicationRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
+        },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
         },
         "immuneActivationRate" : {
           "$ref" : "#/$defs/Distribution"
@@ -505,51 +750,87 @@
           "$ref" : "#/$defs/Distribution"
         },
         "targetCellCount" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "targetRecoveryRate" : {
           "$ref" : "#/$defs/Distribution"
         },
         "virionsDiseaseCutoff" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         }
       }
     },
-    "ImmutableUniformDistribution" : {
+    "ImmutableStochasticModel-2" : {
+      "$ref" : "#/$defs/ImmutableStochasticModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "stochastic"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableUniformDistribution-1" : {
       "type" : "object",
       "properties" : {
         "max" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "min" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
-    "ImmutableUnimodalBetaDistribution" : {
+    "ImmutableUniformDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableUniformDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "uniform"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "ImmutableUnimodalBetaDistribution-1" : {
       "type" : "object",
       "properties" : {
         "dispersion" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "mean" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         }
       }
     },
+    "ImmutableUnimodalBetaDistribution-2" : {
+      "$ref" : "#/$defs/ImmutableUnimodalBetaDistribution-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "unimodal-beta"
+        }
+      },
+      "required" : [ "@type" ]
+    },
     "InHostConfiguration" : {
       "anyOf" : [ {
-        "$ref" : "#/$defs/ImmutableStochasticModel"
+        "$ref" : "#/$defs/ImmutableStochasticModel-2"
       }, {
-        "$ref" : "#/$defs/ImmutablePhenomenologicalModel"
+        "$ref" : "#/$defs/ImmutablePhenomenologicalModel-2"
       }, {
-        "$ref" : "#/$defs/ImmutableMarkovStateModel"
+        "$ref" : "#/$defs/ImmutableMarkovStateModel-2"
       }, {
-        "$ref" : "#/$defs/PartialStochasticModel"
+        "$ref" : "#/$defs/PartialStochasticModel-2"
       }, {
-        "$ref" : "#/$defs/PartialPhenomenologicalModel"
+        "$ref" : "#/$defs/PartialPhenomenologicalModel-2"
       }, {
-        "$ref" : "#/$defs/PartialMarkovStateModel"
+        "$ref" : "#/$defs/PartialMarkovStateModel-2"
       } ]
     },
     "Interpolators" : {
@@ -558,11 +839,11 @@
     },
     "KernelFunction" : {
       "anyOf" : [ {
-        "$ref" : "#/$defs/ImmutableEmpiricalKernel"
+        "$ref" : "#/$defs/ImmutableEmpiricalKernel-2"
       }, {
-        "$ref" : "#/$defs/ImmutableDiscreteFunction"
+        "$ref" : "#/$defs/ImmutableDiscreteFunction-2"
       }, {
-        "$ref" : "#/$defs/ImmutableGaussianKernel"
+        "$ref" : "#/$defs/ImmutableGaussianKernel-2"
       } ]
     },
     "LinkFunction" : {
@@ -610,9 +891,15 @@
         }
       }
     },
-    "PartialMarkovStateModel" : {
+    "PartialMarkovStateModel-1" : {
       "type" : "object",
       "properties" : {
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
         "immuneWaningHalfLife" : {
           "$ref" : "#/$defs/Distribution"
         },
@@ -627,7 +914,17 @@
         }
       }
     },
-    "PartialPhenomenologicalModel" : {
+    "PartialMarkovStateModel-2" : {
+      "$ref" : "#/$defs/PartialMarkovStateModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "markov.modifier"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "PartialPhenomenologicalModel-1" : {
       "type" : "object",
       "properties" : {
         "approxPeakImmuneResponse" : {
@@ -635,6 +932,12 @@
         },
         "approxPeakViralLoad" : {
           "$ref" : "#/$defs/Distribution"
+        },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
         },
         "immuneWaningHalfLife" : {
           "$ref" : "#/$defs/Distribution"
@@ -646,7 +949,8 @@
           "$ref" : "#/$defs/Distribution"
         },
         "infectiousnessCutoff" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "peakImmuneResponseDelay" : {
           "$ref" : "#/$defs/Distribution"
@@ -656,14 +960,32 @@
         }
       }
     },
-    "PartialStochasticModel" : {
+    "PartialPhenomenologicalModel-2" : {
+      "$ref" : "#/$defs/PartialPhenomenologicalModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "phenomenological.modifier"
+        }
+      },
+      "required" : [ "@type" ]
+    },
+    "PartialStochasticModel-1" : {
       "type" : "object",
       "properties" : {
         "baselineViralInfectionRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
         },
         "baselineViralReplicationRate" : {
-          "type" : "number"
+          "type" : "number",
+          "format" : "double"
+        },
+        "description" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
         },
         "immuneActivationRate" : {
           "$ref" : "#/$defs/Distribution"
@@ -678,15 +1000,27 @@
           "$ref" : "#/$defs/Distribution"
         },
         "targetCellCount" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         },
         "targetRecoveryRate" : {
           "$ref" : "#/$defs/Distribution"
         },
         "virionsDiseaseCutoff" : {
-          "type" : "integer"
+          "type" : "integer",
+          "format" : "int32"
         }
       }
+    },
+    "PartialStochasticModel-2" : {
+      "$ref" : "#/$defs/PartialStochasticModel-1",
+      "type" : "object",
+      "properties" : {
+        "@type" : {
+          "const" : "stochastic.modifier"
+        }
+      },
+      "required" : [ "@type" ]
     },
     "SetupFacet" : {
       "type" : "object"

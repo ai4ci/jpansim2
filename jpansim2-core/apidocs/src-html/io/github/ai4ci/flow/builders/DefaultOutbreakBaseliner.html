@@ -107,51 +107,54 @@
 <span class="source-line-no">094</span><span id="line-94">                        ImmutableOutbreakBaseline.Builder builder, Outbreak outbreak,</span>
 <span class="source-line-no">095</span><span id="line-95">                        Sampler sampler</span>
 <span class="source-line-no">096</span><span id="line-96">        ) {</span>
-<span class="source-line-no">097</span><span id="line-97">                ExecutionConfiguration configuration = outbreak</span>
-<span class="source-line-no">098</span><span id="line-98">                                .getExecutionConfiguration();</span>
-<span class="source-line-no">099</span><span id="line-99"></span>
-<span class="source-line-no">100</span><span id="line-100">                // N.B. happens after people are baselined.., I think</span>
-<span class="source-line-no">101</span><span id="line-101">                double parameter;</span>
-<span class="source-line-no">102</span><span id="line-102">                try {</span>
-<span class="source-line-no">103</span><span id="line-103">                        parameter = Calibration.inferViralLoadTransmissionParameterQuick(</span>
-<span class="source-line-no">104</span><span id="line-104">                                        outbreak, configuration.getR0()</span>
-<span class="source-line-no">105</span><span id="line-105">                        );</span>
-<span class="source-line-no">106</span><span id="line-106">                } catch (Exception e) {</span>
-<span class="source-line-no">107</span><span id="line-107">                        parameter = Calibration.inferViralLoadTransmissionParameter(</span>
-<span class="source-line-no">108</span><span id="line-108">                                        outbreak, configuration.getR0()</span>
-<span class="source-line-no">109</span><span id="line-109">                        );</span>
+<span class="source-line-no">097</span><span id="line-97">                var configuration = outbreak.getExecutionConfiguration();</span>
+<span class="source-line-no">098</span><span id="line-98">                var R0 = configuration.getR0()</span>
+<span class="source-line-no">099</span><span id="line-99">                        .sample();</span>
+<span class="source-line-no">100</span><span id="line-100"></span>
+<span class="source-line-no">101</span><span id="line-101">                // N.B. happens after people are baselined.., I think</span>
+<span class="source-line-no">102</span><span id="line-102">                double parameter;</span>
+<span class="source-line-no">103</span><span id="line-103">                if (outbreak.getSetupConfiguration()</span>
+<span class="source-line-no">104</span><span id="line-104">                        .isCalibrateR0ToNetwork()) {</span>
+<span class="source-line-no">105</span><span id="line-105">                        parameter = Calibration</span>
+<span class="source-line-no">106</span><span id="line-106">                                .inferViralLoadTransmissionParameter(outbreak, R0);</span>
+<span class="source-line-no">107</span><span id="line-107">                } else {</span>
+<span class="source-line-no">108</span><span id="line-108">                        parameter = Calibration</span>
+<span class="source-line-no">109</span><span id="line-109">                                .inferViralLoadTransmissionParameterErdosReyni(outbreak, R0);</span>
 <span class="source-line-no">110</span><span id="line-110">                }</span>
 <span class="source-line-no">111</span><span id="line-111">                builder.setDefaultPolicyState(configuration.getDefaultPolicyModel())</span>
-<span class="source-line-no">112</span><span id="line-112">                                .setViralLoadTransmissibilityParameter(parameter)</span>
-<span class="source-line-no">113</span><span id="line-113">                                .setExpectedContactsPerPersonPerDay(</span>
-<span class="source-line-no">114</span><span id="line-114">                                                Calibration.contactsPerPersonPerDay(outbreak)</span>
-<span class="source-line-no">115</span><span id="line-115">                                )</span>
-<span class="source-line-no">116</span><span id="line-116">                                .setSeveritySymptomsCutoff(</span>
-<span class="source-line-no">117</span><span id="line-117">                                                configuration.getInHostConfiguration()</span>
-<span class="source-line-no">118</span><span id="line-118">                                                                .getSeveritySymptomsCutoff(outbreak, configuration)</span>
-<span class="source-line-no">119</span><span id="line-119">                                )</span>
-<span class="source-line-no">120</span><span id="line-120">                                .setSeverityHospitalisationCutoff(</span>
-<span class="source-line-no">121</span><span id="line-121">                                                configuration.getInHostConfiguration()</span>
-<span class="source-line-no">122</span><span id="line-122">                                                                .getSeverityHospitalisationCutoff(</span>
-<span class="source-line-no">123</span><span id="line-123">                                                                                outbreak, configuration</span>
-<span class="source-line-no">124</span><span id="line-124">                                                                )</span>
-<span class="source-line-no">125</span><span id="line-125">                                )</span>
-<span class="source-line-no">126</span><span id="line-126">                                .setSeverityDeathCutoff(</span>
-<span class="source-line-no">127</span><span id="line-127">                                                configuration.getInHostConfiguration()</span>
-<span class="source-line-no">128</span><span id="line-128">                                                                .getSeverityFatalityCutoff(outbreak, configuration)</span>
-<span class="source-line-no">129</span><span id="line-129">                                )</span>
-<span class="source-line-no">130</span><span id="line-130">                                .setInfectivityProfile(</span>
-<span class="source-line-no">131</span><span id="line-131">                                                InHostConfiguration.getInfectivityProfile(</span>
-<span class="source-line-no">132</span><span id="line-132">                                                                configuration, parameter, 100, 100</span>
-<span class="source-line-no">133</span><span id="line-133">                                                )</span>
-<span class="source-line-no">134</span><span id="line-134">                                ).setSymptomDuration(</span>
-<span class="source-line-no">135</span><span id="line-135">                                                configuration.getSeverityProfile().getQuantile(0.95)</span>
-<span class="source-line-no">136</span><span id="line-136">                                );</span>
-<span class="source-line-no">137</span><span id="line-137">                outbreak.getStateMachine().init(configuration.getDefaultPolicyModel());</span>
-<span class="source-line-no">138</span><span id="line-138">                return builder.build();</span>
-<span class="source-line-no">139</span><span id="line-139">        }</span>
-<span class="source-line-no">140</span><span id="line-140"></span>
-<span class="source-line-no">141</span><span id="line-141">}</span>
+<span class="source-line-no">112</span><span id="line-112">                        .setViralLoadTransmissibilityParameter(parameter)</span>
+<span class="source-line-no">113</span><span id="line-113">                        .setR0(R0)</span>
+<span class="source-line-no">114</span><span id="line-114">                        .setExpectedContactsPerPersonPerDay(</span>
+<span class="source-line-no">115</span><span id="line-115">                                Calibration.contactsPerPersonPerDay(outbreak)</span>
+<span class="source-line-no">116</span><span id="line-116">                        )</span>
+<span class="source-line-no">117</span><span id="line-117">                        .setSeveritySymptomsCutoff(</span>
+<span class="source-line-no">118</span><span id="line-118">                                configuration.getInHostConfiguration()</span>
+<span class="source-line-no">119</span><span id="line-119">                                        .getSeveritySymptomsCutoff(outbreak, configuration)</span>
+<span class="source-line-no">120</span><span id="line-120">                        )</span>
+<span class="source-line-no">121</span><span id="line-121">                        .setSeverityHospitalisationCutoff(</span>
+<span class="source-line-no">122</span><span id="line-122">                                configuration.getInHostConfiguration()</span>
+<span class="source-line-no">123</span><span id="line-123">                                        .getSeverityHospitalisationCutoff(outbreak, configuration)</span>
+<span class="source-line-no">124</span><span id="line-124">                        )</span>
+<span class="source-line-no">125</span><span id="line-125">                        .setSeverityDeathCutoff(</span>
+<span class="source-line-no">126</span><span id="line-126">                                configuration.getInHostConfiguration()</span>
+<span class="source-line-no">127</span><span id="line-127">                                        .getSeverityFatalityCutoff(outbreak, configuration)</span>
+<span class="source-line-no">128</span><span id="line-128">                        )</span>
+<span class="source-line-no">129</span><span id="line-129">                        .setInfectivityProfile(</span>
+<span class="source-line-no">130</span><span id="line-130">                                InHostConfiguration.getInfectivityProfile(</span>
+<span class="source-line-no">131</span><span id="line-131">                                        configuration.getViralLoadProfile(),</span>
+<span class="source-line-no">132</span><span id="line-132">                                        parameter</span>
+<span class="source-line-no">133</span><span id="line-133">                                )</span>
+<span class="source-line-no">134</span><span id="line-134">                        )</span>
+<span class="source-line-no">135</span><span id="line-135">                        .setSymptomDuration(</span>
+<span class="source-line-no">136</span><span id="line-136">                                configuration.getSeverityProfile()</span>
+<span class="source-line-no">137</span><span id="line-137">                                        .getQuantile(0.95)</span>
+<span class="source-line-no">138</span><span id="line-138">                        );</span>
+<span class="source-line-no">139</span><span id="line-139">                outbreak.getStateMachine()</span>
+<span class="source-line-no">140</span><span id="line-140">                        .init(configuration.getDefaultPolicyModel());</span>
+<span class="source-line-no">141</span><span id="line-141">                return builder.build();</span>
+<span class="source-line-no">142</span><span id="line-142">        }</span>
+<span class="source-line-no">143</span><span id="line-143"></span>
+<span class="source-line-no">144</span><span id="line-144">}</span>
 
 
 

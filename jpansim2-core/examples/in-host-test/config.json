@@ -1,11 +1,12 @@
 {
   "batchConfig" : {
-    "exporters" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ],
+    "exporters" : [ "SUMMARY", "LINELIST", "HISTORICAL_TESTS", "CONTACT_NETWORK", "INFECTIVITY_PROFILE", "VIRAL_CHALLENGE", "POST_VACCINATION", "DEMOGRAPHICS", "DEBUG_PARAMETERS", "FINAL_STATE", "BEHAVIOUR", "CONTACT_COUNTS" ],
     "simulationDuration" : 200,
     "urnBase" : "default"
   },
   "executionConfig" : {
     "name" : "execution",
+    "description" : [ "A default phenomenomolgical in-host model with no behaviour or policy control.", "Symptoms are completely sensitive and specific for disease." ],
     "appUseProbability" : {
       "@type" : "unimodal-beta",
       "dispersion" : 0.1,
@@ -42,12 +43,13 @@
       "dispersion" : 0.25,
       "mean" : 0.5
     },
-    "defaultBehaviourModelName" : "Test",
+    "defaultBehaviourModelName" : "FixedBehaviour",
     "defaultPolicyModelName" : "NoControl",
     "demographicAdjustment" : { },
     "importationProbability" : 0.0,
     "inHostConfiguration" : {
       "@type" : "phenomenological",
+      "description" : [ "A phenomenological in host model with incubation period ~ 5 days, peak infectivity 2 days later and infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.", "The viral load is derived from the severity which is calibrated from the overall outbreak parameters" ],
       "approxPeakImmuneResponse" : {
         "@type" : "unimodal-beta",
         "dispersion" : 0.1,
@@ -65,7 +67,7 @@
       },
       "incubationPeriod" : {
         "@type" : "log-normal",
-        "mean" : 4.0,
+        "mean" : 5.0,
         "sd" : 2.0
       },
       "incubationToPeakViralLoadDelay" : {
@@ -99,7 +101,10 @@
       "mean" : 0.25
     },
     "organicRateOfMobilityChange" : 0.25,
-    "r0" : 1.75,
+    "r0" : {
+      "@type" : "point",
+      "mean" : 1.75
+    },
     "riskModelContactsKernel" : {
       "@type" : "gaussian",
       "maximum" : 10,
@@ -126,11 +131,11 @@
     },
     "smartAppRiskTrigger" : 0.05,
     "symptomSensitivity" : {
-      "@type" : "uniform",
+      "@type" : "point",
       "mean" : 1.0
     },
     "symptomSpecificity" : {
-      "@type" : "uniform",
+      "@type" : "point",
       "mean" : 1.0
     }
   },
@@ -139,8 +144,10 @@
     "name" : "in-host-models",
     "modifications" : [ {
       "name" : "markov",
+      "description" : [ "Uses a markov-state model for in host viral load" ],
       "inHostConfiguration" : {
         "@type" : "markov",
+        "description" : [ "A SEIR like in host model with incubation period ~ 5 days, infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.", "The viral load is derived from the severity which is calibrated from the overall outbreak parameters" ],
         "immuneWaningHalfLife" : {
           "@type" : "log-normal",
           "mean" : 300.0,
@@ -164,8 +171,10 @@
       }
     }, {
       "name" : "phenomenological",
+      "description" : [ "Uses a phenomenological model for in host viral load" ],
       "inHostConfiguration" : {
         "@type" : "phenomenological",
+        "description" : [ "A phenomenological in host model with incubation period ~ 5 days, peak infectivity 2 days later and infectious duration ~ 8 days, symptom duration ~ 5 days, and immunity ~ 300 days.", "The viral load is derived from the severity which is calibrated from the overall outbreak parameters" ],
         "approxPeakImmuneResponse" : {
           "@type" : "unimodal-beta",
           "dispersion" : 0.1,
@@ -183,7 +192,7 @@
         },
         "incubationPeriod" : {
           "@type" : "log-normal",
-          "mean" : 4.0,
+          "mean" : 5.0,
           "sd" : 2.0
         },
         "incubationToPeakViralLoadDelay" : {
@@ -205,8 +214,10 @@
       }
     }, {
       "name" : "stochastic",
+      "description" : [ "Uses a target cell model for in host viral load" ],
       "inHostConfiguration" : {
         "@type" : "stochastic",
+        "description" : [ "A complex in host model with a target cell model with immunity, and virion components" ],
         "baselineViralInfectionRate" : 1.0,
         "baselineViralReplicationRate" : 4.0,
         "immuneActivationRate" : {
@@ -225,7 +236,7 @@
           "sd" : 0.01
         },
         "infectionCarrierProbability" : {
-          "@type" : "uniform",
+          "@type" : "point",
           "mean" : 0.0
         },
         "targetCellCount" : 10000,
@@ -244,15 +255,19 @@
       "name" : "default",
       "demographics" : {
         "@type" : "location-aware",
+        "description" : [ "An increased association between contact strength and proximity (OR=2)." ],
         "contactProximityBias" : 2.0
       },
       "initialImports" : 30,
+      "calibrateR0ToNetwork" : true,
       "network" : {
         "@type" : "erdos-reyni",
+        "description" : [ "A 128x128 Erdos-Reyni network with 100 contacts per node." ],
         "networkDegree" : 100,
         "networkSize" : 16384
       }
     }
   } ],
-  "setupReplications" : 1
+  "setupReplications" : 1,
+  "version" : "0.3.8"
 }

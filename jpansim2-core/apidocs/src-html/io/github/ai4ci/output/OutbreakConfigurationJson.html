@@ -15,44 +15,53 @@
 <span class="source-line-no">002</span><span id="line-2"></span>
 <span class="source-line-no">003</span><span id="line-3">import org.immutables.value.Value;</span>
 <span class="source-line-no">004</span><span id="line-4"></span>
-<span class="source-line-no">005</span><span id="line-5">import io.github.ai4ci.config.execution.ExecutionConfiguration;</span>
-<span class="source-line-no">006</span><span id="line-6">import io.github.ai4ci.config.setup.SetupConfiguration;</span>
-<span class="source-line-no">007</span><span id="line-7"></span>
-<span class="source-line-no">008</span><span id="line-8">/**</span>
-<span class="source-line-no">009</span><span id="line-9"> * Execution and setup configuration snapshot exported at execution start.</span>
-<span class="source-line-no">010</span><span id="line-10"> *</span>
-<span class="source-line-no">011</span><span id="line-11"> * &lt;p&gt;</span>
-<span class="source-line-no">012</span><span id="line-12"> * Main purpose: capture the full setup and execution configuration used for a</span>
-<span class="source-line-no">013</span><span id="line-13"> * simulation execution. Records are produced at the START stage and are written</span>
-<span class="source-line-no">014</span><span id="line-14"> * per execution as JSON serialisable objects; the immutable type may be</span>
-<span class="source-line-no">015</span><span id="line-15"> * included alongside CSV outputs for reproducibility.</span>
-<span class="source-line-no">016</span><span id="line-16"> *</span>
-<span class="source-line-no">017</span><span id="line-17"> * &lt;p&gt;</span>
-<span class="source-line-no">018</span><span id="line-18"> * Downstream uses: used to reproduce experiments, for auditing and for</span>
-<span class="source-line-no">019</span><span id="line-19"> * supplying configuration metadata to analysis pipelines.</span>
-<span class="source-line-no">020</span><span id="line-20"> *</span>
-<span class="source-line-no">021</span><span id="line-21"> * @author Rob Challen</span>
-<span class="source-line-no">022</span><span id="line-22"> */</span>
-<span class="source-line-no">023</span><span id="line-23">@Value.Immutable</span>
-<span class="source-line-no">024</span><span id="line-24">public interface OutbreakConfigurationJson extends CommonCSV.Execution {</span>
-<span class="source-line-no">025</span><span id="line-25"></span>
-<span class="source-line-no">026</span><span id="line-26">        /**</span>
-<span class="source-line-no">027</span><span id="line-27">         * Get the execution configuration used to run the outbreak.</span>
-<span class="source-line-no">028</span><span id="line-28">         *</span>
-<span class="source-line-no">029</span><span id="line-29">         * @return the execution configuration instance describing runtime policies,</span>
-<span class="source-line-no">030</span><span id="line-30">         *         testing and in‑host model selection</span>
-<span class="source-line-no">031</span><span id="line-31">         */</span>
-<span class="source-line-no">032</span><span id="line-32">        public ExecutionConfiguration getExecutionConfiguration();</span>
-<span class="source-line-no">033</span><span id="line-33"></span>
-<span class="source-line-no">034</span><span id="line-34">        /**</span>
-<span class="source-line-no">035</span><span id="line-35">         * Get the setup configuration used to create the outbreak.</span>
-<span class="source-line-no">036</span><span id="line-36">         *</span>
-<span class="source-line-no">037</span><span id="line-37">         * @return the setup configuration instance describing population and network</span>
-<span class="source-line-no">038</span><span id="line-38">         *         generation parameters</span>
-<span class="source-line-no">039</span><span id="line-39">         */</span>
-<span class="source-line-no">040</span><span id="line-40">        public SetupConfiguration getSetupConfiguration();</span>
-<span class="source-line-no">041</span><span id="line-41"></span>
-<span class="source-line-no">042</span><span id="line-42">}</span>
+<span class="source-line-no">005</span><span id="line-5">import io.github.ai4ci.abm.OutbreakBaseline;</span>
+<span class="source-line-no">006</span><span id="line-6">import io.github.ai4ci.config.execution.ExecutionConfiguration;</span>
+<span class="source-line-no">007</span><span id="line-7">import io.github.ai4ci.config.setup.SetupConfiguration;</span>
+<span class="source-line-no">008</span><span id="line-8"></span>
+<span class="source-line-no">009</span><span id="line-9">/**</span>
+<span class="source-line-no">010</span><span id="line-10"> * Execution and setup configuration snapshot exported at execution start.</span>
+<span class="source-line-no">011</span><span id="line-11"> *</span>
+<span class="source-line-no">012</span><span id="line-12"> * &lt;p&gt;</span>
+<span class="source-line-no">013</span><span id="line-13"> * Main purpose: capture the full setup and execution configuration used for a</span>
+<span class="source-line-no">014</span><span id="line-14"> * simulation execution. Records are produced at the START stage and are written</span>
+<span class="source-line-no">015</span><span id="line-15"> * per execution as JSON serialisable objects; the immutable type may be</span>
+<span class="source-line-no">016</span><span id="line-16"> * included alongside CSV outputs for reproducibility.</span>
+<span class="source-line-no">017</span><span id="line-17"> *</span>
+<span class="source-line-no">018</span><span id="line-18"> * &lt;p&gt;</span>
+<span class="source-line-no">019</span><span id="line-19"> * Downstream uses: used to reproduce experiments, for auditing and for</span>
+<span class="source-line-no">020</span><span id="line-20"> * supplying configuration metadata to analysis pipelines.</span>
+<span class="source-line-no">021</span><span id="line-21"> *</span>
+<span class="source-line-no">022</span><span id="line-22"> * @author Rob Challen</span>
+<span class="source-line-no">023</span><span id="line-23"> */</span>
+<span class="source-line-no">024</span><span id="line-24">@Value.Immutable</span>
+<span class="source-line-no">025</span><span id="line-25">public interface OutbreakConfigurationJson extends CommonCSV.Execution {</span>
+<span class="source-line-no">026</span><span id="line-26"></span>
+<span class="source-line-no">027</span><span id="line-27">        /**</span>
+<span class="source-line-no">028</span><span id="line-28">         * Get the execution configuration used to run the outbreak.</span>
+<span class="source-line-no">029</span><span id="line-29">         *</span>
+<span class="source-line-no">030</span><span id="line-30">         * @return the execution configuration instance describing runtime policies,</span>
+<span class="source-line-no">031</span><span id="line-31">         *         testing and in‑host model selection</span>
+<span class="source-line-no">032</span><span id="line-32">         */</span>
+<span class="source-line-no">033</span><span id="line-33">        ExecutionConfiguration getExecutionConfiguration();</span>
+<span class="source-line-no">034</span><span id="line-34"></span>
+<span class="source-line-no">035</span><span id="line-35">        /**</span>
+<span class="source-line-no">036</span><span id="line-36">         * Get the setup configuration used to create the outbreak.</span>
+<span class="source-line-no">037</span><span id="line-37">         *</span>
+<span class="source-line-no">038</span><span id="line-38">         * @return the setup configuration instance describing population and network</span>
+<span class="source-line-no">039</span><span id="line-39">         *         generation parameters</span>
+<span class="source-line-no">040</span><span id="line-40">         */</span>
+<span class="source-line-no">041</span><span id="line-41">        SetupConfiguration getSetupConfiguration();</span>
+<span class="source-line-no">042</span><span id="line-42"></span>
+<span class="source-line-no">043</span><span id="line-43">        /**</span>
+<span class="source-line-no">044</span><span id="line-44">         * Get the baseline parametrisation of the outbreak.</span>
+<span class="source-line-no">045</span><span id="line-45">         *</span>
+<span class="source-line-no">046</span><span id="line-46">         * @return the outbreak baseline instance describing population and network</span>
+<span class="source-line-no">047</span><span id="line-47">         *         generation parameters</span>
+<span class="source-line-no">048</span><span id="line-48">         */</span>
+<span class="source-line-no">049</span><span id="line-49">        OutbreakBaseline getOutbreakBaseline();</span>
+<span class="source-line-no">050</span><span id="line-50"></span>
+<span class="source-line-no">051</span><span id="line-51">}</span>
 
 
 
